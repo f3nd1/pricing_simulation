@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UCC Course Budget Simulator</title>
+<style>
+:root{
+  --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --surface-0:#eef0f4;
+  --surface-1:#f5f6f9;
+  --surface-2:#ffffff;
+  --border:#dde1e9;
+  --border-strong:#b0b8c8;
+  --border-accent:#3b6ef0;
+  --text-primary:#0f1724;
+  --text-secondary:#2d3748;
+  --text-muted:#64748b;
+  --text-success:#166534;
+  --text-danger:#b91c1c;
+  --text-warning:#92400e;
+  --text-accent:#1d4ed8;
+  --bg-success:#bbf7d0;
+  --bg-danger:#fecaca;
+  --bg-warning:#fde68a;
+  --bg-accent:#dbeafe;
+}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+*{box-sizing:border-box;margin:0;padding:0}
+input,select,button{font-family:inherit;font-size:inherit}
+input[type=number],input[type=text]{background:var(--surface-1);border:0.5px solid var(--border);border-radius:5px;color:var(--text-primary);padding:3px 6px}
+input[type=number]:focus,input[type=text]:focus,select:focus{outline:none;border-color:var(--border-accent)}
+select{background:var(--surface-1);border:0.5px solid var(--border);border-radius:5px;color:var(--text-primary);padding:4px 7px;cursor:pointer}
+button{background:var(--surface-1);border:0.5px solid var(--border);border-radius:6px;color:var(--text-primary);cursor:pointer;padding:5px 11px}
+button:hover{background:var(--surface-0)}
+#saveSc{background:rgba(255,255,255,.18)!important;color:#fff!important;border:1px solid rgba(255,255,255,.5)!important;border-radius:6px;font-weight:500}
+#saveSc:hover{background:rgba(255,255,255,.28)!important}
+.wrap{background:var(--surface-0);min-height:100vh;font-family:var(--font-sans);font-size:13px;color:var(--text-primary)}
+.hdr{background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 100%);border-bottom:none;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;color:#fff}
+.hdr *{color:#fff!important}
+.subhdr{background:var(--surface-2);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.body{display:flex;gap:12px;padding:12px 16px}
+.lp{width:244px;flex-shrink:0;display:flex;flex-direction:column;gap:10px}
+.rp{flex:1;min-width:0}
+.card{background:var(--surface-2);border-radius:12px;border:1px solid var(--border);padding:11px 13px;margin-bottom:0;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.ctitle{font-size:10px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px}
+.row{display:flex;justify-content:space-between;align-items:flex-start;padding:4px 0;border-bottom:0.5px solid var(--border)}
+.row.total{border-top:1.5px solid var(--border-strong);border-bottom:none;margin-top:3px;padding-top:5px}
+.rl{font-size:12px;color:var(--text-secondary)}
+.rn{font-size:10px;color:var(--text-muted)}
+.rv{font-size:13px}
+.rv.ok{color:var(--text-success)}
+.rv.bad{color:var(--text-danger)}
+.rv.acc{color:var(--text-accent);font-weight:500}
+.rv.bold{font-weight:500}
+.ni{display:flex;align-items:center;justify-content:space-between;padding:3px 0;border-bottom:0.5px solid var(--border)}
+.nilbl{font-size:12px;color:var(--text-secondary)}
+.nipfx{font-size:11px;color:var(--text-muted)}
+.nigrp{display:flex;align-items:center;gap:3px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.tabs{display:flex;gap:2px;margin-bottom:10px;border-bottom:2px solid var(--border-accent)}
+.tab{padding:7px 14px;border-radius:6px 6px 0 0;font-size:12px;background:transparent;color:var(--text-muted);border:none;cursor:pointer;margin-bottom:-2px;transition:color .15s}
+.tab:hover{color:var(--text-primary)}
+.tab.on{background:var(--surface-2);color:var(--text-accent);font-weight:600;border:2px solid var(--border-accent);border-bottom:2px solid var(--surface-2)}
+.hero{text-align:right}
+.hlbl{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:1px}
+.hval{font-size:20px;font-weight:700;line-height:1.1;letter-spacing:-.01em}
+.ohrow{display:flex;align-items:center;gap:4px;padding:2px 0}
+.ohlbl{font-size:11px;color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stbl{border-collapse:separate;border-spacing:3px}
+.stbl th{padding:6px 18px;background:var(--surface-1);border-radius:4px;font-size:11px;font-weight:500;color:var(--text-secondary);text-align:center;border:0.5px solid var(--border)}
+.stbl td.drow{padding:6px 18px;background:var(--surface-1);border-radius:4px;font-size:12px;font-weight:500;color:var(--text-secondary);text-align:center;border:0.5px solid var(--border)}
+.sleg{display:flex;gap:14px;margin-top:12px;flex-wrap:wrap}
+.svbox{display:inline-block;width:13px;height:13px;border-radius:3px;border:0.5px solid var(--border-strong);vertical-align:middle;margin-right:4px}
+.stbl td.scell{padding:9px 18px;border-radius:4px;font-size:16px;font-weight:500;text-align:center}
+.vcard{margin-top:10px;border-radius:8px;padding:10px;text-align:center}
+.vrow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:0.5px solid var(--border)}
+.vval{display:flex;align-items:center;gap:5px}
+.cptbl{width:100%;border-collapse:collapse;font-size:12px}
+.cptbl th{padding:6px 8px;text-align:left;border-bottom:0.5px solid var(--border-strong);color:var(--text-muted);font-weight:500;font-size:10px;text-transform:uppercase;white-space:nowrap}
+.cptbl td{padding:5px 8px;border-bottom:0.5px solid var(--border)}
+.qcmp{margin-top:12px;background:var(--surface-1);border-radius:8px;padding:11px;font-size:12px}
+.qcmpg{display:grid;grid-template-columns:1fr 1fr;gap:6px;color:var(--text-secondary);margin-top:7px}
+.pltbl{width:100%;border-collapse:collapse;font-size:12px}
+.pltbl th{padding:6px 8px;text-align:left;border-bottom:0.5px solid var(--border-strong);color:var(--text-muted);font-weight:500;font-size:10px;text-transform:uppercase;white-space:nowrap;position:sticky;top:0;background:var(--surface-2)}
+.pltbl td{padding:3px 6px;border-bottom:0.5px solid var(--border);vertical-align:middle}
+.pltbl tr:hover td{background:var(--surface-1)}
+.pltbl td.cat{font-size:10px;color:var(--text-muted);white-space:nowrap}
+.plinp{width:72px;text-align:right;font-size:11px;padding:2px 4px;background:var(--surface-1);border:0.5px solid var(--border);border-radius:4px;color:var(--text-primary)}
+.plinp:focus{outline:none;border-color:var(--border-accent)}
+.pltbl td.tot{font-size:12px;font-weight:500;color:var(--text-accent);text-align:right;white-space:nowrap}
+.schrad{display:flex;gap:8px;margin:6px 0}
+.schrad label{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-secondary);cursor:pointer}
+.fcsum{border-radius:10px;padding:14px 16px;margin-top:10px;text-align:center}
+.instrow{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:0.5px solid var(--border)}
+.hero-bar{display:flex;gap:20px;margin-left:auto;align-items:flex-end;flex-wrap:wrap}
+.tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+/* ── Tablet (≤ 900px) ── */
+@media(max-width:900px){
+  .g2{grid-template-columns:1fr}
+  .lp{width:200px}
+}
+
+/* ── Mobile (≤ 640px) ── */
+@media(max-width:640px){
+  .hdr{padding:10px 12px;gap:8px}
+  .hdr>div:first-child div:last-child{font-size:14px}
+  .subhdr{flex-direction:column;align-items:stretch;padding:10px 12px;gap:6px}
+  .hero-bar{margin-left:0;display:grid;grid-template-columns:1fr 1fr;gap:6px 16px}
+  .hero{text-align:left}
+  .hval{font-size:16px}
+  .hlbl{font-size:9px}
+  .body{flex-direction:column;padding:10px 12px;gap:10px}
+  .lp{width:100%}
+  .g2{grid-template-columns:1fr;margin-bottom:8px}
+  .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;padding-bottom:1px}
+  .tab{white-space:nowrap;padding:7px 11px;font-size:11px}
+  .card{padding:10px 11px;border-radius:10px}
+  .ctitle{font-size:9px}
+  .rl{font-size:11px}
+  .rv{font-size:12px}
+  .ni{flex-wrap:wrap;gap:4px}
+  .nigrp input[type=number]{width:80px}
+  .ohrow input[type=number]{width:80px}
+  .stbl th,.stbl td.drow,.stbl td.scell{padding:6px 10px;font-size:11px}
+  .qcmpg{grid-template-columns:1fr}
+  .plinp{width:60px}
+  .vcard{padding:8px}
+  select#coursesel,select#fcCoursesel{min-width:0;width:100%}
+}
+</style>
+</head>
+<body>
+<h2 class="sr-only">UCC Course Budget Simulator — select a course and adjust inputs to model breakeven, planned vs actual, sensitivity, ULEC subcontract, and fee calculator scenarios.</h2>
+<noscript><div style="font-family:sans-serif;padding:40px;text-align:center;color:#374151"><strong>JavaScript is required.</strong><br>Open this file in Safari or Chrome — file preview apps block scripts.</div></noscript>
+<div class="wrap" id="app"><div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:12px;font-family:sans-serif;color:#374151;padding:24px;text-align:center"><div style="font-size:32px">📂</div><div style="font-size:16px;font-weight:600">Open in Safari or Chrome</div><div style="font-size:13px;color:#6b7280;max-width:280px">This file is being previewed in QuickLook, which blocks JavaScript. Tap the <strong>Share ↑</strong> button and choose <strong>Open in Safari</strong> (or Chrome) to use the simulator.</div></div></div>
+<script>
+const COURSES=[
+  {cat:"English",name:"Certificate in English Level 1 (FT)",abbr:"CEL1-FT",hrs:96,mo:3,app:400,fee:2480,mat:100,exam:100,admin:150},
+  {cat:"English",name:"Certificate in English Level 2 (FT)",abbr:"CEL2-FT",hrs:120,mo:3,app:400,fee:2480,mat:100,exam:100,admin:150},
+  {cat:"English",name:"Certificate in English Level 3 (FT)",abbr:"CEL3-FT",hrs:120,mo:3,app:400,fee:2480,mat:100,exam:100,admin:150},
+  {cat:"English",name:"Certificate in English Level 1 (PT)",abbr:"CEL1-PT",hrs:120,mo:3,app:400,fee:1488,mat:100,exam:100,admin:150},
+  {cat:"English",name:"Certificate in English Level 2 (PT)",abbr:"CEL2-PT",hrs:120,mo:3,app:400,fee:1488,mat:100,exam:100,admin:150},
+  {cat:"English",name:"Certificate in English Level 3 (PT)",abbr:"CEL3-PT",hrs:120,mo:3,app:400,fee:1488,mat:100,exam:100,admin:150},
+  {cat:"English",name:"Certificate in English Language (FT, 6m)",abbr:"CEL-6M",hrs:240,mo:6,app:400,fee:5260,mat:100,exam:100,admin:150},
+  {cat:"English",name:"IELTS Preparatory Course",abbr:"IELTS",hrs:396,mo:6,app:400,fee:7040,mat:400,exam:100,admin:150},
+  {cat:"Preparatory",name:"AEIS — Primary 2",abbr:"AEIS-P2",hrs:792,mo:6,app:400,fee:9500,mat:300,exam:300,admin:150},
+  {cat:"Preparatory",name:"AEIS — Primary 3",abbr:"AEIS-P3",hrs:792,mo:6,app:400,fee:9500,mat:300,exam:300,admin:150},
+  {cat:"Preparatory",name:"AEIS — Primary 4",abbr:"AEIS-P4",hrs:792,mo:6,app:400,fee:9500,mat:300,exam:300,admin:150},
+  {cat:"Preparatory",name:"AEIS — Primary 5",abbr:"AEIS-P5",hrs:792,mo:6,app:400,fee:9500,mat:300,exam:300,admin:150},
+  {cat:"Preparatory",name:"AEIS — Secondary 1",abbr:"AEIS-S1",hrs:792,mo:6,app:400,fee:9500,mat:300,exam:300,admin:150},
+  {cat:"Preparatory",name:"AEIS — Secondary 2",abbr:"AEIS-S2",hrs:792,mo:6,app:400,fee:9500,mat:300,exam:300,admin:150},
+  {cat:"Preparatory",name:"AEIS — Secondary 3",abbr:"AEIS-S3",hrs:792,mo:6,app:400,fee:9500,mat:300,exam:300,admin:150},
+  {cat:"Preparatory",name:"GCE O-Level Preparatory",abbr:"O-LVL",hrs:1440,mo:24,app:400,fee:36950,mat:3400,exam:1200,admin:800},
+  {cat:"Preparatory",name:"GCE A-Level Preparatory",abbr:"A-LVL",hrs:2880,mo:24,app:400,fee:42450,mat:3400,exam:1200,admin:800},
+  {cat:"Business",name:"Certificate in General Management",abbr:"CM",hrs:160,mo:6,app:400,fee:8120,mat:200,exam:200,admin:150},
+  {cat:"Business",name:"Certificate in General Management (E-Learning)",abbr:"CME",hrs:96,mo:6,app:400,fee:8120,mat:200,exam:200,admin:150},
+  {cat:"Business",name:"Certificate in General Management (Mandarin)",abbr:"CM-M",hrs:160,mo:6,app:400,fee:8120,mat:200,exam:200,admin:150},
+  {cat:"Business",name:"Cert. General Management (Mandarin, E-Learning)",abbr:"CME-M",hrs:96,mo:6,app:400,fee:8120,mat:200,exam:200,admin:150},
+  {cat:"Business",name:"Diploma in Business Management",abbr:"DBM",hrs:320,mo:8,app:400,fee:8400,mat:300,exam:300,admin:150},
+  {cat:"Business",name:"Diploma in Business Management (E-Learning)",abbr:"DBME",hrs:192,mo:8,app:400,fee:8400,mat:300,exam:300,admin:150},
+  {cat:"Business",name:"Diploma in Business Management (Mandarin)",abbr:"DBM-M",hrs:320,mo:8,app:400,fee:8400,mat:300,exam:300,admin:150},
+  {cat:"Business",name:"Diploma in Business Management (Mandarin, E-Learning)",abbr:"DBME-M",hrs:192,mo:8,app:400,fee:8400,mat:300,exam:300,admin:150},
+  {cat:"Business",name:"Advanced Diploma in Business Management",abbr:"ADBM",hrs:216,mo:8,app:400,fee:8940,mat:300,exam:300,admin:150},
+  {cat:"Business",name:"Postgraduate Certificate in Business Administration",abbr:"PGC",hrs:240,mo:4,app:400,fee:6800,mat:300,exam:300,admin:150},
+  {cat:"Business",name:"Postgraduate Certificate in Bus. Admin. (Mandarin)",abbr:"PGC-M",hrs:240,mo:4,app:400,fee:6800,mat:300,exam:300,admin:150},
+  {cat:"Business",name:"Postgraduate Diploma in Business Administration",abbr:"PGD",hrs:480,mo:8,app:400,fee:13600,mat:400,exam:400,admin:150},
+  {cat:"Business",name:"Postgraduate Diploma in Bus. Admin. (Mandarin)",abbr:"PGD-M",hrs:480,mo:8,app:400,fee:13600,mat:400,exam:400,admin:150},
+  {cat:"Technology",name:"Diploma in Applied Artificial Intelligence",abbr:"DIPAI",hrs:144,mo:8,app:400,fee:9200,mat:2500,exam:600,admin:600},
+  {cat:"Technology",name:"Advanced Diploma in Applied AI",abbr:"ADIPAI",hrs:144,mo:8,app:400,fee:10000,mat:2500,exam:600,admin:600},
+  {cat:"Tourism & Hospitality",name:"Diploma in Tourism and Hospitality Management",abbr:"DTHM",hrs:144,mo:6,app:400,fee:6300,mat:300,exam:300,admin:150},
+  {cat:"Tourism & Hospitality",name:"Diploma in Tourism & Hospitality (E-Learning)",abbr:"DTHME",hrs:144,mo:6,app:400,fee:6300,mat:300,exam:300,admin:150},
+  {cat:"Tourism & Hospitality",name:"Diploma in Tourism & Hospitality (Mandarin)",abbr:"DTHM-M",hrs:144,mo:6,app:400,fee:6300,mat:300,exam:300,admin:150},
+  {cat:"Tourism & Hospitality",name:"Diploma in Tourism & Hospitality (Mandarin, E-Learning)",abbr:"DTHME-M",hrs:144,mo:6,app:400,fee:6300,mat:300,exam:300,admin:150},
+];
+
+const DEFAULTS=COURSES.map(c=>({...c}));
+
+const INIT_OH=[
+  {label:"Classroom rental / facilities",cost:12000},
+  {label:"Sales person cost",cost:0},
+  {label:"Marketing & advertising",cost:0},
+  {label:"Course management / coordination",cost:0},
+  {label:"Content / curriculum development",cost:0},
+  {label:"LMS / software / platform licences",cost:600},
+  {label:"Printing & learning materials",cost:1200},
+  {label:"Insurance (FPS / indemnity)",cost:3000},
+  {label:"Utilities & internet",cost:300},
+  {label:"Student welfare / events",cost:3000},
+  {label:"Others",cost:0},
+];
+
+const ST={
+  ci:7,disc:0,agent:40,uni:0,tf:70,cp:100,plan:9,
+  act:40,aDisc:0,aAgent:40,aUni:0,
+  oh:INIT_OH.map(o=>({...o})),
+  ulecMgmt:500,tab:"overview",saved:[],sName:"",
+  fcCi:0,fcSchol:0
+};
+
+const sgd=n=>{const a=Math.abs(Math.round(n));const s="$"+a.toLocaleString();return n<0?"("+s+")":s;};
+const fp=n=>(n*100).toFixed(1)+"%";
+
+function calc(st){
+  const c=COURSES[st.ci];
+  const totalFee=c.fee+c.mat+c.exam+c.admin;
+  const otherFees=c.mat+c.exam+c.admin;
+  const teachCost=st.tf*c.hrs*(st.cp/100);
+  const fixedCost=st.oh.reduce((s,o)=>s+(Number(o.cost)||0),0);
+  const totalCost=teachCost+fixedCost;
+  const d=st.disc/100,a=st.agent/100,u=st.uni/100;
+  const afterDisc=totalFee*(1-d);
+  const agentPS=c.fee*a,uniPS=c.fee*u;
+  const netClean=afterDisc-agentPS-uniPS+c.app;
+  const totalNet=netClean+otherFees;
+  const beStu=totalNet>0?Math.ceil(totalCost/totalNet):999;
+  const pGross=st.plan*totalFee,pNetClean=st.plan*netClean,pOther=st.plan*otherFees;
+  const pTotal=st.plan*totalNet,pProfit=pTotal-totalCost;
+  const pMgn=pTotal>0?pProfit/pTotal:0;
+  const ad=st.aDisc/100,aa=st.aAgent/100,au=st.aUni/100;
+  const aGross=st.act*totalFee,aDiscAmt=aGross*ad;
+  const aAgentAmt=c.fee*st.act*aa,aUniAmt=c.fee*st.act*au;
+  const aApp=st.act*c.app,aNetClean=aGross-aDiscAmt-aAgentAmt-aUniAmt+aApp;
+  const aOther=st.act*otherFees,aTotal=aNetClean+aOther;
+  const aProfit=aTotal-totalCost,aMgn=aTotal>0?aProfit/aTotal:0;
+  const DR=[0,10,20,30,40],AR=[20,30,40,50];
+  const sens=DR.map(dv=>AR.map(av=>{
+    const n=totalFee*(1-dv/100)-c.fee*(av/100)-c.fee*u+c.app+otherFees;
+    return n>0?Math.ceil(totalCost/n):"—";
+  }));
+  const ulecTeach=st.tf*c.hrs*(st.cp/100),ulecMgmtTotal=st.ulecMgmt*c.mo;
+  const ulecTotal=ulecTeach+ulecMgmtTotal;
+  const revPool=st.plan*(totalFee*(1-d)-c.fee*a);
+  const uccProfit=revPool-ulecTotal,uccMgn=revPool>0?uccProfit/revPool:0;
+  const ulecShare=revPool>0?ulecTotal/revPool:0;
+  return{c,totalFee,otherFees,teachCost,fixedCost,totalCost,afterDisc,agentPS,uniPS,netClean,totalNet,beStu,
+    pGross,pNetClean,pOther,pTotal,pProfit,pMgn,
+    aGross,aDiscAmt,aAgentAmt,aUniAmt,aApp,aNetClean,aOther,aTotal,aProfit,aMgn,
+    varStu:st.act-st.plan,varBE:st.act-beStu,
+    varRevG:aGross-pGross,varRevN:aTotal-pTotal,varProfit:aProfit-pProfit,varMgnPp:(aMgn-pMgn)*100,
+    sens,DR,AR,ulecTeach,ulecMgmtTotal,ulecTotal,revPool,uccProfit,uccMgn,ulecShare};
+}
+
+function Row(label,val,cls,note,isTotal){
+  return`<div class="row${isTotal?" total":""}">
+    <div><div class="rl">${label}</div>${note?`<div class="rn">${note}</div>`:""}</div>
+    <span class="rv ${cls||""}">${val}</span>
+  </div>`;
+}
+
+function NInput(id,label,value,step,max,sfx,pfx){
+  return`<div class="ni">
+    <span class="nilbl">${label}</span>
+    <div class="nigrp">${pfx?`<span class="nipfx">${pfx}</span>`:""}
+      <input type="number" id="${id}" value="${value}" min="0" ${max?"max="+max:""} step="${step||1}"
+        style="width:68px;text-align:right;font-size:12px;padding:2px 5px">
+      ${sfx?`<span class="nipfx" style="width:12px">${sfx}</span>`:""}
+    </div>
+  </div>`;
+}
+
+function sensColor(v){
+  if(typeof v!=="number")return{bg:"var(--surface-1)",color:"var(--text-muted)"};
+  if(v<=5)return{bg:"var(--bg-success)",color:"var(--text-success)"};
+  if(v<=10)return{bg:"var(--bg-warning)",color:"var(--text-warning)"};
+  if(v<=15)return{bg:"#fed7aa",color:"#c2410c"};
+  return{bg:"var(--bg-danger)",color:"var(--text-danger)"};
+}
+
+function renderOverview(s,st){
+  const c=s.c;
+  return`
+  <div class="g2">
+    <div class="card">
+      <div class="ctitle">Calculated costs</div>
+      ${Row("Teacher fee",sgd(s.teachCost),"",`$${st.tf}/hr × ${c.hrs} hrs × ${st.cp}%`)}
+      ${Row("Fixed overhead",sgd(s.fixedCost),"","from overhead builder")}
+      ${Row("Total cost (per run)",sgd(s.totalCost),"acc bold","",true)}
+    </div>
+    <div class="card">
+      <div class="ctitle">Net revenue / student</div>
+      ${Row("Total fee (after discount)",sgd(s.afterDisc),"")}
+      ${Row("Less: agent commission","("+sgd(s.agentPS)+")","bad",`${st.agent}% on course fee`)}
+      ${Row("Less: university commission","("+sgd(s.uniPS)+")","bad",`${st.uni}% on course fee`)}
+      ${Row("Add: application fee",sgd(c.app),"")}
+      ${Row("Net revenue (clean)",sgd(s.netClean),"")}
+      ${Row("Add: other fees retained",sgd(s.otherFees),"","mat + exam + admin")}
+      ${Row("Total net revenue / student",sgd(s.totalNet),"acc bold","",true)}
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="ctitle">Breakeven analysis</div>
+      ${Row("Breakeven students (total)",s.beStu,"acc bold")}
+      ${Row("Breakeven students / month",(s.beStu/c.mo).toFixed(1),"")}
+      ${Row("Breakeven gross revenue",sgd(s.beStu*s.totalFee),"")}
+      ${Row("Breakeven net revenue",sgd(s.beStu*s.totalNet),"","after all deductions")}
+    </div>
+    <div class="card">
+      <div class="ctitle">Planned scenario (${st.plan} students)</div>
+      ${Row("Planned gross revenue",sgd(s.pGross),"")}
+      ${Row("Planned net revenue (clean)",sgd(s.pNetClean),"")}
+      ${Row("Add: other fees retained",sgd(s.pOther),"")}
+      ${Row("Planned total net revenue",sgd(s.pTotal),"")}
+      ${Row("Less: total cost","("+sgd(s.totalCost)+")","bad")}
+      ${Row("Planned profit / (loss)",sgd(s.pProfit),s.pProfit>=0?"ok bold":"bad bold","",true)}
+      ${Row("Planned margin %",fp(s.pMgn),"")}
+      ${Row("Revenue / month",sgd(s.pGross/c.mo),"")}
+      ${Row("Profit / month",sgd(s.pProfit/c.mo),"")}
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="ctitle">Actual performance (${st.act} students)</div>
+      ${Row("Actual gross revenue",sgd(s.aGross),"")}
+      ${Row("Less: discount given","("+sgd(s.aDiscAmt)+")","bad")}
+      ${Row("Less: agent commission","("+sgd(s.aAgentAmt)+")","bad")}
+      ${Row("Less: university commission","("+sgd(s.aUniAmt)+")","bad")}
+      ${Row("Add: application fees",sgd(s.aApp),"")}
+      ${Row("Actual net revenue (clean)",sgd(s.aNetClean),"")}
+      ${Row("Add: other fees retained",sgd(s.aOther),"")}
+      ${Row("Actual total net revenue",sgd(s.aTotal),"")}
+      ${Row("Less: total cost","("+sgd(s.totalCost)+")","bad")}
+      ${Row("Actual profit / (loss)",sgd(s.aProfit),s.aProfit>=0?"ok bold":"bad bold","",true)}
+      ${Row("Actual margin %",fp(s.aMgn),"")}
+      ${Row("Profit / month",sgd(s.aProfit/c.mo),"")}
+    </div>
+    <div class="card">
+      <div class="ctitle">Variance analysis (actual vs planned)</div>
+      ${[
+        ["Student variance (actual vs plan)",s.varStu,s.varStu>=0,false],
+        ["Students vs breakeven",s.varBE,s.varBE>=0,false],
+        ["Revenue variance (gross)",s.varRevG,s.varRevG>=0,true],
+        ["Revenue variance (net)",s.varRevN,s.varRevN>=0,true],
+        ["Profit variance",s.varProfit,s.varProfit>=0,true],
+        ["Margin variance",s.varMgnPp.toFixed(1)+" pp",s.varMgnPp>=0,false],
+      ].map(([l,v,ok,money])=>`
+        <div class="vrow">
+          <span style="font-size:12px;color:var(--text-secondary)">${l}</span>
+          <div class="vval">
+            <span style="font-size:13px;font-weight:500;color:var(${ok?"--text-success":"--text-danger"})">${money?sgd(v):v}</span>
+            <span style="font-size:11px">${ok?"✓":"!"}</span>
+          </div>
+        </div>`).join("")}
+      <div class="vcard" style="background:var(${s.aProfit>=0?"--bg-success":"--bg-danger"})">
+        <div style="font-size:15px;font-weight:500;color:var(${s.aProfit>=0?"--text-success":"--text-danger"})">${s.aProfit>=0?"Profitable":"Loss-making"}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:3px">${Math.abs(st.act-s.beStu)} students ${st.act>=s.beStu?"above":"below"} breakeven</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderSens(s,st){
+  const c=s.c;
+  const rows=s.sens.map((row,ri)=>`<tr>
+    <td class="drow">${s.DR[ri]}%</td>
+    ${row.map((v,ci)=>{
+      const curr=s.DR[ri]===Math.round(st.disc)&&s.AR[ci]===Math.round(st.agent);
+      const sc=sensColor(v);
+      return`<td class="scell" style="background:${curr?"var(--bg-accent)":sc.bg};color:${curr?"var(--text-accent)":sc.color};border:${curr?"1.5px solid var(--border-accent)":"0.5px solid var(--border)"}">${v}</td>`;
+    }).join("")}
+  </tr>`).join("");
+  return`<div class="card">
+    <div class="ctitle">Sensitivity — breakeven students by discount % vs agent commission %</div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">University commission held at ${st.uni}% · Total cost per run: ${sgd(s.totalCost)} · Current scenario highlighted in blue</div>
+    <div class="tbl-scroll"><table class="stbl">
+      <thead><tr>
+        <th>Disc ↓ / Agent →</th>
+        ${s.AR.map(a=>`<th style="color:var(--text-accent)">${a}%</th>`).join("")}
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+    <div class="sleg">
+      ${[["≤5 — easy",`var(--bg-success)`,`var(--text-success)`],["6–10 — manageable",`var(--bg-warning)`,`var(--text-warning)`],["11–15 — challenging","#fed7aa","#c2410c"],[">15 — high risk",`var(--bg-danger)`,`var(--text-danger)`]].map(([l,bg,col])=>`
+        <div style="display:flex;align-items:center;gap:4px">
+          <span class="svbox" style="background:${bg}"></span>
+          <span style="font-size:11px;color:${col}">${l}</span>
+        </div>`).join("")}
+    </div>
+  </div>`;
+}
+
+function renderULEC(s,st){
+  const c=s.c;
+  return`<div class="g2" style="margin-bottom:0">
+    <div class="card">
+      <div class="ctitle">ULEC subcontract — cost build</div>
+      <div style="font-size:11px;color:var(--text-muted);line-height:1.6;margin-bottom:10px">Teacher delivery auto-calculates from simulation inputs. Set the monthly course management fee below.</div>
+      ${NInput("ulecMgmt","Course management fee / month",st.ulecMgmt,100,null,null,"$")}
+      <div style="margin-top:10px">
+        ${Row("Teacher delivery cost",sgd(s.ulecTeach),"",`$${st.tf}/hr × ${c.hrs} hrs × ${st.cp}%`)}
+        ${Row("Course management ("+c.mo+"m)",sgd(s.ulecMgmtTotal),"",`$${st.ulecMgmt} × ${c.mo} months`)}
+        ${Row("Total ULEC fee (paid out)",sgd(s.ulecTotal),"acc bold","",true)}
+      </div>
+      <div style="margin-top:8px">${Row("ULEC fee / month",sgd(s.ulecTotal/c.mo),"")}</div>
+    </div>
+    <div class="card">
+      <div class="ctitle">UCC performance (${st.plan} planned students)</div>
+      ${Row("Breakeven students",s.beStu,"acc bold")}
+      ${Row("Revenue pool (fee − disc − agent)",sgd(s.revPool),"","students × net course revenue")}
+      ${Row("Less: total ULEC fee","("+sgd(s.ulecTotal)+")","bad")}
+      ${Row("UCC profit / (loss)",sgd(s.uccProfit),s.uccProfit>=0?"ok bold":"bad bold","",true)}
+      ${Row("UCC margin % (of pool)",fp(s.uccMgn),"")}
+      ${Row("ULEC fee % of revenue pool",fp(s.ulecShare),"")}
+      ${Row("UCC profit / month",sgd(s.uccProfit/c.mo),"")}
+      <div class="vcard" style="margin-top:10px;background:var(${s.uccProfit>=0?"--bg-success":"--bg-danger"})">
+        <div style="font-size:15px;font-weight:500;color:var(${s.uccProfit>=0?"--text-success":"--text-danger"})">UCC ${s.uccProfit>=0?"profit":"loss"}: ${sgd(Math.abs(s.uccProfit))}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:3px">${fp(s.uccMgn)} UCC margin · ${fp(s.ulecShare)} ULEC share</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderCompare(saved){
+  if(!saved.length)return`<div class="card"><div style="color:var(--text-muted);text-align:center;padding:50px 20px;font-size:13px">No scenarios saved yet. Configure the simulation and click Save scenario.</div></div>`;
+  const best=r=>saved.reduce((b,sc)=>sc[r]>b[r]?sc:b).name;
+  const low=r=>saved.reduce((b,sc)=>sc[r]<b[r]?sc:b).name;
+  const rows=saved.map((sc,i)=>`<tr>
+    <td style="padding:5px 8px;font-weight:500;color:var(--text-accent);white-space:nowrap">${sc.name}</td>
+    <td style="padding:5px 8px;color:var(--text-secondary);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${sc.course}">${sc.course}</td>
+    <td style="padding:5px 8px;color:var(--text-secondary)">${sc.disc}%</td>
+    <td style="padding:5px 8px;color:var(--text-secondary)">${sc.agent}%</td>
+    <td style="padding:5px 8px;color:var(--text-secondary)">${sc.plan}</td>
+    <td style="padding:5px 8px;font-weight:500;color:var(--text-accent)">${sc.be}</td>
+    <td style="padding:5px 8px;color:var(--text-secondary)">${sgd(sc.cost)}</td>
+    <td style="padding:5px 8px;color:var(--text-secondary)">${sgd(sc.netRev)}</td>
+    <td style="padding:5px 8px;font-weight:500;color:var(${sc.profit>=0?"--text-success":"--text-danger"})">${sgd(sc.profit)}</td>
+    <td style="padding:5px 8px;color:var(${sc.mgn>=0.15?"--text-success":"--text-warning"})">${fp(sc.mgn)}</td>
+    <td style="padding:5px 8px;text-align:center"><button data-del="${i}" style="color:var(--text-danger);border:none;background:none;cursor:pointer;font-size:15px;padding:0">×</button></td>
+  </tr>`).join("");
+  const qcmp=saved.length>=2?`<div class="qcmp">
+    <div style="font-size:10px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em">Quick comparison</div>
+    <div class="qcmpg">
+      <div>Best margin: <strong style="color:var(--text-success)">${best("mgn")}</strong> (${fp(Math.max(...saved.map(s=>s.mgn)))})</div>
+      <div>Lowest BE: <strong style="color:var(--text-accent)">${low("be")}</strong> (${Math.min(...saved.map(s=>s.be))} students)</div>
+      <div>Highest profit: <strong style="color:var(--text-success)">${best("profit")}</strong> (${sgd(Math.max(...saved.map(s=>s.profit)))})</div>
+      <div>Lowest cost: <strong style="color:var(--text-primary)">${low("cost")}</strong> (${sgd(Math.min(...saved.map(s=>s.cost)))})</div>
+    </div>
+  </div>`:"";
+  return`<div class="card">
+    <div class="ctitle">Saved scenarios</div>
+    <div style="overflow-x:auto">
+      <table class="cptbl">
+        <thead><tr>${["Scenario","Course","Disc","Agent","Planned","BE","Cost","Net rev","Profit","Margin",""].map(h=>`<th>${h}</th>`).join("")}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    ${qcmp}
+    <button id="clearAll" style="margin-top:10px;font-size:11px;color:var(--text-danger);background:none;border:none;cursor:pointer">Clear all scenarios</button>
+  </div>`;
+}
+
+function renderFeeCalc(st){
+  const c=COURSES[st.fcCi];
+  const schol=st.fcSchol/100;
+  const scholAmt=Math.round(c.fee*schol);
+  const discFee=c.fee-scholAmt;
+  const subtotal=discFee+c.mat+c.exam+c.admin;
+  const gst=Math.round(subtotal*0.09);
+  const totalInclGST=subtotal+gst;
+  const instAmt=discFee/c.mo;
+
+  const cats=["English","Preparatory","Business","Technology","Tourism & Hospitality"];
+  const fcOptions=cats.map(cat=>`<optgroup label="${cat}">${COURSES.map((cr,i)=>cr.cat===cat?`<option value="${i}"${i===st.fcCi?" selected":""}>${cr.name}</option>`:"").join("")}</optgroup>`).join("");
+
+  const plRows=COURSES.map((cr,i)=>`<tr>
+    <td class="cat">${cr.cat}</td>
+    <td style="font-size:12px;color:var(--text-primary);white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis" title="${cr.name}">${cr.name}</td>
+    <td><input class="plinp" type="number" data-pci="${i}" data-pf="fee" value="${cr.fee}" min="0" step="10"></td>
+    <td><input class="plinp" type="number" data-pci="${i}" data-pf="mat" value="${cr.mat}" min="0" step="10"></td>
+    <td><input class="plinp" type="number" data-pci="${i}" data-pf="exam" value="${cr.exam}" min="0" step="10"></td>
+    <td><input class="plinp" type="number" data-pci="${i}" data-pf="admin" value="${cr.admin}" min="0" step="10"></td>
+    <td class="tot">${sgd(cr.fee+cr.mat+cr.exam+cr.admin)}</td>
+  </tr>`).join("");
+
+  return`
+  <div class="g2" style="margin-bottom:10px">
+    <div class="card">
+      <div class="ctitle">Student fee calculator</div>
+      <div style="margin-bottom:8px">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Course</div>
+        <select id="fcCoursesel" style="font-size:12px;width:100%">${fcOptions}</select>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Scholarship</div>
+      <div class="schrad">
+        <label><input type="radio" name="fcSchol" value="0" ${st.fcSchol===0?"checked":""}> None</label>
+        <label><input type="radio" name="fcSchol" value="20" ${st.fcSchol===20?"checked":""}> 20% off</label>
+        <label><input type="radio" name="fcSchol" value="30" ${st.fcSchol===30?"checked":""}> 30% off</label>
+      </div>
+      <div style="margin-top:6px">
+        ${Row("Course fee",sgd(c.fee),"")}
+        ${schol>0?Row("Scholarship ("+st.fcSchol+"% on course fee)","("+sgd(scholAmt)+")","bad"):""}
+        ${Row("Discounted course fee",sgd(discFee),"acc")}
+        ${Row("Material fee",sgd(c.mat),"")}
+        ${Row("Exam / assignment fee",sgd(c.exam),"")}
+        ${Row("Admin fee",sgd(c.admin),"")}
+        ${Row("Subtotal (excl. GST)",sgd(subtotal),"bold","",true)}
+        ${Row("GST (9%)",sgd(gst),"")}
+        ${Row("Total incl. GST",sgd(totalInclGST),"acc bold","",true)}
+      </div>
+    </div>
+    <div class="card">
+      <div class="ctitle">Instalment plan — ${c.mo} instalments</div>
+      <div style="font-size:11px;color:var(--text-muted);line-height:1.6;margin-bottom:10px">Course fee spread over ${c.mo} month${c.mo>1?"s":""} (one instalment per month). Other fees paid upfront at enrolment.</div>
+      <div style="margin-bottom:8px">
+        <div class="instrow">
+          <span style="font-size:12px;color:var(--text-secondary)">Application fee (upfront)</span>
+          <span style="font-size:13px;font-weight:500">${sgd(c.app)}</span>
+        </div>
+        <div class="instrow">
+          <span style="font-size:12px;color:var(--text-secondary)">Other fees upfront (mat + exam + admin)</span>
+          <span style="font-size:13px;font-weight:500">${sgd(c.mat+c.exam+c.admin)}</span>
+        </div>
+        <div class="instrow" style="border-bottom:none">
+          <span style="font-size:12px;color:var(--text-secondary)">GST on other fees</span>
+          <span style="font-size:13px;font-weight:500">${sgd(Math.round((c.mat+c.exam+c.admin)*0.09))}</span>
+        </div>
+      </div>
+      <div style="border-top:1.5px solid var(--border-strong);padding-top:8px;margin-top:2px">
+        ${Array.from({length:c.mo},(_, i)=>`
+        <div class="instrow">
+          <span style="font-size:12px;color:var(--text-secondary)">Month ${i+1} instalment</span>
+          <span style="font-size:13px;color:var(--text-accent);font-weight:500">${sgd(Math.round(instAmt*1.09))}<span style="font-size:10px;color:var(--text-muted);font-weight:400"> incl. GST</span></span>
+        </div>`).join("")}
+      </div>
+      <div class="fcsum" style="background:var(--bg-accent);margin-top:12px">
+        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Net price to student${schol>0?" (after "+st.fcSchol+"% scholarship)":""}</div>
+        <div style="font-size:22px;font-weight:500;color:var(--text-accent)">${sgd(totalInclGST)}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:3px">incl. GST · ${c.mo} instalment${c.mo>1?"s":""} of ${sgd(Math.round(instAmt*1.09))}/mo</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div class="ctitle" style="margin-bottom:0">Editable price list — all courses</div>
+      <button id="resetPrices" style="font-size:11px;padding:4px 10px;color:var(--text-danger);background:none;border:0.5px solid var(--border);border-radius:5px;cursor:pointer">Reset to defaults</button>
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">Edit any fee to update the price list in memory — all tabs (Overview, Sensitivity, ULEC) recalculate immediately.</div>
+    <div style="overflow-x:auto;max-height:420px;overflow-y:auto">
+      <table class="pltbl">
+        <thead><tr>
+          <th>Category</th>
+          <th>Course</th>
+          <th>Course fee</th>
+          <th>Material</th>
+          <th>Exam / Assign.</th>
+          <th>Admin</th>
+          <th>Total / student</th>
+        </tr></thead>
+        <tbody>${plRows}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function buildCourseSelector(ci){
+  const cats=["English","Preparatory","Business","Technology","Tourism & Hospitality"];
+  return cats.map(cat=>`<optgroup label="${cat}">${COURSES.map((c,i)=>c.cat===cat?`<option value="${i}"${i===ci?" selected":""}>${c.name}</option>`:"").join("")}</optgroup>`).join("");
+}
+
+function buildLP(st){
+  const c=COURSES[st.ci];
+  const s=calc(st);
+  const params=[["Course fee",sgd(c.fee)],["Material fee",sgd(c.mat)],["Exam / assignment fee",sgd(c.exam)],["Admin fee",sgd(c.admin)],["Total fee / student",sgd(s.totalFee)],["Duration",c.mo+" months"],["Optimum hours",c.hrs+" hrs"]];
+  return`
+  <div class="card">
+    <div class="ctitle">Course parameters</div>
+    ${params.map(([l,v])=>`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:0.5px solid var(--border);font-size:12px"><span style="color:var(--text-muted)">${l}</span><span>${v}</span></div>`).join("")}
+  </div>
+  <div class="card">
+    <div class="ctitle">Simulation inputs (planned)</div>
+    ${NInput("disc","Scholarship discount",st.disc,5,100,"%",null)}
+    ${NInput("agent","Agent commission",st.agent,10,100,"%",null)}
+    ${NInput("uni","University commission",st.uni,5,100,"%",null)}
+    ${NInput("tf","Teacher fee / hr",st.tf,5,null,null,"$")}
+    ${NInput("cp","Contact hours %",st.cp,10,100,"%",null)}
+    ${NInput("plan","Planned students",st.plan,1,null,null,null)}
+  </div>
+  <div class="card">
+    <div class="ctitle">Actual performance inputs</div>
+    ${NInput("act","Actual students",st.act,1,null,null,null)}
+    ${NInput("aDisc","Actual discount %",st.aDisc,5,100,"%",null)}
+    ${NInput("aAgent","Actual agent comm %",st.aAgent,10,100,"%",null)}
+    ${NInput("aUni","Actual uni comm %",st.aUni,5,100,"%",null)}
+  </div>
+  <div class="card">
+    <div class="ctitle">Fixed overhead — total: ${sgd(s.fixedCost)}</div>
+    ${st.oh.map((o,i)=>`<div class="ohrow"><span class="ohlbl" title="${o.label}">${o.label}</span><input type="number" data-oh="${i}" value="${o.cost}" min="0" step="100" style="width:70px;text-align:right;font-size:11px;padding:2px 4px"></div>`).join("")}
+  </div>`;
+}
+
+function buildHero(s,st){
+  const beColor=s.beStu<=10?"var(--text-success)":"var(--text-warning)";
+  return[
+    {lbl:"Breakeven",val:s.beStu+" students",color:beColor},
+    {lbl:"Planned profit",val:sgd(s.pProfit),color:s.pProfit>=0?"var(--text-success)":"var(--text-danger)"},
+    {lbl:"Planned margin",val:fp(s.pMgn),color:s.pMgn>=0.15?"var(--text-success)":"var(--text-warning)"},
+    {lbl:"Total cost / run",val:sgd(s.totalCost),color:"var(--text-primary)"},
+  ].map(({lbl,val,color})=>`<div class="hero"><div class="hlbl">${lbl}</div><div class="hval" style="color:${color}">${val}</div></div>`).join("");
+}
+
+function render(){
+  const s=calc(ST);
+  const tabs=["overview","sensitivity","ulec","compare","feecalc"];
+  const tlbls=["Overview","Sensitivity","ULEC subcontract",`Compare (${ST.saved.length})`,"Fee calculator"];
+  document.getElementById("app").innerHTML=`
+  <div class="hdr">
+    <div>
+      <div style="font-size:10px;font-weight:500;color:var(--text-accent);text-transform:uppercase;letter-spacing:.1em">United Ceres College</div>
+      <div style="font-size:17px;font-weight:500">Course budget simulator</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input id="sName" placeholder="Scenario name…" value="${ST.sName}" style="font-size:12px;width:148px">
+      <button id="saveSc" style="font-size:12px;padding:5px 12px">Save scenario</button>
+    </div>
+  </div>
+  <div class="subhdr">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:12px;color:var(--text-secondary)">Course</span>
+      <select id="coursesel" style="font-size:12px;min-width:296px">${buildCourseSelector(ST.ci)}</select>
+    </div>
+    <div class="hero-bar">${buildHero(s,ST)}</div>
+  </div>
+  <div class="body">
+    <div class="lp" id="lp">${buildLP(ST)}</div>
+    <div class="rp">
+      <div class="tabs">${tabs.map((t,i)=>`<button class="tab${ST.tab===t?" on":""}" data-tab="${t}">${tlbls[i]}</button>`).join("")}</div>
+      <div id="rpcontent">${
+        ST.tab==="overview"?renderOverview(s,ST):
+        ST.tab==="sensitivity"?renderSens(s,ST):
+        ST.tab==="ulec"?renderULEC(s,ST):
+        ST.tab==="compare"?renderCompare(ST.saved):
+        renderFeeCalc(ST)
+      }</div>
+    </div>
+  </div>`;
+  bindEvents();
+}
+
+function bindEvents(){
+  document.getElementById("coursesel").addEventListener("change",e=>{ST.ci=parseInt(e.target.value);render();});
+  document.getElementById("sName").addEventListener("input",e=>{ST.sName=e.target.value;});
+  document.getElementById("saveSc").addEventListener("click",()=>{
+    const c=COURSES[ST.ci],s=calc(ST);
+    const name=ST.sName.trim()||`${c.abbr} — ${new Date().toLocaleDateString("en-GB")}`;
+    ST.saved.push({name,course:c.name,disc:ST.disc,agent:ST.agent,plan:ST.plan,be:s.beStu,cost:s.totalCost,netRev:s.pTotal,profit:s.pProfit,mgn:s.pMgn});
+    ST.sName="";render();
+  });
+  document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",e=>{ST.tab=e.target.dataset.tab;render();}));
+  const nums=["disc","agent","uni","tf","cp","plan","act","aDisc","aAgent","aUni"];
+  nums.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.addEventListener("change",e=>{ST[id]=parseFloat(e.target.value)||0;render();});
+  });
+  const ulec=document.getElementById("ulecMgmt");
+  if(ulec)ulec.addEventListener("change",e=>{ST.ulecMgmt=parseFloat(e.target.value)||0;render();});
+  document.querySelectorAll("[data-oh]").forEach(inp=>inp.addEventListener("change",e=>{
+    ST.oh[parseInt(e.target.dataset.oh)].cost=parseFloat(e.target.value)||0;render();
+  }));
+  document.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",e=>{
+    ST.saved.splice(parseInt(e.target.dataset.del),1);render();
+  }));
+  const ca=document.getElementById("clearAll");
+  if(ca)ca.addEventListener("click",()=>{ST.saved=[];render();});
+
+  const fcSel=document.getElementById("fcCoursesel");
+  if(fcSel)fcSel.addEventListener("change",e=>{ST.fcCi=parseInt(e.target.value);render();});
+
+  document.querySelectorAll("input[name='fcSchol']").forEach(r=>r.addEventListener("change",e=>{
+    ST.fcSchol=parseInt(e.target.value);render();
+  }));
+
+  document.querySelectorAll("[data-pci]").forEach(inp=>inp.addEventListener("change",e=>{
+    const i=parseInt(e.target.dataset.pci);
+    const field=e.target.dataset.pf;
+    COURSES[i][field]=parseFloat(e.target.value)||0;
+    render();
+  }));
+
+  const rp=document.getElementById("resetPrices");
+  if(rp)rp.addEventListener("click",()=>{
+    DEFAULTS.forEach((d,i)=>{COURSES[i].fee=d.fee;COURSES[i].mat=d.mat;COURSES[i].exam=d.exam;COURSES[i].admin=d.admin;});
+    render();
+  });
+}
+
+if(document.readyState==="loading"){
+  document.addEventListener("DOMContentLoaded",render);
+}else{
+  render();
+}
+</script>
+</body>
+</html>
