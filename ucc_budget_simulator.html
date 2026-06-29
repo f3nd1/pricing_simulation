@@ -1,5 +1,9 @@
-
-<h2 class="sr-only">UCC Course Budget Simulator — select a course and adjust inputs to model breakeven, planned vs actual, sensitivity, ULEC subcontract, and fee calculator scenarios.</h2>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UCC Course Budget Simulator</title>
 <style>
 :root{
   --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
@@ -126,9 +130,10 @@ button:hover{background:var(--surface-0)}
   select#coursesel,select#fcCoursesel{min-width:0;width:100%}
 }
 </style>
-
+</head>
+<body>
+<h2 class="sr-only">UCC Course Budget Simulator — select a course and adjust inputs to model breakeven, planned vs actual, sensitivity, ULEC subcontract, and fee calculator scenarios.</h2>
 <div class="wrap" id="app"></div>
-
 <script>
 const COURSES=[
   {cat:"English",name:"Certificate in English Level 1 (FT)",abbr:"CEL1-FT",hrs:96,mo:3,app:400,fee:2480,mat:100,exam:100,admin:150},
@@ -681,3 +686,5 @@ function bindEvents(){
 
 render();
 </script>
+</body>
+</html>
