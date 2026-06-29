@@ -133,7 +133,8 @@ button:hover{background:var(--surface-0)}
 </head>
 <body>
 <h2 class="sr-only">UCC Course Budget Simulator — select a course and adjust inputs to model breakeven, planned vs actual, sensitivity, ULEC subcontract, and fee calculator scenarios.</h2>
-<div class="wrap" id="app"></div>
+<noscript><div style="font-family:sans-serif;padding:40px;text-align:center;color:#374151"><strong>JavaScript is required.</strong><br>Open this file in Safari or Chrome — file preview apps block scripts.</div></noscript>
+<div class="wrap" id="app"><div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:12px;font-family:sans-serif;color:#374151;padding:24px;text-align:center"><div style="font-size:32px">📂</div><div style="font-size:16px;font-weight:600">Open in Safari or Chrome</div><div style="font-size:13px;color:#6b7280;max-width:280px">This file is being previewed in QuickLook, which blocks JavaScript. Tap the <strong>Share ↑</strong> button and choose <strong>Open in Safari</strong> (or Chrome) to use the simulator.</div></div></div>
 <script>
 const COURSES=[
   {cat:"English",name:"Certificate in English Level 1 (FT)",abbr:"CEL1-FT",hrs:96,mo:3,app:400,fee:2480,mat:100,exam:100,admin:150},
@@ -684,7 +685,11 @@ function bindEvents(){
   });
 }
 
-render();
+if(document.readyState==="loading"){
+  document.addEventListener("DOMContentLoaded",render);
+}else{
+  render();
+}
 </script>
 </body>
 </html>
