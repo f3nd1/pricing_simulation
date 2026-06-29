@@ -1,7 +1,35 @@
 
 <h2 class="sr-only">UCC Course Budget Simulator — select a course and adjust inputs to model breakeven, planned vs actual, sensitivity, ULEC subcontract, and fee calculator scenarios.</h2>
 <style>
+:root{
+  --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --surface-0:#f0f2f5;
+  --surface-1:#f7f8fa;
+  --surface-2:#ffffff;
+  --border:#e2e5ea;
+  --border-strong:#c8cdd6;
+  --border-accent:#4f80f7;
+  --text-primary:#111827;
+  --text-secondary:#374151;
+  --text-muted:#6b7280;
+  --text-success:#15803d;
+  --text-danger:#dc2626;
+  --text-warning:#b45309;
+  --text-accent:#2563eb;
+  --bg-success:#dcfce7;
+  --bg-danger:#fee2e2;
+  --bg-warning:#fef3c7;
+  --bg-accent:#eff6ff;
+}
 *{box-sizing:border-box;margin:0;padding:0}
+input,select,button{font-family:inherit;font-size:inherit}
+input[type=number],input[type=text]{background:var(--surface-1);border:0.5px solid var(--border);border-radius:5px;color:var(--text-primary);padding:3px 6px}
+input[type=number]:focus,input[type=text]:focus,select:focus{outline:none;border-color:var(--border-accent)}
+select{background:var(--surface-1);border:0.5px solid var(--border);border-radius:5px;color:var(--text-primary);padding:4px 7px;cursor:pointer}
+button{background:var(--surface-1);border:0.5px solid var(--border);border-radius:6px;color:var(--text-primary);cursor:pointer;padding:5px 11px}
+button:hover{background:var(--surface-0)}
+#saveSc{background:var(--text-accent);color:#fff;border-color:var(--text-accent)}
+#saveSc:hover{opacity:.88}
 .wrap{background:var(--surface-0);min-height:100vh;font-family:var(--font-sans);font-size:13px;color:var(--text-primary)}
 .hdr{background:var(--surface-2);border-bottom:0.5px solid var(--border);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .subhdr{background:var(--surface-1);border-bottom:0.5px solid var(--border);padding:8px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
