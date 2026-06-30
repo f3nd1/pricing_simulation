@@ -55,7 +55,7 @@ button:hover{background:var(--surface-0)}
 .kpi-div{width:1px;background:var(--border)}
 
 .body{display:flex;gap:0;min-height:calc(100vh - 120px)}
-.lp{width:252px;flex-shrink:0;background:var(--surface-2);border-right:1px solid var(--border);padding:12px;display:flex;flex-direction:column;gap:10px;overflow-y:auto}
+.lp{width:284px;flex-shrink:0;background:var(--surface-2);border-right:1px solid var(--border);padding:12px;display:flex;flex-direction:column;gap:10px;overflow-y:auto}
 .rp{flex:1;min-width:0;padding:14px 16px;overflow-x:hidden}
 
 /* Left panel sections */
@@ -631,32 +631,102 @@ function renderSens(s,st){
 
 function renderULEC(s,st){
   const c=s.c;
-  return`<div class="g2" style="margin-bottom:0">
+  // What-if table: sweep mgmt fee from 0 to ~2x current
+  const mgmtSteps=[0,200,500,800,1000,1500,2000,2500,3000].filter((v,i,a)=>a.indexOf(v)===i);
+  if(!mgmtSteps.includes(st.ulecMgmt))mgmtSteps.push(st.ulecMgmt);
+  mgmtSteps.sort((a,b)=>a-b);
+  const whatIfRows=mgmtSteps.map(mgmt=>{
+    const teach=s.ulecTeach;
+    const mgmtTotal=mgmt*c.mo;
+    const total=teach+mgmtTotal;
+    const profit=s.revPool-total;
+    const mgn=s.revPool>0?profit/s.revPool:0;
+    const isCurr=mgmt===st.ulecMgmt;
+    const bg=isCurr?"background:var(--blue-50)":"";
+    const pc=profit>=0?"var(--text-success)":"var(--text-danger)";
+    return`<tr style="${bg}">
+      <td style="padding:5px 10px;text-align:right;font-weight:${isCurr?700:400}">${sgd(mgmt)}/mo</td>
+      <td style="padding:5px 10px;text-align:right;color:var(--text-muted)">${sgd(mgmtTotal)}</td>
+      <td style="padding:5px 10px;text-align:right;color:var(--text-muted)">${sgd(total)}</td>
+      <td style="padding:5px 10px;text-align:right;font-weight:700;color:${pc}">${sgd(profit)}</td>
+      <td style="padding:5px 10px;text-align:right;color:${mgn>=0.15?"var(--text-success)":mgn>=0?"var(--text-warning)":"var(--text-danger)"}">${fp(mgn)}</td>
+      <td style="padding:5px 10px;text-align:right;color:${pc}">${sgd(profit/c.mo)}</td>
+      ${isCurr?`<td style="padding:5px 10px"><span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;background:var(--blue-100);color:var(--blue-700)">CURRENT</span></td>`:`<td></td>`}
+    </tr>`;
+  }).join("");
+
+  return`
+  <!-- Money flow banner -->
+  <div style="display:flex;align-items:stretch;gap:0;margin-bottom:12px;border-radius:12px;overflow:hidden;border:1px solid var(--border);font-size:12px">
+    <div style="flex:1;background:var(--blue-50);padding:12px 14px;border-right:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:600;color:var(--blue-700);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Students pay UCC</div>
+      <div style="font-size:20px;font-weight:700;color:var(--blue-700)">${sgd(s.revPool)}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:3px">${st.plan} students · after discount &amp; agent</div>
+    </div>
+    <div style="display:flex;align-items:center;padding:0 10px;color:var(--text-muted);font-size:18px">→</div>
+    <div style="flex:1;background:#fef9ec;padding:12px 14px;border-right:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:600;color:var(--amber-800);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">UCC pays ULEC</div>
+      <div style="font-size:20px;font-weight:700;color:var(--amber-800)">${sgd(s.ulecTotal)}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:3px">Teaching ${sgd(s.ulecTeach)} + Mgmt ${sgd(s.ulecMgmtTotal)}</div>
+    </div>
+    <div style="display:flex;align-items:center;padding:0 10px;color:var(--text-muted);font-size:18px">→</div>
+    <div style="flex:1;padding:12px 14px;background:var(${s.uccProfit>=0?"--green-50":"--red-50"})">
+      <div style="font-size:10px;font-weight:600;color:var(${s.uccProfit>=0?"--green-800":"--red-700"});text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">UCC keeps</div>
+      <div style="font-size:20px;font-weight:700;color:var(${s.uccProfit>=0?"--green-800":"--red-700"})">${sgd(s.uccProfit)}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:3px">${fp(s.uccMgn)} margin · ${sgd(s.uccProfit/c.mo)}/mo</div>
+    </div>
+  </div>
+
+  <div class="g2">
     <div class="card">
-      <div class="card-hdr"><div class="card-title">ULEC subcontract — cost build</div></div>
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Teaching cost auto-calculates from simulation inputs. Set the monthly management fee below.</div>
-      ${NInput("ulecMgmt","Course management fee / month",st.ulecMgmt,100,null,null,"$")}
-      <div style="margin-top:10px">
-        ${Row("Teacher delivery cost",sgd(s.ulecTeach),"",`$${st.tf}/hr × ${c.hrs} hrs × ${st.cp}%`)}
-        ${Row("Course management (${c.mo}m)".replace("${c.mo}",c.mo),sgd(s.ulecMgmtTotal),"",`$${st.ulecMgmt} × ${c.mo} months`)}
-        ${Row("Total ULEC fee (paid out)",sgd(s.ulecTotal),"acc bold","",true)}
-        ${Row("ULEC fee / month",sgd(s.ulecTotal/c.mo),"")}
+      <div class="card-hdr"><div class="card-title">What ULEC gets paid</div></div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Teaching fee is fixed by your teacher rate × hours. Only adjust the monthly course management fee.</div>
+      ${NInput("ulecMgmt","Course mgmt fee / month",st.ulecMgmt,100,null,null,"$")}
+      <div style="margin-top:12px">
+        ${Row("Teaching fee",sgd(s.ulecTeach),"",`$${st.tf}/hr × ${c.hrs} hrs × ${st.cp}%`)}
+        ${Row(`Course mgmt (${c.mo} months)`,sgd(s.ulecMgmtTotal),"",`$${st.ulecMgmt}/mo × ${c.mo} mo`)}
+        ${Row("Total paid to ULEC",sgd(s.ulecTotal),"acc bold","",true)}
+        ${Row("ULEC fee per month",sgd(s.ulecTotal/c.mo),"")}
+        ${Row("ULEC fee per student",sgd(s.ulecTotal/Math.max(st.plan,1)),"")}
+      </div>
+      <div style="margin-top:12px;padding:10px;background:var(--surface-1);border-radius:8px;font-size:11px;color:var(--text-muted);line-height:1.6">
+        <strong>UCC revenue pool:</strong> ${sgd(s.revPool)}<br>
+        <strong>ULEC share of pool:</strong> ${fp(s.ulecShare)}<br>
+        <strong>UCC retains:</strong> ${fp(1-s.ulecShare)}
       </div>
     </div>
     <div class="card">
-      <div class="card-hdr"><div class="card-title">UCC performance</div><span class="card-badge" style="background:var(--blue-100);color:var(--blue-700)">${st.plan} students</span></div>
-      ${Row("Breakeven students",s.beStu,"acc bold")}
-      ${Row("Revenue pool (fee − disc − agent)",sgd(s.revPool),"","students × net course revenue")}
-      ${Row("Less: total ULEC fee","("+sgd(s.ulecTotal)+")","bad")}
+      <div class="card-hdr"><div class="card-title">UCC profit after paying ULEC</div><span class="card-badge" style="background:var(--blue-100);color:var(--blue-700)">${st.plan} students</span></div>
+      ${Row("Revenue pool (students × net rev)",sgd(s.revPool),"acc")}
+      ${Row("Less: teaching fee","("+sgd(s.ulecTeach)+")","bad",`$${st.tf}/hr × ${c.hrs} hrs`)}
+      ${Row("Less: course mgmt fee","("+sgd(s.ulecMgmtTotal)+")","bad",`$${st.ulecMgmt}/mo × ${c.mo} mo`)}
       ${Row("UCC profit / (loss)",sgd(s.uccProfit),s.uccProfit>=0?"ok bold":"bad bold","",true)}
-      ${Row("UCC margin % (of pool)",fp(s.uccMgn),"")}
-      ${Row("ULEC fee % of revenue pool",fp(s.ulecShare),"")}
+      ${Row("UCC margin",fp(s.uccMgn),"")}
       ${Row("UCC profit / month",sgd(s.uccProfit/c.mo),"")}
+      ${Row("Breakeven students",s.beStu,"acc")}
       <div class="vcard" style="margin-top:10px;background:var(${s.uccProfit>=0?"--bg-success":"--bg-danger"})">
-        <div style="font-size:15px;font-weight:600;color:var(${s.uccProfit>=0?"--text-success":"--text-danger"})">UCC ${s.uccProfit>=0?"profit":"loss"}: ${sgd(Math.abs(s.uccProfit))}</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:3px">${fp(s.uccMgn)} UCC margin · ${fp(s.ulecShare)} ULEC share</div>
+        <div style="font-size:15px;font-weight:700;color:var(${s.uccProfit>=0?"--text-success":"--text-danger"})">${s.uccProfit>=0?"UCC profitable ✓":"UCC loss-making ✗"}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:3px">${sgd(Math.abs(s.uccProfit))} ${s.uccProfit>=0?"profit":"loss"} after paying ULEC everything</div>
       </div>
     </div>
+  </div>
+
+  <!-- What-if: sweep mgmt fee -->
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">What-if: UCC profit at different ULEC management fees</div><span class="card-badge" style="background:var(--amber-100);color:var(--amber-800)">Teaching ${sgd(s.ulecTeach)} fixed</span></div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Teaching fee is always ${sgd(s.ulecTeach)} regardless of mgmt fee. Adjust "Course mgmt fee / month" above to move the CURRENT row.</div>
+    <div class="tbl-scroll"><table class="cptbl" style="min-width:480px">
+      <thead><tr>
+        <th style="text-align:right">Mgmt fee/mo</th>
+        <th style="text-align:right">Mgmt total (${c.mo} mo)</th>
+        <th style="text-align:right">Total to ULEC</th>
+        <th style="text-align:right">UCC profit</th>
+        <th style="text-align:right">UCC margin</th>
+        <th style="text-align:right">Profit/mo</th>
+        <th></th>
+      </tr></thead>
+      <tbody>${whatIfRows}</tbody>
+    </table></div>
   </div>`;
 }
 
