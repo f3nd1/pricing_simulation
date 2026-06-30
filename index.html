@@ -447,6 +447,55 @@ function sensColor(v){
   return{bg:"var(--bg-danger)",color:"var(--text-danger)"};
 }
 
+function renderWhatIf(s,st){
+  const c=s.c;
+  const net=s.totalNet,cost=s.totalCost;
+  // Build a readable ladder of student counts around breakeven / planned / actual
+  const anchors=[s.beStu,st.plan,st.act].filter(n=>n>0);
+  const hi=Math.max(...anchors,1)+Math.max(6,Math.round(s.beStu*0.6));
+  const step=Math.max(1,Math.ceil(hi/12));
+  let counts=[];
+  for(let n=step;n<=hi;n+=step)counts.push(n);
+  anchors.forEach(a=>counts.push(a));
+  counts=[...new Set(counts)].filter(n=>n>0).sort((a,b)=>a-b);
+  const rows=counts.map(n=>{
+    const rev=n*net,profit=rev-cost,mgn=rev>0?profit/rev:0;
+    const perMo=(n/c.mo).toFixed(1),profitMo=profit/c.mo;
+    const isBE=n===s.beStu,isPlan=n===st.plan,isAct=n===st.act;
+    const tags=[];
+    if(isBE)tags.push(`<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;background:var(--blue-100);color:var(--blue-700)">BREAKEVEN</span>`);
+    if(isPlan)tags.push(`<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;background:#ede9fe;color:#6d28d9">PLANNED</span>`);
+    if(isAct)tags.push(`<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;background:var(--amber-100);color:var(--amber-800)">ACTUAL</span>`);
+    const bg=isPlan?"background:#faf5ff":isBE?"background:var(--blue-50)":"";
+    const pc=profit>=0?"var(--text-success)":"var(--text-danger)";
+    return`<tr style="${bg}">
+      <td style="padding:6px 10px;font-weight:600;font-size:13px;white-space:nowrap">${n} <span style="font-size:10px;color:var(--text-muted);font-weight:400">(${perMo}/mo)</span></td>
+      <td style="padding:6px 10px;text-align:right;color:var(--text-secondary)">${sgd(rev)}</td>
+      <td style="padding:6px 10px;text-align:right;color:var(--text-muted)">${sgd(cost)}</td>
+      <td style="padding:6px 10px;text-align:right;font-weight:700;color:${pc}">${sgd(profit)}</td>
+      <td style="padding:6px 10px;text-align:right;color:${mgn>=0.15?"var(--text-success)":mgn>=0?"var(--text-warning)":"var(--text-danger)"}">${fp(mgn)}</td>
+      <td style="padding:6px 10px;text-align:right;color:${pc}">${sgd(profitMo)}</td>
+      <td style="padding:6px 10px;white-space:nowrap">${tags.join(" ")}</td>
+    </tr>`;
+  }).join("");
+  return`<div class="card">
+    <div class="card-hdr"><div class="card-title">What-if: profit by number of students</div><span class="card-badge" style="background:var(--blue-100);color:var(--blue-700)">${sgd(net)} net / student</span></div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Each row = a different enrolment level. Net revenue per student is fixed at <strong>${sgd(net)}</strong>, total cost is fixed at <strong>${sgd(cost)}</strong> for this run — so profit = students × ${sgd(net)} − ${sgd(cost)}. Your <strong>breakeven</strong>, <strong>planned</strong> and <strong>actual</strong> levels are tagged. Change "Planned students" in the left panel to move the planned row.</div>
+    <div class="tbl-scroll"><table class="cptbl" style="min-width:520px">
+      <thead><tr>
+        <th>Students (per month)</th>
+        <th style="text-align:right">Net revenue</th>
+        <th style="text-align:right">Total cost</th>
+        <th style="text-align:right">Profit / (loss)</th>
+        <th style="text-align:right">Margin</th>
+        <th style="text-align:right">Profit / month</th>
+        <th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+  </div>`;
+}
+
 function renderOverview(s,st){
   const c=s.c;
   const teachPct=s.totalCost>0?s.teachCost/s.totalCost:0;
@@ -461,12 +510,12 @@ function renderOverview(s,st){
     <div class="kpi-card">
       <div class="kpi-card-lbl">Breakeven</div>
       <div class="kpi-card-val" style="color:${s.beStu<=st.plan?"var(--text-success)":"var(--text-warning)"}">${s.beStu} <span style="font-size:13px;font-weight:400">students</span></div>
-      <div class="kpi-card-sub">${sgd(s.totalNet)} net rev / student</div>
+      <div class="kpi-card-sub">≈ ${(s.beStu/c.mo).toFixed(1)}/month · over ${c.mo} mo</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-card-lbl">Planned profit</div>
       <div class="kpi-card-val" style="color:${s.pProfit>=0?"var(--text-success)":"var(--text-danger)"}">${sgd(s.pProfit)}</div>
-      <div class="kpi-card-sub">${st.plan} students planned</div>
+      <div class="kpi-card-sub">${st.plan} total ≈ ${(st.plan/c.mo).toFixed(1)}/month</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-card-lbl">Planned margin</div>
@@ -474,6 +523,7 @@ function renderOverview(s,st){
       <div class="kpi-card-sub">${sgd(s.pProfit/c.mo)}/mo</div>
     </div>
   </div>
+  ${renderWhatIf(s,st)}
   <div class="g2">
     <div class="card">
       <div class="card-hdr"><div class="card-title">Cost breakdown</div><span class="card-badge" style="background:var(--red-100);color:var(--red-700)">${sgd(s.totalCost)} total</span></div>
