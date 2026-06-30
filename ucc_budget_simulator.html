@@ -843,9 +843,15 @@ function buildLP(st){
     ${NInput("uni","University commission",st.uni,5,100,"%",null)}
     ${NInput("tf","Teacher fee / hr",st.tf,5,null,null,"$")}
     ${NInput("cp","Contact hours %",st.cp,10,100,"%",null)}
-    ${NInput("plan","Planned students",st.plan,1,null,null,null)}`;
+    <div class="ni">
+      <div><span class="nilbl">Planned students</span><div style="font-size:10px;color:var(--text-muted)">total cohort · ≈ ${(st.plan/c.mo).toFixed(1)}/mo</div></div>
+      <div class="nigrp"><input type="number" id="plan" value="${st.plan}" min="0" step="1" style="width:66px;text-align:right;font-size:12px;padding:3px 6px"></div>
+    </div>`;
   const actHtml=`
-    ${NInput("act","Actual students",st.act,1,null,null,null)}
+    <div class="ni">
+      <div><span class="nilbl">Actual students</span><div style="font-size:10px;color:var(--text-muted)">total cohort · ≈ ${(st.act/c.mo).toFixed(1)}/mo</div></div>
+      <div class="nigrp"><input type="number" id="act" value="${st.act}" min="0" step="1" style="width:66px;text-align:right;font-size:12px;padding:3px 6px"></div>
+    </div>
     ${NInput("aDisc","Actual discount %",st.aDisc,5,100,"%",null)}
     ${NInput("aAgent","Actual agent comm %",st.aAgent,10,100,"%",null)}
     ${NInput("aUni","Actual uni comm %",st.aUni,5,100,"%",null)}`;
