@@ -6,46 +6,105 @@
 <title>UCC Course Budget Simulator</title>
 <style>
 :root{
-  --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-  --surface-0:#eef0f4;
-  --surface-1:#f5f6f9;
-  --surface-2:#ffffff;
-  --border:#dde1e9;
-  --border-strong:#b0b8c8;
-  --border-accent:#3b6ef0;
-  --text-primary:#0f1724;
-  --text-secondary:#2d3748;
-  --text-muted:#64748b;
-  --text-success:#166534;
-  --text-danger:#b91c1c;
-  --text-warning:#92400e;
-  --text-accent:#1d4ed8;
-  --bg-success:#bbf7d0;
-  --bg-danger:#fecaca;
-  --bg-warning:#fde68a;
-  --bg-accent:#dbeafe;
+  --blue-900:#1e3a8a;--blue-700:#1d4ed8;--blue-600:#2563eb;--blue-400:#60a5fa;--blue-100:#dbeafe;--blue-50:#eff6ff;
+  --green-800:#166534;--green-100:#bbf7d0;--green-50:#f0fdf4;
+  --red-700:#b91c1c;--red-100:#fecaca;--red-50:#fff5f5;
+  --amber-800:#92400e;--amber-100:#fde68a;
+  --gray-900:#0f1724;--gray-700:#2d3748;--gray-500:#64748b;--gray-300:#cbd5e1;--gray-200:#e2e8f0;--gray-100:#f1f5f9;--gray-50:#f8fafc;
+  --surface-0:#eef0f4;--surface-1:#f5f6f9;--surface-2:#ffffff;
+  --border:#dde1e9;--border-strong:#b0b8c8;--border-accent:#3b6ef0;
+  --text-primary:var(--gray-900);--text-secondary:var(--gray-700);--text-muted:var(--gray-500);
+  --text-success:var(--green-800);--text-danger:var(--red-700);--text-warning:var(--amber-800);--text-accent:var(--blue-600);
+  --bg-success:var(--green-100);--bg-danger:var(--red-100);--bg-warning:var(--amber-100);--bg-accent:var(--blue-100);
+  --radius-sm:8px;--radius-md:12px;--radius-lg:16px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.07);--shadow-md:0 4px 16px rgba(0,0,0,.11);
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
 }
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 *{box-sizing:border-box;margin:0;padding:0}
-input,select,button{font-family:inherit;font-size:inherit}
-input[type=number],input[type=text]{background:var(--surface-1);border:0.5px solid var(--border);border-radius:5px;color:var(--text-primary);padding:3px 6px}
-input[type=number]:focus,input[type=text]:focus,select:focus{outline:none;border-color:var(--border-accent)}
-select{background:var(--surface-1);border:0.5px solid var(--border);border-radius:5px;color:var(--text-primary);padding:4px 7px;cursor:pointer}
-button{background:var(--surface-1);border:0.5px solid var(--border);border-radius:6px;color:var(--text-primary);cursor:pointer;padding:5px 11px}
+input,select,button,textarea{font-family:var(--font);font-size:inherit}
+input[type=number],input[type=text],input[type=password]{
+  background:var(--surface-1);border:1px solid var(--border);border-radius:6px;
+  color:var(--text-primary);padding:4px 8px;transition:border-color .15s}
+input[type=number]:focus,input[type=text]:focus,input[type=password]:focus,select:focus,textarea:focus{
+  outline:none;border-color:var(--blue-600)}
+select{background:var(--surface-1);border:1px solid var(--border);border-radius:6px;
+  color:var(--text-primary);padding:5px 8px;cursor:pointer}
+button{background:var(--surface-1);border:1px solid var(--border);border-radius:7px;
+  color:var(--text-primary);cursor:pointer;padding:5px 12px;transition:background .15s}
 button:hover{background:var(--surface-0)}
-#saveSc{background:rgba(255,255,255,.18)!important;color:#fff!important;border:1px solid rgba(255,255,255,.5)!important;border-radius:6px;font-weight:500}
-#saveSc:hover{background:rgba(255,255,255,.28)!important}
-.wrap{background:var(--surface-0);min-height:100vh;font-family:var(--font-sans);font-size:13px;color:var(--text-primary)}
-.hdr{background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 100%);border-bottom:none;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;color:#fff}
-.hdr *{color:#fff!important}
-.subhdr{background:var(--surface-2);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-.body{display:flex;gap:12px;padding:12px 16px}
-.lp{width:244px;flex-shrink:0;display:flex;flex-direction:column;gap:10px}
-.rp{flex:1;min-width:0}
-.card{background:var(--surface-2);border-radius:12px;border:1px solid var(--border);padding:11px 13px;margin-bottom:0;box-shadow:0 1px 4px rgba(0,0,0,.07)}
-.ctitle{font-size:10px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px}
-.row{display:flex;justify-content:space-between;align-items:flex-start;padding:4px 0;border-bottom:0.5px solid var(--border)}
-.row.total{border-top:1.5px solid var(--border-strong);border-bottom:none;margin-top:3px;padding-top:5px}
+
+/* Layout */
+.wrap{background:var(--surface-0);min-height:100vh;font-family:var(--font);font-size:13px;color:var(--text-primary)}
+.hdr{background:linear-gradient(135deg,var(--blue-900) 0%,var(--blue-700) 100%);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.hdr-brand{display:flex;flex-direction:column;gap:1px}
+.hdr-label{font-size:10px;font-weight:500;color:var(--blue-400);text-transform:uppercase;letter-spacing:.1em}
+.hdr-title{font-size:17px;font-weight:600;color:#fff}
+.hdr-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.hdr-btn{font-size:12px;padding:5px 11px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.4);border-radius:7px;color:#fff;cursor:pointer;font-weight:500;transition:background .15s}
+.hdr-btn:hover{background:rgba(255,255,255,.25)}
+.hdr-btn.primary{background:rgba(255,255,255,.25);border-color:rgba(255,255,255,.6)}
+
+.subhdr{background:var(--surface-2);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:var(--shadow-sm)}
+.course-label{font-size:11px;font-weight:500;color:var(--text-muted);white-space:nowrap}
+#coursesel{font-size:12px;min-width:300px}
+.kpi-bar{display:flex;gap:20px;margin-left:auto;align-items:stretch;flex-wrap:wrap}
+.kpi{text-align:right;padding:0 4px}
+.kpi-lbl{font-size:9px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+.kpi-val{font-size:18px;font-weight:700;line-height:1;letter-spacing:-.02em}
+.kpi-div{width:1px;background:var(--border)}
+
+.body{display:flex;gap:0;min-height:calc(100vh - 120px)}
+.lp{width:252px;flex-shrink:0;background:var(--surface-2);border-right:1px solid var(--border);padding:12px;display:flex;flex-direction:column;gap:10px;overflow-y:auto}
+.rp{flex:1;min-width:0;padding:14px 16px;overflow-x:hidden}
+
+/* Left panel sections */
+.lp-sec{border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden}
+.lp-sec-hdr{display:flex;align-items:center;justify-content:space-between;padding:8px 11px;background:var(--surface-1);cursor:pointer;user-select:none}
+.lp-sec-hdr:hover{background:var(--surface-0)}
+.lp-sec-title{font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;display:flex;align-items:center;gap:6px}
+.lp-sec-dot{width:7px;height:7px;border-radius:50%}
+.lp-sec-caret{font-size:11px;color:var(--text-muted);transition:transform .2s}
+.lp-sec-caret.open{transform:rotate(90deg)}
+.lp-sec-body{padding:8px 11px;display:flex;flex-direction:column;gap:0}
+.lp-sec-body.hidden{display:none}
+
+/* Input rows */
+.ni{display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:.5px solid var(--border)}
+.ni:last-child{border-bottom:none}
+.nilbl{font-size:12px;color:var(--text-secondary)}
+.nipfx{font-size:11px;color:var(--text-muted)}
+.nigrp{display:flex;align-items:center;gap:3px}
+
+/* Course param rows */
+.cprow{display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:.5px solid var(--border);font-size:12px}
+.cprow:last-child{border-bottom:none}
+.cprow-lbl{color:var(--text-muted)}
+.cprow-val{font-weight:500;color:var(--text-primary)}
+
+/* Overhead rows */
+.ohrow{display:flex;align-items:center;gap:4px;padding:3px 0;border-bottom:.5px solid var(--border)}
+.ohrow:last-child{border-bottom:none}
+.ohlbl{font-size:11px;color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Content cards */
+.card{background:var(--surface-2);border-radius:var(--radius-md);border:1px solid var(--border);padding:14px;box-shadow:var(--shadow-sm);margin-bottom:10px}
+.card:last-child{margin-bottom:0}
+.card-hdr{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.card-title{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em}
+.card-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px}
+
+/* KPI cards in overview */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.kpi-card{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 14px;box-shadow:var(--shadow-sm);text-align:center}
+.kpi-card-lbl{font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.kpi-card-val{font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.kpi-card-sub{font-size:11px;color:var(--text-muted);margin-top:3px}
+
+/* Data rows */
+.row{display:flex;justify-content:space-between;align-items:flex-start;padding:4px 0;border-bottom:.5px solid var(--border)}
+.row:last-child{border-bottom:none}
+.row.total{border-top:1.5px solid var(--border-strong);border-bottom:none;margin-top:4px;padding-top:6px}
 .rl{font-size:12px;color:var(--text-secondary)}
 .rn{font-size:10px;color:var(--text-muted)}
 .rv{font-size:13px}
@@ -53,88 +112,151 @@ button:hover{background:var(--surface-0)}
 .rv.bad{color:var(--text-danger)}
 .rv.acc{color:var(--text-accent);font-weight:500}
 .rv.bold{font-weight:500}
-.ni{display:flex;align-items:center;justify-content:space-between;padding:3px 0;border-bottom:0.5px solid var(--border)}
-.nilbl{font-size:12px;color:var(--text-secondary)}
-.nipfx{font-size:11px;color:var(--text-muted)}
-.nigrp{display:flex;align-items:center;gap:3px}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
-.tabs{display:flex;gap:2px;margin-bottom:10px;border-bottom:2px solid var(--border-accent)}
-.tab{padding:7px 14px;border-radius:6px 6px 0 0;font-size:12px;background:transparent;color:var(--text-muted);border:none;cursor:pointer;margin-bottom:-2px;transition:color .15s}
+
+/* Tabs */
+.tabs-wrap{margin-bottom:14px;border-bottom:2px solid var(--border)}
+.tabs{display:flex;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tab{padding:8px 14px;border-radius:7px 7px 0 0;font-size:12px;background:transparent;color:var(--text-muted);border:none;cursor:pointer;white-space:nowrap;margin-bottom:-2px;font-weight:500;transition:color .15s}
 .tab:hover{color:var(--text-primary)}
-.tab.on{background:var(--surface-2);color:var(--text-accent);font-weight:600;border:2px solid var(--border-accent);border-bottom:2px solid var(--surface-2)}
-.hero{text-align:right}
-.hlbl{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:1px}
-.hval{font-size:20px;font-weight:700;line-height:1.1;letter-spacing:-.01em}
-.ohrow{display:flex;align-items:center;gap:4px;padding:2px 0}
-.ohlbl{font-size:11px;color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tab.on{background:var(--surface-2);color:var(--blue-600);font-weight:700;border:2px solid var(--border);border-bottom:2px solid var(--surface-2)}
+
+/* Sensitivity table */
 .stbl{border-collapse:separate;border-spacing:3px}
-.stbl th{padding:6px 18px;background:var(--surface-1);border-radius:4px;font-size:11px;font-weight:500;color:var(--text-secondary);text-align:center;border:0.5px solid var(--border)}
-.stbl td.drow{padding:6px 18px;background:var(--surface-1);border-radius:4px;font-size:12px;font-weight:500;color:var(--text-secondary);text-align:center;border:0.5px solid var(--border)}
+.stbl th{padding:6px 16px;background:var(--surface-1);border-radius:4px;font-size:11px;font-weight:500;color:var(--text-secondary);text-align:center;border:.5px solid var(--border)}
+.stbl td.drow{padding:6px 16px;background:var(--surface-1);border-radius:4px;font-size:12px;font-weight:500;color:var(--text-secondary);text-align:center;border:.5px solid var(--border)}
+.stbl td.scell{padding:9px 16px;border-radius:4px;font-size:15px;font-weight:500;text-align:center}
 .sleg{display:flex;gap:14px;margin-top:12px;flex-wrap:wrap}
-.svbox{display:inline-block;width:13px;height:13px;border-radius:3px;border:0.5px solid var(--border-strong);vertical-align:middle;margin-right:4px}
-.stbl td.scell{padding:9px 18px;border-radius:4px;font-size:16px;font-weight:500;text-align:center}
-.vcard{margin-top:10px;border-radius:8px;padding:10px;text-align:center}
-.vrow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:0.5px solid var(--border)}
-.vval{display:flex;align-items:center;gap:5px}
+.svbox{display:inline-block;width:12px;height:12px;border-radius:3px;border:.5px solid var(--border-strong);vertical-align:middle;margin-right:4px}
+
+/* Compare table */
 .cptbl{width:100%;border-collapse:collapse;font-size:12px}
-.cptbl th{padding:6px 8px;text-align:left;border-bottom:0.5px solid var(--border-strong);color:var(--text-muted);font-weight:500;font-size:10px;text-transform:uppercase;white-space:nowrap}
-.cptbl td{padding:5px 8px;border-bottom:0.5px solid var(--border)}
-.qcmp{margin-top:12px;background:var(--surface-1);border-radius:8px;padding:11px;font-size:12px}
-.qcmpg{display:grid;grid-template-columns:1fr 1fr;gap:6px;color:var(--text-secondary);margin-top:7px}
+.cptbl th{padding:6px 8px;text-align:left;border-bottom:.5px solid var(--border-strong);color:var(--text-muted);font-weight:500;font-size:10px;text-transform:uppercase;white-space:nowrap}
+.cptbl td{padding:5px 8px;border-bottom:.5px solid var(--border)}
+.qcmp{margin-top:12px;background:var(--surface-1);border-radius:10px;padding:12px}
+.qcmpg{display:grid;grid-template-columns:1fr 1fr;gap:6px;color:var(--text-secondary);margin-top:8px;font-size:12px}
+
+/* Price list table */
 .pltbl{width:100%;border-collapse:collapse;font-size:12px}
-.pltbl th{padding:6px 8px;text-align:left;border-bottom:0.5px solid var(--border-strong);color:var(--text-muted);font-weight:500;font-size:10px;text-transform:uppercase;white-space:nowrap;position:sticky;top:0;background:var(--surface-2)}
-.pltbl td{padding:3px 6px;border-bottom:0.5px solid var(--border);vertical-align:middle}
+.pltbl th{padding:7px 8px;text-align:left;border-bottom:.5px solid var(--border-strong);color:var(--text-muted);font-weight:500;font-size:10px;text-transform:uppercase;white-space:nowrap;position:sticky;top:0;background:var(--surface-2);z-index:1}
+.pltbl td{padding:3px 6px;border-bottom:.5px solid var(--border);vertical-align:middle}
 .pltbl tr:hover td{background:var(--surface-1)}
 .pltbl td.cat{font-size:10px;color:var(--text-muted);white-space:nowrap}
-.plinp{width:72px;text-align:right;font-size:11px;padding:2px 4px;background:var(--surface-1);border:0.5px solid var(--border);border-radius:4px;color:var(--text-primary)}
-.plinp:focus{outline:none;border-color:var(--border-accent)}
-.pltbl td.tot{font-size:12px;font-weight:500;color:var(--text-accent);text-align:right;white-space:nowrap}
-.schrad{display:flex;gap:8px;margin:6px 0}
+.plinp{width:68px;text-align:right;font-size:11px;padding:2px 5px;background:var(--surface-1);border:1px solid var(--border);border-radius:5px;color:var(--text-primary)}
+.plinp:focus{outline:none;border-color:var(--blue-600)}
+.plinp.sm{width:52px}
+.pltbl td.tot{font-size:12px;font-weight:600;color:var(--text-accent);text-align:right;white-space:nowrap}
+
+/* Fee calc */
+.schrad{display:flex;gap:10px;margin:6px 0;flex-wrap:wrap}
 .schrad label{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-secondary);cursor:pointer}
-.fcsum{border-radius:10px;padding:14px 16px;margin-top:10px;text-align:center}
-.instrow{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:0.5px solid var(--border)}
-.hero-bar{display:flex;gap:20px;margin-left:auto;align-items:flex-end;flex-wrap:wrap}
+.fcsum{border-radius:12px;padding:16px;margin-top:12px;text-align:center}
+.instrow{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:.5px solid var(--border)}
+
+/* Variance cards */
+.vrow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:.5px solid var(--border)}
+.vrow:last-child{border-bottom:none}
+.vcard{margin-top:10px;border-radius:10px;padding:12px;text-align:center}
+
+/* Grid layouts */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
 .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 
-/* ── Tablet (≤ 900px) ── */
-@media(max-width:900px){
-  .g2{grid-template-columns:1fr}
-  .lp{width:200px}
-}
+/* Scenario name input in header */
+#sName{font-size:12px;width:130px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.4);border-radius:6px;color:#fff;padding:5px 10px}
+#sName::placeholder{color:rgba(255,255,255,.6)}
 
-/* ── Mobile (≤ 640px) ── */
+/* AI Chat */
+.ai-panel{
+  position:fixed;right:16px;bottom:16px;width:360px;max-height:520px;
+  background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-md);display:flex;flex-direction:column;z-index:1000;
+  transform:translateY(16px) scale(.97);opacity:0;pointer-events:none;transition:all .2s ease}
+.ai-panel.open{transform:none;opacity:1;pointer-events:all}
+.ai-float{
+  position:fixed;right:16px;bottom:16px;width:50px;height:50px;border-radius:50%;
+  background:linear-gradient(135deg,var(--blue-900),var(--blue-600));border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(37,99,235,.4);z-index:999;font-size:20px;
+  transition:transform .2s,box-shadow .2s;color:#fff}
+.ai-float:hover{transform:scale(1.07);box-shadow:0 6px 22px rgba(37,99,235,.5)}
+.ai-float.hidden{display:none}
+.ai-phdr{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.ai-phdr-title{display:flex;align-items:center;gap:8px}
+.ai-model-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:12px;background:var(--blue-100);color:var(--blue-700)}
+.ai-settings-panel{padding:12px 14px;border-bottom:1px solid var(--border);background:var(--surface-1);flex-shrink:0}
+.ai-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;min-height:80px}
+.ai-msg{display:flex}
+.ai-msg.user{justify-content:flex-end}
+.ai-bubble{max-width:86%;padding:8px 12px;border-radius:12px;font-size:12px;line-height:1.55}
+.ai-msg.user .ai-bubble{background:var(--blue-600);color:#fff;border-radius:12px 12px 3px 12px}
+.ai-msg.assistant .ai-bubble{background:var(--surface-1);color:var(--text-primary);border-radius:12px 12px 12px 3px;border:1px solid var(--border)}
+.ai-empty{padding:16px 12px;text-align:center;color:var(--text-muted);font-size:12px}
+.ai-chips{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
+.ai-chip{font-size:11px;padding:4px 10px;border-radius:20px;background:var(--blue-50);color:var(--blue-700);border:1px solid var(--blue-100);cursor:pointer;transition:background .15s}
+.ai-chip:hover{background:var(--blue-100)}
+.ai-input-row{padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;align-items:center}
+.ai-send-btn{padding:7px 14px;background:var(--blue-600);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;transition:background .15s;flex-shrink:0}
+.ai-send-btn:hover{background:var(--blue-700)}
+.ai-send-btn:disabled{background:var(--gray-300);cursor:not-allowed}
+.ai-thinking{display:flex;gap:4px;align-items:center;padding:8px 12px}
+.ai-dot{width:6px;height:6px;border-radius:50%;background:var(--text-muted);animation:bounce .8s infinite}
+.ai-dot:nth-child(2){animation-delay:.15s}
+.ai-dot:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:3px}
+
+/* Tablet ≤ 900px */
+@media(max-width:900px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .g2{grid-template-columns:1fr}
+  .g3{grid-template-columns:1fr 1fr}
+  .lp{width:220px}
+  #coursesel{min-width:0;flex:1}
+}
+/* Mobile ≤ 640px */
 @media(max-width:640px){
   .hdr{padding:10px 12px;gap:8px}
-  .hdr>div:first-child div:last-child{font-size:14px}
-  .subhdr{flex-direction:column;align-items:stretch;padding:10px 12px;gap:6px}
-  .hero-bar{margin-left:0;display:grid;grid-template-columns:1fr 1fr;gap:6px 16px}
-  .hero{text-align:left}
-  .hval{font-size:16px}
-  .hlbl{font-size:9px}
-  .body{flex-direction:column;padding:10px 12px;gap:10px}
-  .lp{width:100%}
-  .g2{grid-template-columns:1fr;margin-bottom:8px}
-  .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;padding-bottom:1px}
-  .tab{white-space:nowrap;padding:7px 11px;font-size:11px}
-  .card{padding:10px 11px;border-radius:10px}
-  .ctitle{font-size:9px}
-  .rl{font-size:11px}
-  .rv{font-size:12px}
-  .ni{flex-wrap:wrap;gap:4px}
-  .nigrp input[type=number]{width:80px}
-  .ohrow input[type=number]{width:80px}
-  .stbl th,.stbl td.drow,.stbl td.scell{padding:6px 10px;font-size:11px}
+  .hdr-title{font-size:15px}
+  .subhdr{flex-direction:column;align-items:stretch;padding:10px 12px;gap:8px}
+  .kpi-bar{margin-left:0;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+  .kpi-div{display:none}
+  .kpi{text-align:left;padding:0}
+  .kpi-val{font-size:15px}
+  .body{flex-direction:column}
+  .lp{width:100%;border-right:none;border-bottom:1px solid var(--border);padding:10px 12px}
+  .rp{padding:10px 12px}
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .g2{grid-template-columns:1fr}
+  .g3{grid-template-columns:1fr}
+  .tab{padding:7px 10px;font-size:11px}
+  .card{padding:12px}
+  .kpi-card-val{font-size:18px}
+  .plinp{width:56px}
+  .plinp.sm{width:44px}
+  #coursesel{width:100%}
+  select#fcCoursesel{width:100%}
+  .ai-panel{width:calc(100vw - 24px);right:12px;bottom:12px;max-height:65vh}
+  .ai-float{right:12px;bottom:12px;width:44px;height:44px;font-size:17px}
   .qcmpg{grid-template-columns:1fr}
-  .plinp{width:60px}
-  .vcard{padding:8px}
-  select#coursesel,select#fcCoursesel{min-width:0;width:100%}
+  .hdr-actions{gap:4px}
 }
 </style>
 </head>
 <body>
-<h2 class="sr-only">UCC Course Budget Simulator — select a course and adjust inputs to model breakeven, planned vs actual, sensitivity, ULEC subcontract, and fee calculator scenarios.</h2>
-<noscript><div style="font-family:sans-serif;padding:40px;text-align:center;color:#374151"><strong>JavaScript is required.</strong><br>Open this file in Safari or Chrome — file preview apps block scripts.</div></noscript>
-<div class="wrap" id="app"><div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:12px;font-family:sans-serif;color:#374151;padding:24px;text-align:center"><div style="font-size:32px">📂</div><div style="font-size:16px;font-weight:600">Open in Safari or Chrome</div><div style="font-size:13px;color:#6b7280;max-width:280px">This file is being previewed in QuickLook, which blocks JavaScript. Tap the <strong>Share ↑</strong> button and choose <strong>Open in Safari</strong> (or Chrome) to use the simulator.</div></div></div>
+<h2 class="sr-only">UCC Course Budget Simulator</h2>
+<noscript><div style="font-family:sans-serif;padding:40px;text-align:center;color:#374151"><strong>JavaScript required.</strong><br>Open in Safari or Chrome.</div></noscript>
+<div class="wrap" id="app">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:12px;font-family:sans-serif;color:#374151;padding:24px;text-align:center">
+    <div style="font-size:32px">📂</div>
+    <div style="font-size:16px;font-weight:600">Open in Safari or Chrome</div>
+    <div style="font-size:13px;color:#6b7280;max-width:280px">This file is being previewed in QuickLook, which blocks JavaScript. Tap <strong>Share ↑</strong> → <strong>Open in Safari</strong>.</div>
+  </div>
+</div>
 <script>
 const COURSES=[
   {cat:"English",name:"Certificate in English Level 1 (FT)",abbr:"CEL1-FT",hrs:96,mo:3,app:400,fee:2480,mat:100,exam:100,admin:150},
@@ -174,84 +296,87 @@ const COURSES=[
   {cat:"Tourism & Hospitality",name:"Diploma in Tourism & Hospitality (Mandarin)",abbr:"DTHM-M",hrs:144,mo:6,app:400,fee:6300,mat:300,exam:300,admin:150},
   {cat:"Tourism & Hospitality",name:"Diploma in Tourism & Hospitality (Mandarin, E-Learning)",abbr:"DTHME-M",hrs:144,mo:6,app:400,fee:6300,mat:300,exam:300,admin:150},
 ];
-
 const DEFAULTS=COURSES.map(c=>({...c}));
-
 const INIT_OH=[
-  {label:"Classroom rental / facilities",cost:12000},
+  {label:"Classroom rental / facilities",cost:2000},
   {label:"Sales person cost",cost:0},
   {label:"Marketing & advertising",cost:0},
   {label:"Course management / coordination",cost:0},
   {label:"Content / curriculum development",cost:0},
-  {label:"LMS / software / platform licences",cost:600},
-  {label:"Printing & learning materials",cost:1200},
-  {label:"Insurance (FPS / indemnity)",cost:3000},
-  {label:"Utilities & internet",cost:300},
-  {label:"Student welfare / events",cost:3000},
+  {label:"LMS / software / platform licences",cost:100},
+  {label:"Printing & learning materials",cost:200},
+  {label:"Insurance (FPS / indemnity)",cost:500},
+  {label:"Utilities & internet",cost:50},
+  {label:"Student welfare / events",cost:500},
   {label:"Others",cost:0},
 ];
-
 const ST={
   ci:7,disc:0,agent:40,uni:0,tf:70,cp:100,plan:9,
   act:40,aDisc:0,aAgent:40,aUni:0,
   oh:INIT_OH.map(o=>({...o})),
   ulecMgmt:500,tab:"overview",saved:[],sName:"",
-  fcCi:0,fcSchol:0
+  fcCi:0,fcSchol:0,
+  aiKey:"",aiModel:"gpt-4o-mini",aiMessages:[],aiOpen:false,aiSettingsOpen:false,aiThinking:false,
+  lpSections:{params:true,inputs:true,actual:false,overhead:true}
 };
-
 const sgd=n=>{const a=Math.abs(Math.round(n));const s="$"+a.toLocaleString();return n<0?"("+s+")":s;};
 const fp=n=>(n*100).toFixed(1)+"%";
-
-const LS_KEY="ucc_sim_v1";
+const LS_KEY="ucc_sim_v3";
 
 function saveToStorage(){
   try{
-    const prices=COURSES.map(c=>({fee:c.fee,mat:c.mat,exam:c.exam,admin:c.admin}));
-    const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol}=ST;
-    localStorage.setItem(LS_KEY,JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol}));
+    const prices=COURSES.map(c=>({fee:c.fee,mat:c.mat,exam:c.exam,admin:c.admin,hrs:c.hrs,mo:c.mo}));
+    const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections}=ST;
+    localStorage.setItem(LS_KEY,JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections}));
   }catch(e){}
 }
-
 function loadFromStorage(){
   try{
     const raw=localStorage.getItem(LS_KEY);
     if(!raw)return;
     const d=JSON.parse(raw);
     if(d.prices&&d.prices.length===COURSES.length){
-      d.prices.forEach((p,i)=>{COURSES[i].fee=p.fee;COURSES[i].mat=p.mat;COURSES[i].exam=p.exam;COURSES[i].admin=p.admin;});
+      d.prices.forEach((p,i)=>{
+        COURSES[i].fee=p.fee;COURSES[i].mat=p.mat;COURSES[i].exam=p.exam;COURSES[i].admin=p.admin;
+        if(p.hrs!==undefined)COURSES[i].hrs=p.hrs;
+        if(p.mo!==undefined)COURSES[i].mo=p.mo;
+      });
     }
     const nums=["ci","disc","agent","uni","tf","cp","plan","act","aDisc","aAgent","aUni","ulecMgmt","fcCi","fcSchol"];
     nums.forEach(k=>{if(d[k]!==undefined)ST[k]=d[k];});
     if(Array.isArray(d.saved))ST.saved=d.saved;
     if(d.tab)ST.tab=d.tab;
     if(Array.isArray(d.oh)&&d.oh.length===ST.oh.length)ST.oh=d.oh;
+    if(d.aiKey)ST.aiKey=d.aiKey;
+    if(d.aiModel)ST.aiModel=d.aiModel;
+    if(Array.isArray(d.aiMessages))ST.aiMessages=d.aiMessages;
+    if(d.lpSections)ST.lpSections={...ST.lpSections,...d.lpSections};
   }catch(e){}
 }
-
 function exportData(){
-  const prices=COURSES.map(c=>({fee:c.fee,mat:c.mat,exam:c.exam,admin:c.admin}));
+  const prices=COURSES.map(c=>({fee:c.fee,mat:c.mat,exam:c.exam,admin:c.admin,hrs:c.hrs,mo:c.mo}));
   const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,saved,fcCi,fcSchol}=ST;
   const blob=new Blob([JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,saved,fcCi,fcSchol},null,2)],{type:"application/json"});
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="ucc_simulator_data.json";
-  a.click();
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="ucc_simulator_data.json";a.click();
 }
-
 function importData(file){
   const reader=new FileReader();
   reader.onload=e=>{
     try{
       const d=JSON.parse(e.target.result);
       if(d.prices&&d.prices.length===COURSES.length){
-        d.prices.forEach((p,i)=>{COURSES[i].fee=p.fee;COURSES[i].mat=p.mat;COURSES[i].exam=p.exam;COURSES[i].admin=p.admin;});
+        d.prices.forEach((p,i)=>{
+          COURSES[i].fee=p.fee;COURSES[i].mat=p.mat;COURSES[i].exam=p.exam;COURSES[i].admin=p.admin;
+          if(p.hrs!==undefined)COURSES[i].hrs=p.hrs;
+          if(p.mo!==undefined)COURSES[i].mo=p.mo;
+        });
       }
       const nums=["ci","disc","agent","uni","tf","cp","plan","act","aDisc","aAgent","aUni","ulecMgmt","fcCi","fcSchol"];
       nums.forEach(k=>{if(d[k]!==undefined)ST[k]=d[k];});
       if(Array.isArray(d.saved))ST.saved=d.saved;
       if(Array.isArray(d.oh)&&d.oh.length===ST.oh.length)ST.oh=d.oh;
       saveToStorage();render();
-    }catch(err){alert("Invalid file — could not import data.");}
+    }catch(err){alert("Invalid file — could not import.");}
   };
   reader.readAsText(file);
 }
@@ -261,7 +386,8 @@ function calc(st){
   const totalFee=c.fee+c.mat+c.exam+c.admin;
   const otherFees=c.mat+c.exam+c.admin;
   const teachCost=st.tf*c.hrs*(st.cp/100);
-  const fixedCost=st.oh.reduce((s,o)=>s+(Number(o.cost)||0),0);
+  const fixedCostMonthly=st.oh.reduce((s,o)=>s+(Number(o.cost)||0),0);
+  const fixedCost=fixedCostMonthly*c.mo;
   const totalCost=teachCost+fixedCost;
   const d=st.disc/100,a=st.agent/100,u=st.uni/100;
   const afterDisc=totalFee*(1-d);
@@ -288,7 +414,8 @@ function calc(st){
   const revPool=st.plan*(totalFee*(1-d)-c.fee*a);
   const uccProfit=revPool-ulecTotal,uccMgn=revPool>0?uccProfit/revPool:0;
   const ulecShare=revPool>0?ulecTotal/revPool:0;
-  return{c,totalFee,otherFees,teachCost,fixedCost,totalCost,afterDisc,agentPS,uniPS,netClean,totalNet,beStu,
+  return{c,totalFee,otherFees,teachCost,fixedCost,fixedCostMonthly,totalCost,
+    afterDisc,agentPS,uniPS,netClean,totalNet,beStu,
     pGross,pNetClean,pOther,pTotal,pProfit,pMgn,
     aGross,aDiscAmt,aAgentAmt,aUniAmt,aApp,aNetClean,aOther,aTotal,aProfit,aMgn,
     varStu:st.act-st.plan,varBE:st.act-beStu,
@@ -302,18 +429,16 @@ function Row(label,val,cls,note,isTotal){
     <span class="rv ${cls||""}">${val}</span>
   </div>`;
 }
-
 function NInput(id,label,value,step,max,sfx,pfx){
   return`<div class="ni">
     <span class="nilbl">${label}</span>
     <div class="nigrp">${pfx?`<span class="nipfx">${pfx}</span>`:""}
-      <input type="number" id="${id}" value="${value}" min="0" ${max?"max="+max:""} step="${step||1}"
-        style="width:68px;text-align:right;font-size:12px;padding:2px 5px">
-      ${sfx?`<span class="nipfx" style="width:12px">${sfx}</span>`:""}
+      <input type="number" id="${id}" value="${value}" min="0"${max?" max="+max:""} step="${step||1}"
+        style="width:66px;text-align:right;font-size:12px;padding:3px 6px">
+      ${sfx?`<span class="nipfx" style="width:14px">${sfx}</span>`:""}
     </div>
   </div>`;
 }
-
 function sensColor(v){
   if(typeof v!=="number")return{bg:"var(--surface-1)",color:"var(--text-muted)"};
   if(v<=5)return{bg:"var(--bg-success)",color:"var(--text-success)"};
@@ -324,100 +449,117 @@ function sensColor(v){
 
 function renderOverview(s,st){
   const c=s.c;
+  const teachPct=s.totalCost>0?s.teachCost/s.totalCost:0;
+  const ohPct=s.totalCost>0?s.fixedCost/s.totalCost:0;
   return`
-  <div class="g2">
-    <div class="card">
-      <div class="ctitle">Calculated costs</div>
-      ${Row("Teacher fee",sgd(s.teachCost),"",`$${st.tf}/hr × ${c.hrs} hrs × ${st.cp}%`)}
-      ${Row("Fixed overhead",sgd(s.fixedCost),"","from overhead builder")}
-      ${Row("Total cost (per run)",sgd(s.totalCost),"acc bold","",true)}
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-card-lbl">Total cost / run</div>
+      <div class="kpi-card-val" style="color:var(--text-danger)">${sgd(s.totalCost)}</div>
+      <div class="kpi-card-sub">Teaching ${fp(teachPct)} · O/H ${fp(ohPct)}</div>
     </div>
-    <div class="card">
-      <div class="ctitle">Net revenue / student</div>
-      ${Row("Total fee (after discount)",sgd(s.afterDisc),"")}
-      ${Row("Less: agent commission","("+sgd(s.agentPS)+")","bad",`${st.agent}% on course fee`)}
-      ${Row("Less: university commission","("+sgd(s.uniPS)+")","bad",`${st.uni}% on course fee`)}
-      ${Row("Add: application fee",sgd(c.app),"")}
-      ${Row("Net revenue (clean)",sgd(s.netClean),"")}
-      ${Row("Add: other fees retained",sgd(s.otherFees),"","mat + exam + admin")}
-      ${Row("Total net revenue / student",sgd(s.totalNet),"acc bold","",true)}
+    <div class="kpi-card">
+      <div class="kpi-card-lbl">Breakeven</div>
+      <div class="kpi-card-val" style="color:${s.beStu<=st.plan?"var(--text-success)":"var(--text-warning)"}">${s.beStu} <span style="font-size:13px;font-weight:400">students</span></div>
+      <div class="kpi-card-sub">${sgd(s.totalNet)} net rev / student</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-lbl">Planned profit</div>
+      <div class="kpi-card-val" style="color:${s.pProfit>=0?"var(--text-success)":"var(--text-danger)"}">${sgd(s.pProfit)}</div>
+      <div class="kpi-card-sub">${st.plan} students planned</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-lbl">Planned margin</div>
+      <div class="kpi-card-val" style="color:${s.pMgn>=0.15?"var(--text-success)":s.pMgn>=0?"var(--text-warning)":"var(--text-danger)"}">${fp(s.pMgn)}</div>
+      <div class="kpi-card-sub">${sgd(s.pProfit/c.mo)}/mo</div>
     </div>
   </div>
   <div class="g2">
     <div class="card">
-      <div class="ctitle">Breakeven analysis</div>
-      ${Row("Breakeven students (total)",s.beStu,"acc bold")}
-      ${Row("Breakeven students / month",(s.beStu/c.mo).toFixed(1),"")}
-      ${Row("Breakeven gross revenue",sgd(s.beStu*s.totalFee),"")}
-      ${Row("Breakeven net revenue",sgd(s.beStu*s.totalNet),"","after all deductions")}
+      <div class="card-hdr"><div class="card-title">Cost breakdown</div><span class="card-badge" style="background:var(--red-100);color:var(--red-700)">${sgd(s.totalCost)} total</span></div>
+      ${Row("Teacher fee",sgd(s.teachCost),"",`$${st.tf}/hr × ${c.hrs} hrs × ${st.cp}%`)}
+      ${Row("Fixed overhead",sgd(s.fixedCost),"",`$${sgd(s.fixedCostMonthly)}/mo × ${c.mo} mo`)}
+      ${Row("Total cost (per run)",sgd(s.totalCost),"acc bold","",true)}
+      <div style="margin-top:10px;background:var(--surface-1);border-radius:8px;overflow:hidden;height:8px;display:flex">
+        <div style="width:${fp(teachPct)};background:#3b82f6;transition:width .3s"></div>
+        <div style="width:${fp(ohPct)};background:#94a3b8;transition:width .3s"></div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:6px;font-size:10px;color:var(--text-muted)">
+        <div><span style="display:inline-block;width:8px;height:8px;background:#3b82f6;border-radius:2px;margin-right:3px;vertical-align:middle"></span>Teaching ${fp(teachPct)}</div>
+        <div><span style="display:inline-block;width:8px;height:8px;background:#94a3b8;border-radius:2px;margin-right:3px;vertical-align:middle"></span>Overhead ${fp(ohPct)}</div>
+      </div>
     </div>
     <div class="card">
-      <div class="ctitle">Planned scenario (${st.plan} students)</div>
+      <div class="card-hdr"><div class="card-title">Net revenue / student</div><span class="card-badge" style="background:var(--blue-100);color:var(--blue-700)">${sgd(s.totalNet)}/student</span></div>
+      ${Row("Total fee",sgd(s.totalFee),"")}
+      ${Row("Less: discount","("+sgd(s.totalFee*st.disc/100)+")","bad",`${st.disc}%`)}
+      ${Row("Less: agent commission","("+sgd(s.agentPS)+")","bad",`${st.agent}% on course fee`)}
+      ${Row("Less: university comm.","("+sgd(s.uniPS)+")","bad",`${st.uni}% on course fee`)}
+      ${Row("Add: application fee",sgd(c.app),"")}
+      ${Row("Net revenue / student",sgd(s.totalNet),"acc bold","",true)}
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">Planned scenario</div><span class="card-badge" style="background:var(--blue-100);color:var(--blue-700)">${st.plan} students</span></div>
       ${Row("Planned gross revenue",sgd(s.pGross),"")}
-      ${Row("Planned net revenue (clean)",sgd(s.pNetClean),"")}
-      ${Row("Add: other fees retained",sgd(s.pOther),"")}
-      ${Row("Planned total net revenue",sgd(s.pTotal),"")}
+      ${Row("Planned net revenue",sgd(s.pTotal),"")}
       ${Row("Less: total cost","("+sgd(s.totalCost)+")","bad")}
       ${Row("Planned profit / (loss)",sgd(s.pProfit),s.pProfit>=0?"ok bold":"bad bold","",true)}
-      ${Row("Planned margin %",fp(s.pMgn),"")}
+      ${Row("Margin",fp(s.pMgn),"")}
       ${Row("Revenue / month",sgd(s.pGross/c.mo),"")}
       ${Row("Profit / month",sgd(s.pProfit/c.mo),"")}
+      ${Row("Breakeven students",s.beStu+" students","acc")}
     </div>
-  </div>
-  <div class="g2">
     <div class="card">
-      <div class="ctitle">Actual performance (${st.act} students)</div>
+      <div class="card-hdr"><div class="card-title">Actual performance</div><span class="card-badge" style="background:${s.aProfit>=0?"var(--green-100)":"var(--red-100)"};color:${s.aProfit>=0?"var(--green-800)":"var(--red-700)"}">${st.act} students</span></div>
       ${Row("Actual gross revenue",sgd(s.aGross),"")}
-      ${Row("Less: discount given","("+sgd(s.aDiscAmt)+")","bad")}
+      ${Row("Less: discount","("+sgd(s.aDiscAmt)+")","bad",`${st.aDisc}%`)}
       ${Row("Less: agent commission","("+sgd(s.aAgentAmt)+")","bad")}
-      ${Row("Less: university commission","("+sgd(s.aUniAmt)+")","bad")}
+      ${Row("Less: university comm.","("+sgd(s.aUniAmt)+")","bad")}
       ${Row("Add: application fees",sgd(s.aApp),"")}
-      ${Row("Actual net revenue (clean)",sgd(s.aNetClean),"")}
-      ${Row("Add: other fees retained",sgd(s.aOther),"")}
-      ${Row("Actual total net revenue",sgd(s.aTotal),"")}
+      ${Row("Actual net revenue",sgd(s.aTotal),"")}
       ${Row("Less: total cost","("+sgd(s.totalCost)+")","bad")}
       ${Row("Actual profit / (loss)",sgd(s.aProfit),s.aProfit>=0?"ok bold":"bad bold","",true)}
-      ${Row("Actual margin %",fp(s.aMgn),"")}
-      ${Row("Profit / month",sgd(s.aProfit/c.mo),"")}
-    </div>
-    <div class="card">
-      <div class="ctitle">Variance analysis (actual vs planned)</div>
-      ${[
-        ["Student variance (actual vs plan)",s.varStu,s.varStu>=0,false],
-        ["Students vs breakeven",s.varBE,s.varBE>=0,false],
-        ["Revenue variance (gross)",s.varRevG,s.varRevG>=0,true],
-        ["Revenue variance (net)",s.varRevN,s.varRevN>=0,true],
-        ["Profit variance",s.varProfit,s.varProfit>=0,true],
-        ["Margin variance",s.varMgnPp.toFixed(1)+" pp",s.varMgnPp>=0,false],
-      ].map(([l,v,ok,money])=>`
-        <div class="vrow">
-          <span style="font-size:12px;color:var(--text-secondary)">${l}</span>
-          <div class="vval">
-            <span style="font-size:13px;font-weight:500;color:var(${ok?"--text-success":"--text-danger"})">${money?sgd(v):v}</span>
-            <span style="font-size:11px">${ok?"✓":"!"}</span>
-          </div>
-        </div>`).join("")}
-      <div class="vcard" style="background:var(${s.aProfit>=0?"--bg-success":"--bg-danger"})">
-        <div style="font-size:15px;font-weight:500;color:var(${s.aProfit>=0?"--text-success":"--text-danger"})">${s.aProfit>=0?"Profitable":"Loss-making"}</div>
+      ${Row("Margin",fp(s.aMgn),"")}
+      <div class="vcard" style="background:var(${s.aProfit>=0?"--bg-success":"--bg-danger"});margin-top:8px">
+        <div style="font-size:14px;font-weight:600;color:var(${s.aProfit>=0?"--text-success":"--text-danger"})">${s.aProfit>=0?"Profitable ✓":"Loss-making ✗"} · ${sgd(Math.abs(s.aProfit))}</div>
         <div style="font-size:11px;color:var(--text-muted);margin-top:3px">${Math.abs(st.act-s.beStu)} students ${st.act>=s.beStu?"above":"below"} breakeven</div>
       </div>
     </div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">Variance — actual vs planned</div></div>
+    ${[
+      ["Student variance",s.varStu,s.varStu>=0,false,"students"],
+      ["vs Breakeven",s.varBE,s.varBE>=0,false,"students"],
+      ["Revenue variance (gross)",s.varRevG,s.varRevG>=0,true,""],
+      ["Revenue variance (net)",s.varRevN,s.varRevN>=0,true,""],
+      ["Profit variance",s.varProfit,s.varProfit>=0,true,""],
+      ["Margin variance",s.varMgnPp.toFixed(1)+" pp",s.varMgnPp>=0,false,""],
+    ].map(([l,v,ok,money,sfx])=>`
+    <div class="vrow">
+      <span style="font-size:12px;color:var(--text-secondary)">${l}</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:13px;font-weight:600;color:var(${ok?"--text-success":"--text-danger"})">${money?sgd(v):v}${sfx?" "+sfx:""}</span>
+        <span style="font-size:12px">${ok?"↑":"↓"}</span>
+      </div>
+    </div>`).join("")}
   </div>`;
 }
 
 function renderSens(s,st){
-  const c=s.c;
   const rows=s.sens.map((row,ri)=>`<tr>
     <td class="drow">${s.DR[ri]}%</td>
     ${row.map((v,ci)=>{
       const curr=s.DR[ri]===Math.round(st.disc)&&s.AR[ci]===Math.round(st.agent);
       const sc=sensColor(v);
-      return`<td class="scell" style="background:${curr?"var(--bg-accent)":sc.bg};color:${curr?"var(--text-accent)":sc.color};border:${curr?"1.5px solid var(--border-accent)":"0.5px solid var(--border)"}">${v}</td>`;
+      return`<td class="scell" style="background:${curr?"var(--bg-accent)":sc.bg};color:${curr?"var(--text-accent)":sc.color};border:${curr?"2px solid var(--border-accent)":"1px solid var(--border)"}">${v}</td>`;
     }).join("")}
   </tr>`).join("");
   return`<div class="card">
-    <div class="ctitle">Sensitivity — breakeven students by discount % vs agent commission %</div>
-    <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">University commission held at ${st.uni}% · Total cost per run: ${sgd(s.totalCost)} · Current scenario highlighted in blue</div>
+    <div class="card-hdr"><div class="card-title">Breakeven students — discount % vs agent %</div></div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">University commission held at ${st.uni}% · Total cost: ${sgd(s.totalCost)} · Current highlighted in blue</div>
     <div class="tbl-scroll"><table class="stbl">
       <thead><tr>
         <th>Disc ↓ / Agent →</th>
@@ -426,11 +568,11 @@ function renderSens(s,st){
       <tbody>${rows}</tbody>
     </table></div>
     <div class="sleg">
-      ${[["≤5 — easy",`var(--bg-success)`,`var(--text-success)`],["6–10 — manageable",`var(--bg-warning)`,`var(--text-warning)`],["11–15 — challenging","#fed7aa","#c2410c"],[">15 — high risk",`var(--bg-danger)`,`var(--text-danger)`]].map(([l,bg,col])=>`
-        <div style="display:flex;align-items:center;gap:4px">
-          <span class="svbox" style="background:${bg}"></span>
-          <span style="font-size:11px;color:${col}">${l}</span>
-        </div>`).join("")}
+      ${[["≤5 — easy","var(--bg-success)","var(--text-success)"],["6–10 — manageable","var(--bg-warning)","var(--text-warning)"],["11–15 — challenging","#fed7aa","#c2410c"],[">15 — high risk","var(--bg-danger)","var(--text-danger)"]].map(([l,bg,col])=>`
+      <div style="display:flex;align-items:center;gap:5px">
+        <span class="svbox" style="background:${bg}"></span>
+        <span style="font-size:11px;color:${col}">${l}</span>
+      </div>`).join("")}
     </div>
   </div>`;
 }
@@ -439,18 +581,18 @@ function renderULEC(s,st){
   const c=s.c;
   return`<div class="g2" style="margin-bottom:0">
     <div class="card">
-      <div class="ctitle">ULEC subcontract — cost build</div>
-      <div style="font-size:11px;color:var(--text-muted);line-height:1.6;margin-bottom:10px">Teacher delivery auto-calculates from simulation inputs. Set the monthly course management fee below.</div>
+      <div class="card-hdr"><div class="card-title">ULEC subcontract — cost build</div></div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Teaching cost auto-calculates from simulation inputs. Set the monthly management fee below.</div>
       ${NInput("ulecMgmt","Course management fee / month",st.ulecMgmt,100,null,null,"$")}
       <div style="margin-top:10px">
         ${Row("Teacher delivery cost",sgd(s.ulecTeach),"",`$${st.tf}/hr × ${c.hrs} hrs × ${st.cp}%`)}
-        ${Row("Course management ("+c.mo+"m)",sgd(s.ulecMgmtTotal),"",`$${st.ulecMgmt} × ${c.mo} months`)}
+        ${Row("Course management (${c.mo}m)".replace("${c.mo}",c.mo),sgd(s.ulecMgmtTotal),"",`$${st.ulecMgmt} × ${c.mo} months`)}
         ${Row("Total ULEC fee (paid out)",sgd(s.ulecTotal),"acc bold","",true)}
+        ${Row("ULEC fee / month",sgd(s.ulecTotal/c.mo),"")}
       </div>
-      <div style="margin-top:8px">${Row("ULEC fee / month",sgd(s.ulecTotal/c.mo),"")}</div>
     </div>
     <div class="card">
-      <div class="ctitle">UCC performance (${st.plan} planned students)</div>
+      <div class="card-hdr"><div class="card-title">UCC performance</div><span class="card-badge" style="background:var(--blue-100);color:var(--blue-700)">${st.plan} students</span></div>
       ${Row("Breakeven students",s.beStu,"acc bold")}
       ${Row("Revenue pool (fee − disc − agent)",sgd(s.revPool),"","students × net course revenue")}
       ${Row("Less: total ULEC fee","("+sgd(s.ulecTotal)+")","bad")}
@@ -459,7 +601,7 @@ function renderULEC(s,st){
       ${Row("ULEC fee % of revenue pool",fp(s.ulecShare),"")}
       ${Row("UCC profit / month",sgd(s.uccProfit/c.mo),"")}
       <div class="vcard" style="margin-top:10px;background:var(${s.uccProfit>=0?"--bg-success":"--bg-danger"})">
-        <div style="font-size:15px;font-weight:500;color:var(${s.uccProfit>=0?"--text-success":"--text-danger"})">UCC ${s.uccProfit>=0?"profit":"loss"}: ${sgd(Math.abs(s.uccProfit))}</div>
+        <div style="font-size:15px;font-weight:600;color:var(${s.uccProfit>=0?"--text-success":"--text-danger"})">UCC ${s.uccProfit>=0?"profit":"loss"}: ${sgd(Math.abs(s.uccProfit))}</div>
         <div style="font-size:11px;color:var(--text-muted);margin-top:3px">${fp(s.uccMgn)} UCC margin · ${fp(s.ulecShare)} ULEC share</div>
       </div>
     </div>
@@ -467,25 +609,24 @@ function renderULEC(s,st){
 }
 
 function renderCompare(saved){
-  if(!saved.length)return`<div class="card"><div style="color:var(--text-muted);text-align:center;padding:50px 20px;font-size:13px">No scenarios saved yet. Configure the simulation and click Save scenario.</div></div>`;
+  if(!saved.length)return`<div class="card"><div style="color:var(--text-muted);text-align:center;padding:60px 20px;font-size:13px">No scenarios saved yet.<br>Configure and click <strong>Save scenario</strong> in the header.</div></div>`;
   const best=r=>saved.reduce((b,sc)=>sc[r]>b[r]?sc:b).name;
   const low=r=>saved.reduce((b,sc)=>sc[r]<b[r]?sc:b).name;
   const rows=saved.map((sc,i)=>`<tr>
-    <td style="padding:5px 8px;font-weight:500;color:var(--text-accent);white-space:nowrap">${sc.name}</td>
-    <td style="padding:5px 8px;color:var(--text-secondary);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${sc.course}">${sc.course}</td>
-    <td style="padding:5px 8px;color:var(--text-secondary)">${sc.disc}%</td>
-    <td style="padding:5px 8px;color:var(--text-secondary)">${sc.agent}%</td>
-    <td style="padding:5px 8px;color:var(--text-secondary)">${sc.plan}</td>
-    <td style="padding:5px 8px;font-weight:500;color:var(--text-accent)">${sc.be}</td>
-    <td style="padding:5px 8px;color:var(--text-secondary)">${sgd(sc.cost)}</td>
-    <td style="padding:5px 8px;color:var(--text-secondary)">${sgd(sc.netRev)}</td>
-    <td style="padding:5px 8px;font-weight:500;color:var(${sc.profit>=0?"--text-success":"--text-danger"})">${sgd(sc.profit)}</td>
-    <td style="padding:5px 8px;color:var(${sc.mgn>=0.15?"--text-success":"--text-warning"})">${fp(sc.mgn)}</td>
-    <td style="padding:5px 8px;text-align:center"><button data-del="${i}" style="color:var(--text-danger);border:none;background:none;cursor:pointer;font-size:15px;padding:0">×</button></td>
+    <td style="padding:5px 8px;font-weight:600;color:var(--text-accent);white-space:nowrap">${sc.name}</td>
+    <td style="padding:5px 8px;color:var(--text-muted);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${sc.course}">${sc.course}</td>
+    <td style="padding:5px 8px;text-align:right">${sc.disc}%</td>
+    <td style="padding:5px 8px;text-align:right">${sc.agent}%</td>
+    <td style="padding:5px 8px;text-align:right">${sc.plan}</td>
+    <td style="padding:5px 8px;text-align:right;font-weight:600;color:var(--text-accent)">${sc.be}</td>
+    <td style="padding:5px 8px;text-align:right">${sgd(sc.cost)}</td>
+    <td style="padding:5px 8px;text-align:right;font-weight:600;color:var(${sc.profit>=0?"--text-success":"--text-danger"})">${sgd(sc.profit)}</td>
+    <td style="padding:5px 8px;text-align:right;color:var(${sc.mgn>=0.15?"--text-success":"--text-warning"})">${fp(sc.mgn)}</td>
+    <td style="padding:5px 8px;text-align:center"><button data-del="${i}" style="color:var(--text-danger);border:none;background:none;cursor:pointer;font-size:16px;padding:0;line-height:1">×</button></td>
   </tr>`).join("");
   const qcmp=saved.length>=2?`<div class="qcmp">
-    <div style="font-size:10px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em">Quick comparison</div>
-    <div class="qcmpg">
+    <div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em">Quick comparison</div>
+    <div class="qcmpg" style="margin-top:8px">
       <div>Best margin: <strong style="color:var(--text-success)">${best("mgn")}</strong> (${fp(Math.max(...saved.map(s=>s.mgn)))})</div>
       <div>Lowest BE: <strong style="color:var(--text-accent)">${low("be")}</strong> (${Math.min(...saved.map(s=>s.be))} students)</div>
       <div>Highest profit: <strong style="color:var(--text-success)">${best("profit")}</strong> (${sgd(Math.max(...saved.map(s=>s.profit)))})</div>
@@ -493,15 +634,62 @@ function renderCompare(saved){
     </div>
   </div>`:"";
   return`<div class="card">
-    <div class="ctitle">Saved scenarios</div>
+    <div class="card-hdr"><div class="card-title">Saved scenarios</div><span style="font-size:11px;color:var(--text-muted)">${saved.length} saved</span></div>
     <div style="overflow-x:auto">
       <table class="cptbl">
-        <thead><tr>${["Scenario","Course","Disc","Agent","Planned","BE","Cost","Net rev","Profit","Margin",""].map(h=>`<th>${h}</th>`).join("")}</tr></thead>
+        <thead><tr>${["Scenario","Course","Disc","Agent","Plan","BE","Cost","Profit","Margin",""].map(h=>`<th>${h}</th>`).join("")}</tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
     ${qcmp}
-    <button id="clearAll" style="margin-top:10px;font-size:11px;color:var(--text-danger);background:none;border:none;cursor:pointer">Clear all scenarios</button>
+    <button id="clearAll" style="margin-top:12px;font-size:11px;color:var(--text-danger);background:none;border:none;cursor:pointer">Clear all scenarios</button>
+  </div>`;
+}
+
+function renderPriceList(){
+  const cats=["English","Preparatory","Business","Technology","Tourism & Hospitality"];
+  const rows=cats.flatMap(cat=>{
+    const catRows=COURSES.map((cr,i)=>{
+      if(cr.cat!==cat)return"";
+      const hrRate=cr.hrs>0?(cr.fee/cr.hrs).toFixed(2):"—";
+      return`<tr>
+        <td class="cat">${cr.cat}</td>
+        <td style="font-size:12px;color:var(--text-primary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${cr.name}">${cr.name}</td>
+        <td style="text-align:right"><input class="plinp sm" type="number" data-pci="${i}" data-pf="hrs" value="${cr.hrs}" min="1" step="8" title="Contact hours — affects teaching cost"></td>
+        <td style="text-align:right"><input class="plinp sm" type="number" data-pci="${i}" data-pf="mo" value="${cr.mo}" min="1" step="1" title="Duration in months — affects overhead total"></td>
+        <td style="text-align:right;font-size:11px;color:var(--text-muted);white-space:nowrap">$${hrRate}</td>
+        <td style="text-align:right"><input class="plinp" type="number" data-pci="${i}" data-pf="fee" value="${cr.fee}" min="0" step="10"></td>
+        <td style="text-align:right"><input class="plinp" type="number" data-pci="${i}" data-pf="mat" value="${cr.mat}" min="0" step="10"></td>
+        <td style="text-align:right"><input class="plinp" type="number" data-pci="${i}" data-pf="exam" value="${cr.exam}" min="0" step="10"></td>
+        <td style="text-align:right"><input class="plinp" type="number" data-pci="${i}" data-pf="admin" value="${cr.admin}" min="0" step="10"></td>
+        <td class="tot">${sgd(cr.fee+cr.mat+cr.exam+cr.admin)}</td>
+      </tr>`;
+    }).join("");
+    return catRows;
+  });
+  return`<div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div class="card-hdr" style="margin-bottom:0"><div class="card-title">Editable price list — all courses</div></div>
+      <button id="resetPrices" style="font-size:11px;padding:4px 10px;color:var(--text-danger);border:1px solid var(--border);border-radius:6px;cursor:pointer;background:none">Reset to defaults</button>
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Edit hours, months, or any fee — all tabs recalculate immediately. Hours affect teaching cost; months affect overhead total. <strong>$/hr</strong> = course fee ÷ contact hours.</div>
+    <div style="overflow-x:auto;max-height:480px;overflow-y:auto">
+      <table class="pltbl">
+        <thead><tr>
+          <th>Category</th>
+          <th>Course</th>
+          <th style="text-align:right">Hrs</th>
+          <th style="text-align:right">Mo</th>
+          <th style="text-align:right">$/hr</th>
+          <th style="text-align:right">Course fee</th>
+          <th style="text-align:right">Material</th>
+          <th style="text-align:right">Exam/Assign.</th>
+          <th style="text-align:right">Admin</th>
+          <th style="text-align:right">Total/student</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
   </div>`;
 }
 
@@ -514,38 +702,29 @@ function renderFeeCalc(st){
   const gst=Math.round(subtotal*0.09);
   const totalInclGST=subtotal+gst;
   const instAmt=discFee/c.mo;
-
   const cats=["English","Preparatory","Business","Technology","Tourism & Hospitality"];
   const fcOptions=cats.map(cat=>`<optgroup label="${cat}">${COURSES.map((cr,i)=>cr.cat===cat?`<option value="${i}"${i===st.fcCi?" selected":""}>${cr.name}</option>`:"").join("")}</optgroup>`).join("");
-
-  const plRows=COURSES.map((cr,i)=>`<tr>
-    <td class="cat">${cr.cat}</td>
-    <td style="font-size:12px;color:var(--text-primary);white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis" title="${cr.name}">${cr.name}</td>
-    <td><input class="plinp" type="number" data-pci="${i}" data-pf="fee" value="${cr.fee}" min="0" step="10"></td>
-    <td><input class="plinp" type="number" data-pci="${i}" data-pf="mat" value="${cr.mat}" min="0" step="10"></td>
-    <td><input class="plinp" type="number" data-pci="${i}" data-pf="exam" value="${cr.exam}" min="0" step="10"></td>
-    <td><input class="plinp" type="number" data-pci="${i}" data-pf="admin" value="${cr.admin}" min="0" step="10"></td>
-    <td class="tot">${sgd(cr.fee+cr.mat+cr.exam+cr.admin)}</td>
-  </tr>`).join("");
-
   return`
-  <div class="g2" style="margin-bottom:10px">
+  <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;padding:8px 12px;background:var(--blue-50);border-radius:8px;border:1px solid var(--blue-100)">
+    💡 <strong>Student invoice view</strong> — shows what the student pays including 9% GST and scholarship options. For UCC internal financials (profit, margin, breakeven), see the <em>Overview</em> tab.
+  </div>
+  <div class="g2">
     <div class="card">
-      <div class="ctitle">Student fee calculator</div>
-      <div style="margin-bottom:8px">
+      <div class="card-hdr"><div class="card-title">Student fee breakdown</div></div>
+      <div style="margin-bottom:10px">
         <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Course</div>
         <select id="fcCoursesel" style="font-size:12px;width:100%">${fcOptions}</select>
       </div>
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Scholarship</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Scholarship / bursary</div>
       <div class="schrad">
         <label><input type="radio" name="fcSchol" value="0" ${st.fcSchol===0?"checked":""}> None</label>
         <label><input type="radio" name="fcSchol" value="20" ${st.fcSchol===20?"checked":""}> 20% off</label>
         <label><input type="radio" name="fcSchol" value="30" ${st.fcSchol===30?"checked":""}> 30% off</label>
       </div>
-      <div style="margin-top:6px">
+      <div style="margin-top:8px">
         ${Row("Course fee",sgd(c.fee),"")}
-        ${schol>0?Row("Scholarship ("+st.fcSchol+"% on course fee)","("+sgd(scholAmt)+")","bad"):""}
-        ${Row("Discounted course fee",sgd(discFee),"acc")}
+        ${schol>0?Row(`Scholarship (${st.fcSchol}% on course fee)`,"("+sgd(scholAmt)+")","bad"):""}
+        ${schol>0?Row("Discounted course fee",sgd(discFee),"acc"):""}
         ${Row("Material fee",sgd(c.mat),"")}
         ${Row("Exam / assignment fee",sgd(c.exam),"")}
         ${Row("Admin fee",sgd(c.admin),"")}
@@ -553,57 +732,27 @@ function renderFeeCalc(st){
         ${Row("GST (9%)",sgd(gst),"")}
         ${Row("Total incl. GST",sgd(totalInclGST),"acc bold","",true)}
       </div>
+      <div class="fcsum" style="background:var(--bg-accent);margin-top:12px">
+        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Total payable by student${schol>0?` · ${st.fcSchol}% scholarship applied`:""}</div>
+        <div style="font-size:26px;font-weight:700;color:var(--text-accent);letter-spacing:-.02em">${sgd(totalInclGST)}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">incl. 9% GST · ${c.hrs} hrs · ${c.mo} month${c.mo>1?"s":""}</div>
+      </div>
     </div>
     <div class="card">
-      <div class="ctitle">Instalment plan — ${c.mo} instalments</div>
-      <div style="font-size:11px;color:var(--text-muted);line-height:1.6;margin-bottom:10px">Course fee spread over ${c.mo} month${c.mo>1?"s":""} (one instalment per month). Other fees paid upfront at enrolment.</div>
+      <div class="card-hdr"><div class="card-title">Instalment plan — ${c.mo} months</div></div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Course fee spread over ${c.mo} monthly instalments. Other fees paid at enrolment.</div>
       <div style="margin-bottom:8px">
-        <div class="instrow">
-          <span style="font-size:12px;color:var(--text-secondary)">Application fee (upfront)</span>
-          <span style="font-size:13px;font-weight:500">${sgd(c.app)}</span>
-        </div>
-        <div class="instrow">
-          <span style="font-size:12px;color:var(--text-secondary)">Other fees upfront (mat + exam + admin)</span>
-          <span style="font-size:13px;font-weight:500">${sgd(c.mat+c.exam+c.admin)}</span>
-        </div>
-        <div class="instrow" style="border-bottom:none">
-          <span style="font-size:12px;color:var(--text-secondary)">GST on other fees</span>
-          <span style="font-size:13px;font-weight:500">${sgd(Math.round((c.mat+c.exam+c.admin)*0.09))}</span>
-        </div>
+        <div class="instrow"><span style="font-size:12px;color:var(--text-secondary)">Application fee (upfront)</span><span style="font-size:13px;font-weight:500">${sgd(c.app)}</span></div>
+        <div class="instrow"><span style="font-size:12px;color:var(--text-secondary)">Other fees at enrolment (mat + exam + admin)</span><span style="font-size:13px;font-weight:500">${sgd(c.mat+c.exam+c.admin)}</span></div>
+        <div class="instrow" style="border-bottom:none"><span style="font-size:12px;color:var(--text-secondary)">GST on other fees</span><span style="font-size:13px;font-weight:500">${sgd(Math.round((c.mat+c.exam+c.admin)*0.09))}</span></div>
       </div>
-      <div style="border-top:1.5px solid var(--border-strong);padding-top:8px;margin-top:2px">
-        ${Array.from({length:c.mo},(_, i)=>`
+      <div style="border-top:1.5px solid var(--border-strong);padding-top:8px">
+        ${Array.from({length:c.mo},(_,i)=>`
         <div class="instrow">
-          <span style="font-size:12px;color:var(--text-secondary)">Month ${i+1} instalment</span>
-          <span style="font-size:13px;color:var(--text-accent);font-weight:500">${sgd(Math.round(instAmt*1.09))}<span style="font-size:10px;color:var(--text-muted);font-weight:400"> incl. GST</span></span>
+          <span style="font-size:12px;color:var(--text-secondary)">Month ${i+1}</span>
+          <span style="font-size:13px;color:var(--text-accent);font-weight:600">${sgd(Math.round(instAmt*1.09))}<span style="font-size:10px;color:var(--text-muted);font-weight:400"> incl. GST</span></span>
         </div>`).join("")}
       </div>
-      <div class="fcsum" style="background:var(--bg-accent);margin-top:12px">
-        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Net price to student${schol>0?" (after "+st.fcSchol+"% scholarship)":""}</div>
-        <div style="font-size:22px;font-weight:500;color:var(--text-accent)">${sgd(totalInclGST)}</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:3px">incl. GST · ${c.mo} instalment${c.mo>1?"s":""} of ${sgd(Math.round(instAmt*1.09))}/mo</div>
-      </div>
-    </div>
-  </div>
-  <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <div class="ctitle" style="margin-bottom:0">Editable price list — all courses</div>
-      <button id="resetPrices" style="font-size:11px;padding:4px 10px;color:var(--text-danger);background:none;border:0.5px solid var(--border);border-radius:5px;cursor:pointer">Reset to defaults</button>
-    </div>
-    <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">Edit any fee to update the price list in memory — all tabs (Overview, Sensitivity, ULEC) recalculate immediately.</div>
-    <div style="overflow-x:auto;max-height:420px;overflow-y:auto">
-      <table class="pltbl">
-        <thead><tr>
-          <th>Category</th>
-          <th>Course</th>
-          <th>Course fee</th>
-          <th>Material</th>
-          <th>Exam / Assign.</th>
-          <th>Admin</th>
-          <th>Total / student</th>
-        </tr></thead>
-        <tbody>${plRows}</tbody>
-      </table>
     </div>
   </div>`;
 }
@@ -613,147 +762,320 @@ function buildCourseSelector(ci){
   return cats.map(cat=>`<optgroup label="${cat}">${COURSES.map((c,i)=>c.cat===cat?`<option value="${i}"${i===ci?" selected":""}>${c.name}</option>`:"").join("")}</optgroup>`).join("");
 }
 
+function lpSection(key,dotColor,title,bodyHtml,st){
+  const open=st.lpSections[key];
+  return`<div class="lp-sec">
+    <div class="lp-sec-hdr" data-lpsec="${key}">
+      <div class="lp-sec-title"><span class="lp-sec-dot" style="background:${dotColor}"></span>${title}</div>
+      <span class="lp-sec-caret${open?" open":""}">›</span>
+    </div>
+    <div class="lp-sec-body${open?"":" hidden"}">${bodyHtml}</div>
+  </div>`;
+}
+
 function buildLP(st){
   const c=COURSES[st.ci];
   const s=calc(st);
-  const params=[["Course fee",sgd(c.fee)],["Material fee",sgd(c.mat)],["Exam / assignment fee",sgd(c.exam)],["Admin fee",sgd(c.admin)],["Total fee / student",sgd(s.totalFee)],["Duration",c.mo+" months"],["Optimum hours",c.hrs+" hrs"]];
-  return`
-  <div class="card">
-    <div class="ctitle">Course parameters</div>
-    ${params.map(([l,v])=>`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:0.5px solid var(--border);font-size:12px"><span style="color:var(--text-muted)">${l}</span><span>${v}</span></div>`).join("")}
-  </div>
-  <div class="card">
-    <div class="ctitle">Simulation inputs (planned)</div>
+  const paramsHtml=`
+    <div class="cprow"><span class="cprow-lbl">Course fee</span><span class="cprow-val">${sgd(c.fee)}</span></div>
+    <div class="cprow"><span class="cprow-lbl">Material fee</span><span class="cprow-val">${sgd(c.mat)}</span></div>
+    <div class="cprow"><span class="cprow-lbl">Exam / assign. fee</span><span class="cprow-val">${sgd(c.exam)}</span></div>
+    <div class="cprow"><span class="cprow-lbl">Admin fee</span><span class="cprow-val">${sgd(c.admin)}</span></div>
+    <div class="cprow"><span class="cprow-lbl">Total fee / student</span><span class="cprow-val" style="color:var(--text-accent)">${sgd(s.totalFee)}</span></div>
+    <div class="cprow"><span class="cprow-lbl">Duration</span><span class="cprow-val">${c.mo} months</span></div>
+    <div class="cprow"><span class="cprow-lbl">Contact hours</span><span class="cprow-val">${c.hrs} hrs</span></div>
+    <div class="cprow"><span class="cprow-lbl">Fee / hr</span><span class="cprow-val">$${(c.fee/c.hrs).toFixed(0)}/hr</span></div>`;
+  const simHtml=`
     ${NInput("disc","Scholarship discount",st.disc,5,100,"%",null)}
     ${NInput("agent","Agent commission",st.agent,10,100,"%",null)}
     ${NInput("uni","University commission",st.uni,5,100,"%",null)}
     ${NInput("tf","Teacher fee / hr",st.tf,5,null,null,"$")}
     ${NInput("cp","Contact hours %",st.cp,10,100,"%",null)}
-    ${NInput("plan","Planned students",st.plan,1,null,null,null)}
-  </div>
-  <div class="card">
-    <div class="ctitle">Actual performance inputs</div>
+    ${NInput("plan","Planned students",st.plan,1,null,null,null)}`;
+  const actHtml=`
     ${NInput("act","Actual students",st.act,1,null,null,null)}
     ${NInput("aDisc","Actual discount %",st.aDisc,5,100,"%",null)}
     ${NInput("aAgent","Actual agent comm %",st.aAgent,10,100,"%",null)}
-    ${NInput("aUni","Actual uni comm %",st.aUni,5,100,"%",null)}
-  </div>
-  <div class="card">
-    <div class="ctitle">Fixed overhead — total: ${sgd(s.fixedCost)}</div>
-    ${st.oh.map((o,i)=>`<div class="ohrow"><span class="ohlbl" title="${o.label}">${o.label}</span><input type="number" data-oh="${i}" value="${o.cost}" min="0" step="100" style="width:70px;text-align:right;font-size:11px;padding:2px 4px"></div>`).join("")}
-  </div>`;
+    ${NInput("aUni","Actual uni comm %",st.aUni,5,100,"%",null)}`;
+  const ohHtml=`
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:10px;color:var(--text-muted)">
+      <span>per month</span><span>${c.mo} mo total</span>
+    </div>
+    ${st.oh.map((o,i)=>`
+    <div class="ohrow">
+      <span class="ohlbl" title="${o.label}">${o.label}</span>
+      <div style="display:flex;align-items:center;gap:3px;flex-shrink:0">
+        <span style="font-size:10px;color:var(--text-muted)">$</span>
+        <input type="number" data-oh="${i}" value="${o.cost}" min="0" step="100" style="width:54px;text-align:right;font-size:11px;padding:2px 4px">
+        <span style="font-size:10px;color:var(--text-accent);font-weight:500;min-width:44px;text-align:right">${sgd((Number(o.cost)||0)*c.mo)}</span>
+      </div>
+    </div>`).join("")}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;padding-top:6px;border-top:1.5px solid var(--border-strong)">
+      <span style="font-size:11px;font-weight:600">Total overhead</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span style="font-size:11px;color:var(--text-muted)">${sgd(s.fixedCostMonthly)}/mo</span>
+        <span style="font-size:12px;font-weight:700;color:var(--text-accent)">${sgd(s.fixedCost)}</span>
+      </div>
+    </div>`;
+  return`
+    ${lpSection("params","#3b82f6","Course parameters",paramsHtml,st)}
+    ${lpSection("inputs","#8b5cf6","Simulation inputs",simHtml,st)}
+    ${lpSection("actual","#f59e0b","Actual performance",actHtml,st)}
+    ${lpSection("overhead","#ef4444","Fixed overhead ($/month)",ohHtml,st)}`;
 }
 
-function buildHero(s,st){
-  const beColor=s.beStu<=10?"var(--text-success)":"var(--text-warning)";
-  return[
-    {lbl:"Breakeven",val:s.beStu+" students",color:beColor},
-    {lbl:"Planned profit",val:sgd(s.pProfit),color:s.pProfit>=0?"var(--text-success)":"var(--text-danger)"},
-    {lbl:"Planned margin",val:fp(s.pMgn),color:s.pMgn>=0.15?"var(--text-success)":"var(--text-warning)"},
-    {lbl:"Total cost / run",val:sgd(s.totalCost),color:"var(--text-primary)"},
-  ].map(({lbl,val,color})=>`<div class="hero"><div class="hlbl">${lbl}</div><div class="hval" style="color:${color}">${val}</div></div>`).join("");
+function buildKPIBar(s,st){
+  const kpi=(lbl,val,col)=>`<div class="kpi"><div class="kpi-lbl">${lbl}</div><div class="kpi-val" style="color:${col}">${val}</div></div>`;
+  return`
+    ${kpi("Breakeven",s.beStu+" stu",s.beStu<=st.plan?"var(--text-success)":"var(--text-warning)")}
+    <div class="kpi-div"></div>
+    ${kpi("Planned profit",sgd(s.pProfit),s.pProfit>=0?"var(--text-success)":"var(--text-danger)")}
+    <div class="kpi-div"></div>
+    ${kpi("Margin",fp(s.pMgn),s.pMgn>=0.15?"var(--text-success)":s.pMgn>=0?"var(--text-warning)":"var(--text-danger)")}
+    <div class="kpi-div"></div>
+    ${kpi("Total cost",sgd(s.totalCost),"var(--text-danger)")}`;
+}
+
+function buildAIPanel(st){
+  const msgs=st.aiMessages;
+  const hasKey=!!st.aiKey;
+  return`
+  <div id="ai-panel" class="ai-panel${st.aiOpen?" open":""}">
+    <div class="ai-phdr">
+      <div class="ai-phdr-title">
+        <span style="font-size:16px">🤖</span>
+        <span style="font-weight:700;font-size:14px">Finance Advisor</span>
+        <span class="ai-model-badge">${st.aiModel||"gpt-4o-mini"}</span>
+      </div>
+      <div style="display:flex;gap:4px;align-items:center">
+        <button id="aiSettingsBtn" title="API settings" style="background:none;border:none;cursor:pointer;font-size:16px;padding:3px;color:var(--text-muted)">⚙</button>
+        <button id="aiClearBtn" title="Clear conversation" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--text-muted);padding:3px 6px">Clear</button>
+        <button id="aiCloseBtn" style="background:none;border:none;cursor:pointer;font-size:20px;line-height:1;color:var(--text-muted);padding:2px 5px">×</button>
+      </div>
+    </div>
+    ${st.aiSettingsOpen?`
+    <div class="ai-settings-panel">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:5px">OpenAI API key <span style="color:var(--green-800)">(stored locally only)</span></div>
+      <input type="password" id="aiKeyInput" value="${st.aiKey}" placeholder="sk-…" style="width:100%;font-size:12px;padding:6px 8px;margin-bottom:8px;border-radius:6px;border:1px solid var(--border)">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:5px">Model</div>
+      <select id="aiModelSel" style="width:100%;font-size:12px;padding:5px">
+        ${["gpt-4o-mini","gpt-4o","gpt-4-turbo","gpt-3.5-turbo"].map(m=>`<option value="${m}"${m===st.aiModel?" selected":""}>${m}</option>`).join("")}
+      </select>
+      ${!hasKey?`<div style="margin-top:8px;font-size:11px;color:var(--amber-800);background:var(--amber-100);padding:6px 8px;border-radius:6px">Enter your OpenAI API key above to enable the AI advisor.</div>`:""}
+    </div>`:""}
+    ${msgs.length===0&&!st.aiThinking?`
+    <div class="ai-empty">
+      <div style="font-size:24px;margin-bottom:8px">💬</div>
+      Ask me anything about the current course financials
+    </div>`:""}
+    ${msgs.length===0?`
+    <div class="ai-chips" id="aiChips">
+      <button class="ai-chip" data-q="What's driving the breakeven number so high?">Why is breakeven high?</button>
+      <button class="ai-chip" data-q="How can I improve the planned profit margin for this course?">Improve margins?</button>
+      <button class="ai-chip" data-q="Is this overhead structure reasonable for a Singapore PE institution?">Is overhead OK?</button>
+      <button class="ai-chip" data-q="What discount rate would you recommend to stay profitable with 15 students?">Best discount rate?</button>
+    </div>`:""}
+    <div class="ai-msgs" id="aiMsgs">
+      ${msgs.map(m=>`
+      <div class="ai-msg ${m.role}">
+        <div class="ai-bubble">${m.content.replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>")}</div>
+      </div>`).join("")}
+      ${st.aiThinking?`<div class="ai-msg assistant"><div class="ai-bubble" style="padding:10px 14px"><div class="ai-thinking"><div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div></div></div></div>`:""}
+    </div>
+    <div class="ai-input-row">
+      <input type="text" id="aiInput" placeholder="Ask about this course's financials…" style="flex:1;font-size:12px;padding:7px 10px;border-radius:8px;border:1px solid var(--border)">
+      <button id="aiSendBtn" class="ai-send-btn"${!hasKey?" disabled title='Add API key in ⚙ settings'":" title='Send (Enter)'"}>Send</button>
+    </div>
+  </div>
+  <button id="aiFloatBtn" class="ai-float${st.aiOpen?" hidden":""}" title="Finance AI Advisor">💬</button>`;
+}
+
+function getSimContext(s,st){
+  const c=s.c;
+  return`You are a financial advisor embedded in United Ceres College's (UCC) course budget simulator. UCC is a Singapore private education institution (PEI).
+
+Your role: Help staff understand, analyse, and improve course financials. Be concise, practical, and actionable. Use Singapore education context where relevant (CPE, EduTrust, FPS, GST 9%, agent-driven international student recruitment).
+
+CURRENT SIMULATION STATE:
+Course: ${c.name} (${c.abbr}) | Category: ${c.cat}
+Duration: ${c.mo} months | Contact hours: ${c.hrs} hrs | Fee/hr: $${(c.fee/c.hrs).toFixed(2)}/hr
+
+Fee structure (per student):
+  Course fee: $${c.fee} | Material: $${c.mat} | Exam/Assign: $${c.exam} | Admin: $${c.admin}
+  Total fee/student: $${s.totalFee} | Application fee: $${c.app}
+
+Cost structure (per run):
+  Teacher rate: $${st.tf}/hr | Contact hours used: ${st.cp}% of ${c.hrs} hrs
+  Teaching cost: $${Math.round(s.teachCost)}
+  Fixed overhead: $${Math.round(s.fixedCostMonthly)}/mo × ${c.mo} months = $${Math.round(s.fixedCost)}
+  Total cost per run: $${Math.round(s.totalCost)}
+
+Pricing / deductions:
+  Discount: ${st.disc}% | Agent commission: ${st.agent}% (on course fee) | University commission: ${st.uni}%
+  Net revenue/student (after all deductions): $${Math.round(s.totalNet)}
+
+Financial outcomes (planned: ${st.plan} students):
+  Breakeven: ${s.beStu} students | Gap to BE: ${st.plan-s.beStu} students
+  Planned net revenue: $${Math.round(s.pTotal)} | Planned profit: $${Math.round(s.pProfit)} (${(s.pMgn*100).toFixed(1)}% margin)
+  Profit/month: $${Math.round(s.pProfit/c.mo)}/mo
+
+Actual (${st.act} students):
+  Actual profit: $${Math.round(s.aProfit)} (${(s.aMgn*100).toFixed(1)}% margin) | Variance vs planned: $${Math.round(s.varProfit)}`;
+}
+
+async function sendToAI(userMsg,s,st){
+  if(!ST.aiKey){
+    return"Please add your OpenAI API key in ⚙ Settings to enable AI assistance.";
+  }
+  ST.aiMessages.push({role:"user",content:userMsg});
+  const messages=[{role:"system",content:getSimContext(s,st)},...ST.aiMessages];
+  try{
+    const res=await fetch("https://api.openai.com/v1/chat/completions",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+ST.aiKey},
+      body:JSON.stringify({model:ST.aiModel||"gpt-4o-mini",messages,max_tokens:700,temperature:0.7})
+    });
+    if(!res.ok){
+      const err=await res.json().catch(()=>({}));
+      throw new Error(err.error?.message||"API error "+res.status);
+    }
+    const data=await res.json();
+    const reply=data.choices[0].message.content;
+    ST.aiMessages.push({role:"assistant",content:reply});
+    return reply;
+  }catch(e){
+    ST.aiMessages.pop();
+    throw e;
+  }
 }
 
 function render(){
   const s=calc(ST);
-  const tabs=["overview","sensitivity","ulec","compare","feecalc"];
-  const tlbls=["Overview","Sensitivity","ULEC subcontract",`Compare (${ST.saved.length})`,"Fee calculator"];
+  const tabs=["overview","sensitivity","ulec","compare","pricelist","feecalc"];
+  const tlbls=["Overview","Sensitivity","ULEC subcontract",`Scenarios (${ST.saved.length})`,"Price List","Fee Calculator"];
   document.getElementById("app").innerHTML=`
   <div class="hdr">
-    <div>
-      <div style="font-size:10px;font-weight:500;color:var(--text-accent);text-transform:uppercase;letter-spacing:.1em">United Ceres College</div>
-      <div style="font-size:17px;font-weight:500">Course budget simulator</div>
+    <div class="hdr-brand">
+      <div class="hdr-label">United Ceres College</div>
+      <div class="hdr-title">Course Budget Simulator</div>
     </div>
-    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-      <input id="sName" placeholder="Scenario name…" value="${ST.sName}" style="font-size:12px;width:130px">
-      <button id="saveSc" style="font-size:12px;padding:5px 12px">Save</button>
-      <button id="exportBtn" title="Export all data as JSON" style="font-size:11px;padding:5px 9px">⬇ Export</button>
-      <label id="importLbl" title="Import data from JSON" style="font-size:11px;padding:5px 9px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.5);border-radius:6px;cursor:pointer;color:#fff;font-weight:500">⬆ Import<input id="importFile" type="file" accept=".json" style="display:none"></label>
+    <div class="hdr-actions">
+      <input id="sName" placeholder="Scenario name…" value="${ST.sName}">
+      <button id="saveSc" class="hdr-btn primary">Save</button>
+      <button id="exportBtn" class="hdr-btn" title="Export all data as JSON">⬇ Export</button>
+      <label class="hdr-btn" style="cursor:pointer" title="Import data from JSON">⬆ Import<input id="importFile" type="file" accept=".json" style="display:none"></label>
     </div>
   </div>
   <div class="subhdr">
-    <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:12px;color:var(--text-secondary)">Course</span>
-      <select id="coursesel" style="font-size:12px;min-width:296px">${buildCourseSelector(ST.ci)}</select>
-    </div>
-    <div class="hero-bar">${buildHero(s,ST)}</div>
+    <span class="course-label">Course</span>
+    <select id="coursesel">${buildCourseSelector(ST.ci)}</select>
+    <div class="kpi-bar">${buildKPIBar(s,ST)}</div>
   </div>
   <div class="body">
-    <div class="lp" id="lp">${buildLP(ST)}</div>
+    <div class="lp">${buildLP(ST)}</div>
     <div class="rp">
-      <div class="tabs">${tabs.map((t,i)=>`<button class="tab${ST.tab===t?" on":""}" data-tab="${t}">${tlbls[i]}</button>`).join("")}</div>
+      <div class="tabs-wrap">
+        <div class="tabs">${tabs.map((t,i)=>`<button class="tab${ST.tab===t?" on":""}" data-tab="${t}">${tlbls[i]}</button>`).join("")}</div>
+      </div>
       <div id="rpcontent">${
         ST.tab==="overview"?renderOverview(s,ST):
         ST.tab==="sensitivity"?renderSens(s,ST):
         ST.tab==="ulec"?renderULEC(s,ST):
         ST.tab==="compare"?renderCompare(ST.saved):
+        ST.tab==="pricelist"?renderPriceList():
         renderFeeCalc(ST)
       }</div>
     </div>
-  </div>`;
-  bindEvents();
+  </div>
+  ${buildAIPanel(ST)}`;
+  bindEvents(s);
+  if(ST.aiOpen){const msgs=document.getElementById("aiMsgs");if(msgs)msgs.scrollTop=msgs.scrollHeight;}
 }
 
-function bindEvents(){
-  function save_render(){saveToStorage();render();}
+function bindEvents(s){
+  const save_render=()=>{saveToStorage();render();};
 
   document.getElementById("coursesel").addEventListener("change",e=>{ST.ci=parseInt(e.target.value);save_render();});
   document.getElementById("sName").addEventListener("input",e=>{ST.sName=e.target.value;});
   document.getElementById("saveSc").addEventListener("click",()=>{
-    const c=COURSES[ST.ci],s=calc(ST);
+    const c=COURSES[ST.ci],sc=calc(ST);
     const name=ST.sName.trim()||`${c.abbr} — ${new Date().toLocaleDateString("en-GB")}`;
-    ST.saved.push({name,course:c.name,disc:ST.disc,agent:ST.agent,plan:ST.plan,be:s.beStu,cost:s.totalCost,netRev:s.pTotal,profit:s.pProfit,mgn:s.pMgn});
+    ST.saved.push({name,course:c.name,disc:ST.disc,agent:ST.agent,plan:ST.plan,be:sc.beStu,cost:sc.totalCost,netRev:sc.pTotal,profit:sc.pProfit,mgn:sc.pMgn});
     ST.sName="";save_render();
   });
   document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",e=>{ST.tab=e.target.dataset.tab;save_render();}));
   const nums=["disc","agent","uni","tf","cp","plan","act","aDisc","aAgent","aUni"];
-  nums.forEach(id=>{
-    const el=document.getElementById(id);
-    if(el)el.addEventListener("change",e=>{ST[id]=parseFloat(e.target.value)||0;save_render();});
-  });
+  nums.forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener("change",e=>{ST[id]=parseFloat(e.target.value)||0;save_render();});});
   const ulec=document.getElementById("ulecMgmt");
   if(ulec)ulec.addEventListener("change",e=>{ST.ulecMgmt=parseFloat(e.target.value)||0;save_render();});
-  document.querySelectorAll("[data-oh]").forEach(inp=>inp.addEventListener("change",e=>{
-    ST.oh[parseInt(e.target.dataset.oh)].cost=parseFloat(e.target.value)||0;save_render();
-  }));
-  document.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",e=>{
-    ST.saved.splice(parseInt(e.target.dataset.del),1);save_render();
-  }));
-  const ca=document.getElementById("clearAll");
-  if(ca)ca.addEventListener("click",()=>{ST.saved=[];save_render();});
-
-  const fcSel=document.getElementById("fcCoursesel");
-  if(fcSel)fcSel.addEventListener("change",e=>{ST.fcCi=parseInt(e.target.value);save_render();});
-
-  document.querySelectorAll("input[name='fcSchol']").forEach(r=>r.addEventListener("change",e=>{
-    ST.fcSchol=parseInt(e.target.value);save_render();
-  }));
-
+  document.querySelectorAll("[data-oh]").forEach(inp=>inp.addEventListener("change",e=>{ST.oh[parseInt(e.target.dataset.oh)].cost=parseFloat(e.target.value)||0;save_render();}));
+  document.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",e=>{ST.saved.splice(parseInt(e.target.dataset.del),1);save_render();}));
+  const ca=document.getElementById("clearAll");if(ca)ca.addEventListener("click",()=>{ST.saved=[];save_render();});
+  const fcSel=document.getElementById("fcCoursesel");if(fcSel)fcSel.addEventListener("change",e=>{ST.fcCi=parseInt(e.target.value);save_render();});
+  document.querySelectorAll("input[name='fcSchol']").forEach(r=>r.addEventListener("change",e=>{ST.fcSchol=parseInt(e.target.value);save_render();}));
   document.querySelectorAll("[data-pci]").forEach(inp=>inp.addEventListener("change",e=>{
-    const i=parseInt(e.target.dataset.pci);
-    const field=e.target.dataset.pf;
-    COURSES[i][field]=parseFloat(e.target.value)||0;
-    save_render();
+    const i=parseInt(e.target.dataset.pci),field=e.target.dataset.pf;
+    COURSES[i][field]=parseFloat(e.target.value)||0;save_render();
+  }));
+  const rp=document.getElementById("resetPrices");if(rp)rp.addEventListener("click",()=>{DEFAULTS.forEach((d,i)=>{COURSES[i].fee=d.fee;COURSES[i].mat=d.mat;COURSES[i].exam=d.exam;COURSES[i].admin=d.admin;COURSES[i].hrs=d.hrs;COURSES[i].mo=d.mo;});save_render();});
+  document.getElementById("exportBtn").addEventListener("click",exportData);
+  document.getElementById("importFile").addEventListener("change",e=>{if(e.target.files[0])importData(e.target.files[0]);});
+
+  /* LP section toggles */
+  document.querySelectorAll("[data-lpsec]").forEach(btn=>btn.addEventListener("click",e=>{
+    const k=e.currentTarget.dataset.lpsec;
+    ST.lpSections[k]=!ST.lpSections[k];
+    saveToStorage();
+    const body=btn.nextElementSibling;
+    const caret=btn.querySelector(".lp-sec-caret");
+    body.classList.toggle("hidden",!ST.lpSections[k]);
+    caret.classList.toggle("open",ST.lpSections[k]);
   }));
 
-  const rp=document.getElementById("resetPrices");
-  if(rp)rp.addEventListener("click",()=>{
-    DEFAULTS.forEach((d,i)=>{COURSES[i].fee=d.fee;COURSES[i].mat=d.mat;COURSES[i].exam=d.exam;COURSES[i].admin=d.admin;});
-    save_render();
-  });
+  /* AI panel */
+  const floatBtn=document.getElementById("aiFloatBtn");
+  const closeBtn=document.getElementById("aiCloseBtn");
+  const settingsBtn=document.getElementById("aiSettingsBtn");
+  const clearBtn=document.getElementById("aiClearBtn");
+  const sendBtn=document.getElementById("aiSendBtn");
+  const aiInput=document.getElementById("aiInput");
+  const keyInp=document.getElementById("aiKeyInput");
+  const modelSel=document.getElementById("aiModelSel");
 
-  document.getElementById("exportBtn").addEventListener("click",exportData);
-  document.getElementById("importFile").addEventListener("change",e=>{
-    if(e.target.files[0])importData(e.target.files[0]);
-  });
+  if(floatBtn)floatBtn.addEventListener("click",()=>{ST.aiOpen=true;render();});
+  if(closeBtn)closeBtn.addEventListener("click",()=>{ST.aiOpen=false;save_render();});
+  if(settingsBtn)settingsBtn.addEventListener("click",()=>{ST.aiSettingsOpen=!ST.aiSettingsOpen;render();});
+  if(clearBtn)clearBtn.addEventListener("click",()=>{ST.aiMessages=[];ST.aiThinking=false;render();});
+  if(keyInp)keyInp.addEventListener("change",e=>{ST.aiKey=e.target.value.trim();save_render();});
+  if(modelSel)modelSel.addEventListener("change",e=>{ST.aiModel=e.target.value;save_render();});
+
+  document.querySelectorAll(".ai-chip").forEach(c=>c.addEventListener("click",e=>doAISend(e.target.dataset.q,s)));
+  if(aiInput){
+    aiInput.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();doAISend(aiInput.value,s);}});
+  }
+  if(sendBtn)sendBtn.addEventListener("click",()=>{if(aiInput)doAISend(aiInput.value,s);});
+}
+
+async function doAISend(msg,s){
+  msg=(msg||"").trim();
+  if(!msg)return;
+  const inp=document.getElementById("aiInput");
+  if(inp)inp.value="";
+  ST.aiThinking=true;
+  render();
+  try{
+    await sendToAI(msg,s,ST);
+  }catch(e){
+    ST.aiMessages.push({role:"assistant",content:"Error: "+e.message});
+  }
+  ST.aiThinking=false;
+  render();
+  const msgs=document.getElementById("aiMsgs");
+  if(msgs)msgs.scrollTop=msgs.scrollHeight;
 }
 
 function init(){loadFromStorage();render();}
-if(document.readyState==="loading"){
-  document.addEventListener("DOMContentLoaded",init);
-}else{
-  init();
-}
+if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",init);}else{init();}
 </script>
 </body>
 </html>
