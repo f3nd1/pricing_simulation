@@ -481,11 +481,13 @@ function renderWhatIf(s,st){
   }).join("");
   return`<div class="card">
     <div class="card-hdr"><div class="card-title">What-if: profit by number of students</div><span class="card-badge" style="background:var(--blue-100);color:var(--blue-700)">${sgd(net)} net / student</span></div>
-    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Each row = a different enrolment level. Net revenue per student is fixed at <strong>${sgd(net)}</strong>, total cost is fixed at <strong>${sgd(cost)}</strong> for this run — so profit = students × ${sgd(net)} − ${sgd(cost)}. Your <strong>breakeven</strong>, <strong>planned</strong> and <strong>actual</strong> levels are tagged. Change "Planned students" in the left panel to move the planned row.</div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">
+      <strong>How to read this:</strong> each student pays once at enrolment and takes the full ${c.mo}-month course. The total cost of ${sgd(cost)} covers the whole run regardless of student count. So profit = (students enrolled) × ${sgd(net)} − ${sgd(cost)}. <em>"Per month" is just the cohort size ÷ ${c.mo} — it is not a monthly recurring enrolment figure.</em>
+    </div>
     <div class="tbl-scroll"><table class="cptbl" style="min-width:520px">
       <thead><tr>
-        <th style="text-align:right">Students<br><span style="font-weight:400;text-transform:none">(total cohort)</span></th>
-        <th style="text-align:right">Per month<br><span style="font-weight:400;text-transform:none">(÷ ${c.mo} mo)</span></th>
+        <th style="text-align:right">Students enrolled<br><span style="font-weight:400;text-transform:none">(total for this run)</span></th>
+        <th style="text-align:right">Avg / month<br><span style="font-weight:400;text-transform:none">(÷ ${c.mo} mo, for reference)</span></th>
         <th style="text-align:right">Net revenue</th>
         <th style="text-align:right">Total cost</th>
         <th style="text-align:right">Profit / (loss)</th>
@@ -510,9 +512,9 @@ function renderOverview(s,st){
       <div class="kpi-card-sub">Teaching ${fp(teachPct)} · O/H ${fp(ohPct)}</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-card-lbl">Breakeven</div>
+      <div class="kpi-card-lbl">Breakeven — total enrolment</div>
       <div class="kpi-card-val" style="color:${s.beStu<=st.plan?"var(--text-success)":"var(--text-warning)"}">${s.beStu} <span style="font-size:13px;font-weight:400">students</span></div>
-      <div class="kpi-card-sub">≈ ${(s.beStu/c.mo).toFixed(1)}/month · over ${c.mo} mo</div>
+      <div class="kpi-card-sub">enrolled at start of this ${c.mo}-month run</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-card-lbl">Planned profit</div>
@@ -561,7 +563,7 @@ function renderOverview(s,st){
       ${Row("Margin",fp(s.pMgn),"")}
       ${Row("Revenue / month",sgd(s.pGross/c.mo),"")}
       ${Row("Profit / month",sgd(s.pProfit/c.mo),"")}
-      ${Row("Breakeven students",s.beStu+" students","acc")}
+      ${Row("Breakeven (total enrolment for this run)",s.beStu+" students","acc")}
     </div>
     <div class="card">
       <div class="card-hdr"><div class="card-title">Actual performance</div><span class="card-badge" style="background:${s.aProfit>=0?"var(--green-100)":"var(--red-100)"};color:${s.aProfit>=0?"var(--green-800)":"var(--red-700)"}">${st.act} students</span></div>
@@ -955,7 +957,7 @@ function buildLP(st){
 function buildKPIBar(s,st){
   const kpi=(lbl,val,col)=>`<div class="kpi"><div class="kpi-lbl">${lbl}</div><div class="kpi-val" style="color:${col}">${val}</div></div>`;
   return`
-    ${kpi("Breakeven",s.beStu+" stu",s.beStu<=st.plan?"var(--text-success)":"var(--text-warning)")}
+    ${kpi("BE (total enrol.)",s.beStu+" stu",s.beStu<=st.plan?"var(--text-success)":"var(--text-warning)")}
     <div class="kpi-div"></div>
     ${kpi("Planned profit",sgd(s.pProfit),s.pProfit>=0?"var(--text-success)":"var(--text-danger)")}
     <div class="kpi-div"></div>
