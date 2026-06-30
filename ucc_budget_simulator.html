@@ -844,12 +844,12 @@ function buildLP(st){
     ${NInput("tf","Teacher fee / hr",st.tf,5,null,null,"$")}
     ${NInput("cp","Contact hours %",st.cp,10,100,"%",null)}
     <div class="ni">
-      <div><span class="nilbl">Planned students</span><div style="font-size:10px;color:var(--text-muted)">total cohort · ≈ ${(st.plan/c.mo).toFixed(1)}/mo</div></div>
+      <div><span class="nilbl">Planned students (total)</span><div style="font-size:10px;color:var(--text-muted)">whole run · ≈ ${(st.plan/c.mo).toFixed(1)} per month</div></div>
       <div class="nigrp"><input type="number" id="plan" value="${st.plan}" min="0" step="1" style="width:66px;text-align:right;font-size:12px;padding:3px 6px"></div>
     </div>`;
   const actHtml=`
     <div class="ni">
-      <div><span class="nilbl">Actual students</span><div style="font-size:10px;color:var(--text-muted)">total cohort · ≈ ${(st.act/c.mo).toFixed(1)}/mo</div></div>
+      <div><span class="nilbl">Actual students (total)</span><div style="font-size:10px;color:var(--text-muted)">whole run · ≈ ${(st.act/c.mo).toFixed(1)} per month</div></div>
       <div class="nigrp"><input type="number" id="act" value="${st.act}" min="0" step="1" style="width:66px;text-align:right;font-size:12px;padding:3px 6px"></div>
     </div>
     ${NInput("aDisc","Actual discount %",st.aDisc,5,100,"%",null)}
