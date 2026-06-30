@@ -202,6 +202,60 @@ const ST={
 const sgd=n=>{const a=Math.abs(Math.round(n));const s="$"+a.toLocaleString();return n<0?"("+s+")":s;};
 const fp=n=>(n*100).toFixed(1)+"%";
 
+const LS_KEY="ucc_sim_v1";
+
+function saveToStorage(){
+  try{
+    const prices=COURSES.map(c=>({fee:c.fee,mat:c.mat,exam:c.exam,admin:c.admin}));
+    const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol}=ST;
+    localStorage.setItem(LS_KEY,JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol}));
+  }catch(e){}
+}
+
+function loadFromStorage(){
+  try{
+    const raw=localStorage.getItem(LS_KEY);
+    if(!raw)return;
+    const d=JSON.parse(raw);
+    if(d.prices&&d.prices.length===COURSES.length){
+      d.prices.forEach((p,i)=>{COURSES[i].fee=p.fee;COURSES[i].mat=p.mat;COURSES[i].exam=p.exam;COURSES[i].admin=p.admin;});
+    }
+    const nums=["ci","disc","agent","uni","tf","cp","plan","act","aDisc","aAgent","aUni","ulecMgmt","fcCi","fcSchol"];
+    nums.forEach(k=>{if(d[k]!==undefined)ST[k]=d[k];});
+    if(Array.isArray(d.saved))ST.saved=d.saved;
+    if(d.tab)ST.tab=d.tab;
+    if(Array.isArray(d.oh)&&d.oh.length===ST.oh.length)ST.oh=d.oh;
+  }catch(e){}
+}
+
+function exportData(){
+  const prices=COURSES.map(c=>({fee:c.fee,mat:c.mat,exam:c.exam,admin:c.admin}));
+  const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,saved,fcCi,fcSchol}=ST;
+  const blob=new Blob([JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,saved,fcCi,fcSchol},null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="ucc_simulator_data.json";
+  a.click();
+}
+
+function importData(file){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const d=JSON.parse(e.target.result);
+      if(d.prices&&d.prices.length===COURSES.length){
+        d.prices.forEach((p,i)=>{COURSES[i].fee=p.fee;COURSES[i].mat=p.mat;COURSES[i].exam=p.exam;COURSES[i].admin=p.admin;});
+      }
+      const nums=["ci","disc","agent","uni","tf","cp","plan","act","aDisc","aAgent","aUni","ulecMgmt","fcCi","fcSchol"];
+      nums.forEach(k=>{if(d[k]!==undefined)ST[k]=d[k];});
+      if(Array.isArray(d.saved))ST.saved=d.saved;
+      if(Array.isArray(d.oh)&&d.oh.length===ST.oh.length)ST.oh=d.oh;
+      saveToStorage();render();
+    }catch(err){alert("Invalid file — could not import data.");}
+  };
+  reader.readAsText(file);
+}
+
 function calc(st){
   const c=COURSES[st.ci];
   const totalFee=c.fee+c.mat+c.exam+c.admin;
@@ -610,9 +664,11 @@ function render(){
       <div style="font-size:10px;font-weight:500;color:var(--text-accent);text-transform:uppercase;letter-spacing:.1em">United Ceres College</div>
       <div style="font-size:17px;font-weight:500">Course budget simulator</div>
     </div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <input id="sName" placeholder="Scenario name…" value="${ST.sName}" style="font-size:12px;width:148px">
-      <button id="saveSc" style="font-size:12px;padding:5px 12px">Save scenario</button>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <input id="sName" placeholder="Scenario name…" value="${ST.sName}" style="font-size:12px;width:130px">
+      <button id="saveSc" style="font-size:12px;padding:5px 12px">Save</button>
+      <button id="exportBtn" title="Export all data as JSON" style="font-size:11px;padding:5px 9px">⬇ Export</button>
+      <label id="importLbl" title="Import data from JSON" style="font-size:11px;padding:5px 9px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.5);border-radius:6px;cursor:pointer;color:#fff;font-weight:500">⬆ Import<input id="importFile" type="file" accept=".json" style="display:none"></label>
     </div>
   </div>
   <div class="subhdr">
@@ -639,56 +695,64 @@ function render(){
 }
 
 function bindEvents(){
-  document.getElementById("coursesel").addEventListener("change",e=>{ST.ci=parseInt(e.target.value);render();});
+  function save_render(){saveToStorage();render();}
+
+  document.getElementById("coursesel").addEventListener("change",e=>{ST.ci=parseInt(e.target.value);save_render();});
   document.getElementById("sName").addEventListener("input",e=>{ST.sName=e.target.value;});
   document.getElementById("saveSc").addEventListener("click",()=>{
     const c=COURSES[ST.ci],s=calc(ST);
     const name=ST.sName.trim()||`${c.abbr} — ${new Date().toLocaleDateString("en-GB")}`;
     ST.saved.push({name,course:c.name,disc:ST.disc,agent:ST.agent,plan:ST.plan,be:s.beStu,cost:s.totalCost,netRev:s.pTotal,profit:s.pProfit,mgn:s.pMgn});
-    ST.sName="";render();
+    ST.sName="";save_render();
   });
-  document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",e=>{ST.tab=e.target.dataset.tab;render();}));
+  document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",e=>{ST.tab=e.target.dataset.tab;save_render();}));
   const nums=["disc","agent","uni","tf","cp","plan","act","aDisc","aAgent","aUni"];
   nums.forEach(id=>{
     const el=document.getElementById(id);
-    if(el)el.addEventListener("change",e=>{ST[id]=parseFloat(e.target.value)||0;render();});
+    if(el)el.addEventListener("change",e=>{ST[id]=parseFloat(e.target.value)||0;save_render();});
   });
   const ulec=document.getElementById("ulecMgmt");
-  if(ulec)ulec.addEventListener("change",e=>{ST.ulecMgmt=parseFloat(e.target.value)||0;render();});
+  if(ulec)ulec.addEventListener("change",e=>{ST.ulecMgmt=parseFloat(e.target.value)||0;save_render();});
   document.querySelectorAll("[data-oh]").forEach(inp=>inp.addEventListener("change",e=>{
-    ST.oh[parseInt(e.target.dataset.oh)].cost=parseFloat(e.target.value)||0;render();
+    ST.oh[parseInt(e.target.dataset.oh)].cost=parseFloat(e.target.value)||0;save_render();
   }));
   document.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",e=>{
-    ST.saved.splice(parseInt(e.target.dataset.del),1);render();
+    ST.saved.splice(parseInt(e.target.dataset.del),1);save_render();
   }));
   const ca=document.getElementById("clearAll");
-  if(ca)ca.addEventListener("click",()=>{ST.saved=[];render();});
+  if(ca)ca.addEventListener("click",()=>{ST.saved=[];save_render();});
 
   const fcSel=document.getElementById("fcCoursesel");
-  if(fcSel)fcSel.addEventListener("change",e=>{ST.fcCi=parseInt(e.target.value);render();});
+  if(fcSel)fcSel.addEventListener("change",e=>{ST.fcCi=parseInt(e.target.value);save_render();});
 
   document.querySelectorAll("input[name='fcSchol']").forEach(r=>r.addEventListener("change",e=>{
-    ST.fcSchol=parseInt(e.target.value);render();
+    ST.fcSchol=parseInt(e.target.value);save_render();
   }));
 
   document.querySelectorAll("[data-pci]").forEach(inp=>inp.addEventListener("change",e=>{
     const i=parseInt(e.target.dataset.pci);
     const field=e.target.dataset.pf;
     COURSES[i][field]=parseFloat(e.target.value)||0;
-    render();
+    save_render();
   }));
 
   const rp=document.getElementById("resetPrices");
   if(rp)rp.addEventListener("click",()=>{
     DEFAULTS.forEach((d,i)=>{COURSES[i].fee=d.fee;COURSES[i].mat=d.mat;COURSES[i].exam=d.exam;COURSES[i].admin=d.admin;});
-    render();
+    save_render();
+  });
+
+  document.getElementById("exportBtn").addEventListener("click",exportData);
+  document.getElementById("importFile").addEventListener("change",e=>{
+    if(e.target.files[0])importData(e.target.files[0]);
   });
 }
 
+function init(){loadFromStorage();render();}
 if(document.readyState==="loading"){
-  document.addEventListener("DOMContentLoaded",render);
+  document.addEventListener("DOMContentLoaded",init);
 }else{
-  render();
+  init();
 }
 </script>
 </body>
