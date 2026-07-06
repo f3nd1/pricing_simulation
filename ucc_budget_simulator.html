@@ -331,7 +331,8 @@ const ST={
   fcCi:0,fcSchol:0,
   aiKey:"",aiModel:"gpt-4o-mini",aiMessages:[],aiOpen:false,aiSettingsOpen:false,aiThinking:false,
   lpSections:{params:true,inputs:true,actual:false,overhead:true},
-  whatIfView:"table"
+  whatIfView:"table",
+  views:{costBreakdown:"bars",waterfall:"rows",sens:"table",ulec:"table",compare:"table",pricelist:"table",feecalc:"table"}
 };
 const sgd=n=>{const a=Math.abs(Math.round(n));const s="$"+a.toLocaleString();return n<0?"("+s+")":s;};
 const fp=n=>(n*100).toFixed(1)+"%";
@@ -340,8 +341,8 @@ const LS_KEY="ucc_sim_v3";
 function saveToStorage(){
   try{
     const prices=COURSES.map(c=>({fee:c.fee,mat:c.mat,exam:c.exam,admin:c.admin,hrs:c.hrs,mo:c.mo}));
-    const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView}=ST;
-    localStorage.setItem(LS_KEY,JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView}));
+    const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views}=ST;
+    localStorage.setItem(LS_KEY,JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views}));
   }catch(e){}
 }
 function loadFromStorage(){
@@ -366,6 +367,7 @@ function loadFromStorage(){
     if(Array.isArray(d.aiMessages))ST.aiMessages=d.aiMessages;
     if(d.lpSections)ST.lpSections={...ST.lpSections,...d.lpSections};
     if(d.whatIfView)ST.whatIfView=d.whatIfView;
+    if(d.views)ST.views={...ST.views,...d.views};
   }catch(e){}
 }
 function exportData(){
@@ -460,6 +462,12 @@ function sensColor(v){
   if(v<=10)return{bg:"var(--bg-warning)",color:"var(--text-warning)"};
   if(v<=15)return{bg:"#fed7aa",color:"#c2410c"};
   return{bg:"var(--bg-danger)",color:"var(--text-danger)"};
+}
+
+function viewToggle(key,opts){
+  // opts: [{val,label},...]
+  const cur=ST.views[key];
+  return`<div class="view-toggle">${opts.map(o=>`<button data-viewkey="${key}" data-viewval="${o.val}" class="${cur===o.val?"on":""}">${o.label}</button>`).join("")}</div>`;
 }
 
 function renderWhatIf(s,st){
@@ -627,6 +635,98 @@ function drawWhatIfChart(s,st){
     .on("mouseleave",()=>{tip.style("opacity",0);focusLine.attr("opacity",0);focusDot.attr("opacity",0);});
 }
 
+function chartFallback(el,msg){
+  el.innerHTML=`<div class="chart-fallback">📉 ${msg||"Chart requires D3.js, which failed to load."}</div>`;
+}
+
+function drawCostDonutChart(s,st){
+  const el=document.getElementById("costDonutChart");
+  if(!el)return;
+  el.innerHTML="";
+  if(typeof d3==="undefined")return chartFallback(el);
+  const data=[
+    {label:"Teaching",value:s.teachCost,color:"#3b82f6"},
+    {label:"Overhead",value:s.fixedCost,color:"#94a3b8"},
+  ].filter(d=>d.value>0);
+  const width=el.clientWidth||300,height=200,radius=Math.min(width,height)/2-10;
+  const svg=d3.select(el).append("svg").attr("width",width).attr("height",height);
+  const g=svg.append("g").attr("transform",`translate(${width/2},${height/2})`);
+  const pie=d3.pie().value(d=>d.value).sort(null);
+  const arc=d3.arc().innerRadius(radius*0.6).outerRadius(radius);
+  const arcHover=d3.arc().innerRadius(radius*0.6).outerRadius(radius+6);
+  const tip=d3.select(el).append("div").attr("class","whatif-chart-tip");
+  g.selectAll("path").data(pie(data)).enter().append("path")
+    .attr("d",arc).attr("fill",d=>d.data.color).attr("stroke","var(--surface-2)").attr("stroke-width",2)
+    .on("mousemove",function(event,d){
+      d3.select(this).transition().duration(120).attr("d",arcHover);
+      const pct=s.totalCost>0?d.data.value/s.totalCost:0;
+      tip.style("opacity",1).style("left",(event.offsetX+12)+"px").style("top",(event.offsetY-24)+"px")
+        .html(`<strong>${d.data.label}</strong><br>${sgd(d.data.value)} (${fp(pct)})`);
+    })
+    .on("mouseleave",function(){d3.select(this).transition().duration(120).attr("d",arc);tip.style("opacity",0);});
+  g.append("text").attr("text-anchor","middle").attr("dy","-.2em").attr("font-size",11).attr("fill","var(--text-muted)").text("Total cost");
+  g.append("text").attr("text-anchor","middle").attr("dy","1.1em").attr("font-size",15).attr("font-weight",700).attr("fill","var(--text-primary)").text(sgd(s.totalCost));
+}
+
+function drawWaterfallChart(s,st){
+  const el=document.getElementById("waterfallChart");
+  if(!el)return;
+  el.innerHTML="";
+  if(typeof d3==="undefined")return chartFallback(el);
+  const c=s.c;
+  const steps=[
+    {label:"Total fee",delta:s.totalFee,type:"start"},
+    {label:"Discount",delta:-(s.totalFee*st.disc/100),type:"neg"},
+    {label:"Agent comm.",delta:-s.agentPS,type:"neg"},
+    {label:"Uni comm.",delta:-s.uniPS,type:"neg"},
+    {label:"App fee",delta:c.app,type:"pos"},
+    {label:"Net revenue",delta:s.totalNet,type:"end"},
+  ];
+  let running=0;
+  const bars=steps.map((st_,i)=>{
+    if(st_.type==="start"){const b={...st_,from:0,to:st_.delta};running=st_.delta;return b;}
+    if(st_.type==="end"){return{...st_,from:0,to:st_.delta};}
+    const from=running,to=running+st_.delta;running=to;return{...st_,from,to};
+  });
+  const width=el.clientWidth||600,height=260;
+  const margin={top:20,right:16,bottom:56,left:64};
+  const innerW=Math.max(width-margin.left-margin.right,100),innerH=height-margin.top-margin.bottom;
+  const svg=d3.select(el).append("svg").attr("width",width).attr("height",height);
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
+  const x=d3.scaleBand().domain(bars.map((_,i)=>i)).range([0,innerW]).padding(0.32);
+  const allVals=bars.flatMap(b=>[b.from,b.to]);
+  const y=d3.scaleLinear().domain([Math.min(0,...allVals),Math.max(...allVals)]).nice().range([innerH,0]);
+  g.append("g").call(d3.axisLeft(y).ticks(5).tickSize(-innerW).tickFormat("")).call(sel=>sel.select(".domain").remove())
+    .selectAll("line").attr("stroke","var(--border)").attr("stroke-dasharray","2,3");
+  const colorFor=t=>t==="neg"?"#dc2626":t==="pos"?"#16a34a":"#2563eb";
+  const tip=d3.select(el).append("div").attr("class","whatif-chart-tip");
+  g.selectAll("rect").data(bars).enter().append("rect")
+    .attr("x",(d,i)=>x(i)).attr("width",x.bandwidth())
+    .attr("y",d=>y(Math.max(d.from,d.to))).attr("height",d=>Math.abs(y(d.from)-y(d.to)))
+    .attr("fill",d=>colorFor(d.type)).attr("rx",3)
+    .on("mousemove",function(event,d){
+      tip.style("opacity",1).style("left",(event.offsetX+10)+"px").style("top",(event.offsetY-30)+"px")
+        .html(`<strong>${d.label}</strong><br>${sgd(d.type==="neg"?-Math.abs(d.delta):d.delta)}`);
+    })
+    .on("mouseleave",()=>tip.style("opacity",0));
+  // connector lines
+  for(let i=0;i<bars.length-1;i++){
+    const yv=y(bars[i].to);
+    g.append("line").attr("x1",x(i)+x.bandwidth()).attr("x2",x(i+1))
+      .attr("y1",yv).attr("y2",yv).attr("stroke","var(--border-strong)").attr("stroke-dasharray","2,2");
+  }
+  g.selectAll(".val-lbl").data(bars).enter().append("text")
+    .attr("x",(d,i)=>x(i)+x.bandwidth()/2).attr("y",d=>y(Math.max(d.from,d.to))-6)
+    .attr("text-anchor","middle").attr("font-size",10).attr("font-weight",600)
+    .attr("fill",d=>colorFor(d.type)).text(d=>sgd(d.type==="end"||d.type==="start"?d.to:d.delta));
+  g.append("g").attr("transform",`translate(0,${innerH})`)
+    .call(d3.axisBottom(x).tickFormat(i=>bars[i].label).tickSize(0))
+    .selectAll("text").attr("font-size",10).attr("fill","var(--text-muted)")
+    .attr("transform","rotate(-18)").style("text-anchor","end");
+  g.selectAll(".domain").attr("stroke","var(--border-strong)");
+  g.append("line").attr("x1",0).attr("x2",innerW).attr("y1",y(0)).attr("y2",y(0)).attr("stroke","var(--border-strong)");
+}
+
 function renderOverview(s,st){
   const c=s.c;
   const teachPct=s.totalCost>0?s.teachCost/s.totalCost:0;
@@ -657,27 +757,43 @@ function renderOverview(s,st){
   ${renderWhatIf(s,st)}
   <div class="g2">
     <div class="card">
-      <div class="card-hdr"><div class="card-title">Cost breakdown</div><span class="card-badge" style="background:var(--red-100);color:var(--red-700)">${sgd(s.totalCost)} total</span></div>
+      <div class="card-hdr" style="justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:8px"><div class="card-title">Cost breakdown</div><span class="card-badge" style="background:var(--red-100);color:var(--red-700)">${sgd(s.totalCost)} total</span></div>
+        ${viewToggle("costBreakdown",[{val:"bars",label:"▤ Bars"},{val:"donut",label:"◐ Donut"}])}
+      </div>
       ${Row("Teacher fee",sgd(s.teachCost),"",`$${st.tf}/hr × ${c.hrs} hrs × ${st.cp}%`)}
       ${Row("Fixed overhead",sgd(s.fixedCost),"",`$${sgd(s.fixedCostMonthly)}/mo × ${c.mo} mo`)}
       ${Row("Total cost (per run)",sgd(s.totalCost),"acc bold","",true)}
-      <div style="margin-top:10px;background:var(--surface-1);border-radius:8px;overflow:hidden;height:8px;display:flex">
-        <div style="width:${fp(teachPct)};background:#3b82f6;transition:width .3s"></div>
-        <div style="width:${fp(ohPct)};background:#94a3b8;transition:width .3s"></div>
+      <div style="${st.views.costBreakdown==="bars"?"":"display:none"}">
+        <div style="margin-top:10px;background:var(--surface-1);border-radius:8px;overflow:hidden;height:8px;display:flex">
+          <div style="width:${fp(teachPct)};background:#3b82f6;transition:width .3s"></div>
+          <div style="width:${fp(ohPct)};background:#94a3b8;transition:width .3s"></div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:6px;font-size:10px;color:var(--text-muted)">
+          <div><span style="display:inline-block;width:8px;height:8px;background:#3b82f6;border-radius:2px;margin-right:3px;vertical-align:middle"></span>Teaching ${fp(teachPct)}</div>
+          <div><span style="display:inline-block;width:8px;height:8px;background:#94a3b8;border-radius:2px;margin-right:3px;vertical-align:middle"></span>Overhead ${fp(ohPct)}</div>
+        </div>
       </div>
-      <div style="display:flex;gap:12px;margin-top:6px;font-size:10px;color:var(--text-muted)">
-        <div><span style="display:inline-block;width:8px;height:8px;background:#3b82f6;border-radius:2px;margin-right:3px;vertical-align:middle"></span>Teaching ${fp(teachPct)}</div>
-        <div><span style="display:inline-block;width:8px;height:8px;background:#94a3b8;border-radius:2px;margin-right:3px;vertical-align:middle"></span>Overhead ${fp(ohPct)}</div>
+      <div style="${st.views.costBreakdown==="donut"?"":"display:none"}">
+        <div id="costDonutChart" style="position:relative;width:100%;height:200px;margin-top:6px"></div>
       </div>
     </div>
     <div class="card">
-      <div class="card-hdr"><div class="card-title">Net revenue / student</div><span class="card-badge" style="background:var(--blue-100);color:var(--blue-700)">${sgd(s.totalNet)}/student</span></div>
-      ${Row("Total fee",sgd(s.totalFee),"")}
-      ${Row("Less: discount","("+sgd(s.totalFee*st.disc/100)+")","bad",`${st.disc}%`)}
-      ${Row("Less: agent commission","("+sgd(s.agentPS)+")","bad",`${st.agent}% on course fee`)}
-      ${Row("Less: university comm.","("+sgd(s.uniPS)+")","bad",`${st.uni}% on course fee`)}
-      ${Row("Add: application fee",sgd(c.app),"")}
-      ${Row("Net revenue / student",sgd(s.totalNet),"acc bold","",true)}
+      <div class="card-hdr" style="justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:8px"><div class="card-title">Net revenue / student</div><span class="card-badge" style="background:var(--blue-100);color:var(--blue-700)">${sgd(s.totalNet)}/student</span></div>
+        ${viewToggle("waterfall",[{val:"rows",label:"▤ Rows"},{val:"chart",label:"📊 Waterfall"}])}
+      </div>
+      <div style="${st.views.waterfall==="rows"?"":"display:none"}">
+        ${Row("Total fee",sgd(s.totalFee),"")}
+        ${Row("Less: discount","("+sgd(s.totalFee*st.disc/100)+")","bad",`${st.disc}%`)}
+        ${Row("Less: agent commission","("+sgd(s.agentPS)+")","bad",`${st.agent}% on course fee`)}
+        ${Row("Less: university comm.","("+sgd(s.uniPS)+")","bad",`${st.uni}% on course fee`)}
+        ${Row("Add: application fee",sgd(c.app),"")}
+        ${Row("Net revenue / student",sgd(s.totalNet),"acc bold","",true)}
+      </div>
+      <div style="${st.views.waterfall==="chart"?"":"display:none"}">
+        <div id="waterfallChart" style="position:relative;width:100%;height:260px"></div>
+      </div>
     </div>
   </div>
   <div class="g2">
@@ -739,23 +855,83 @@ function renderSens(s,st){
     }).join("")}
   </tr>`).join("");
   return`<div class="card">
-    <div class="card-hdr"><div class="card-title">Breakeven students — discount % vs agent %</div></div>
+    <div class="card-hdr" style="justify-content:space-between">
+      <div class="card-title">Breakeven students — discount % vs agent %</div>
+      ${viewToggle("sens",[{val:"table",label:"▤ Table"},{val:"heatmap",label:"🔥 Heatmap"}])}
+    </div>
     <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">University commission held at ${st.uni}% · Total cost: ${sgd(s.totalCost)} · Current highlighted in blue</div>
-    <div class="tbl-scroll"><table class="stbl">
-      <thead><tr>
-        <th>Disc ↓ / Agent →</th>
-        ${s.AR.map(a=>`<th style="color:var(--text-accent)">${a}%</th>`).join("")}
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table></div>
-    <div class="sleg">
-      ${[["≤5 — easy","var(--bg-success)","var(--text-success)"],["6–10 — manageable","var(--bg-warning)","var(--text-warning)"],["11–15 — challenging","#fed7aa","#c2410c"],[">15 — high risk","var(--bg-danger)","var(--text-danger)"]].map(([l,bg,col])=>`
-      <div style="display:flex;align-items:center;gap:5px">
-        <span class="svbox" style="background:${bg}"></span>
-        <span style="font-size:11px;color:${col}">${l}</span>
-      </div>`).join("")}
+    <div style="${st.views.sens==="table"?"":"display:none"}">
+      <div class="tbl-scroll"><table class="stbl">
+        <thead><tr>
+          <th>Disc ↓ / Agent →</th>
+          ${s.AR.map(a=>`<th style="color:var(--text-accent)">${a}%</th>`).join("")}
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+      <div class="sleg">
+        ${[["≤5 — easy","var(--bg-success)","var(--text-success)"],["6–10 — manageable","var(--bg-warning)","var(--text-warning)"],["11–15 — challenging","#fed7aa","#c2410c"],[">15 — high risk","var(--bg-danger)","var(--text-danger)"]].map(([l,bg,col])=>`
+        <div style="display:flex;align-items:center;gap:5px">
+          <span class="svbox" style="background:${bg}"></span>
+          <span style="font-size:11px;color:${col}">${l}</span>
+        </div>`).join("")}
+      </div>
+    </div>
+    <div style="${st.views.sens==="heatmap"?"":"display:none"}">
+      <div id="sensHeatmap" style="position:relative;width:100%;height:340px"></div>
     </div>
   </div>`;
+}
+
+function drawSensHeatmap(s,st){
+  const el=document.getElementById("sensHeatmap");
+  if(!el)return;
+  el.innerHTML="";
+  if(typeof d3==="undefined")return chartFallback(el);
+  const c=s.c,u=st.uni/100;
+  const discRange=d3.range(0,41,2),agentRange=d3.range(0,51,2);
+  const beAt=(dv,av)=>{
+    const n=s.totalFee*(1-dv/100)-c.fee*(av/100)-c.fee*u+c.app+s.otherFees;
+    return n>0?s.totalCost/n:null;
+  };
+  const width=el.clientWidth||600,height=340;
+  const margin={top:16,right:70,bottom:44,left:56};
+  const innerW=Math.max(width-margin.left-margin.right,100),innerH=height-margin.top-margin.bottom;
+  const svg=d3.select(el).append("svg").attr("width",width).attr("height",height);
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
+  const x=d3.scaleBand().domain(agentRange).range([0,innerW]).padding(0.04);
+  const y=d3.scaleBand().domain(discRange).range([0,innerH]).padding(0.04);
+  const maxBE=Math.max(...discRange.flatMap(dv=>agentRange.map(av=>{const b=beAt(dv,av);return b&&isFinite(b)?Math.min(b,60):60;})));
+  const color=d3.scaleSequential(d3.interpolateRgbBasis(["#16a34a","#facc15","#dc2626"])).domain([0,Math.min(maxBE,40)]);
+  const tip=d3.select(el).append("div").attr("class","whatif-chart-tip");
+  const cells=[];
+  discRange.forEach(dv=>agentRange.forEach(av=>cells.push({dv,av,be:beAt(dv,av)})));
+  g.selectAll("rect").data(cells).enter().append("rect")
+    .attr("x",d=>x(d.av)).attr("y",d=>y(d.dv)).attr("width",x.bandwidth()).attr("height",y.bandwidth())
+    .attr("fill",d=>d.be==null?"var(--surface-1)":color(Math.min(d.be,40)))
+    .attr("stroke",d=>Math.round(d.dv)===Math.round(st.disc)&&Math.round(d.av)===Math.round(st.agent)?"#1d4ed8":"none")
+    .attr("stroke-width",d=>Math.round(d.dv)===Math.round(st.disc)&&Math.round(d.av)===Math.round(st.agent)?2.5:0)
+    .on("mousemove",function(event,d){
+      tip.style("opacity",1).style("left",(event.offsetX+12)+"px").style("top",(event.offsetY-30)+"px")
+        .html(`Disc ${d.dv}% · Agent ${d.av}%<br><strong>BE: ${d.be==null?"—":Math.ceil(d.be)+" students"}</strong>`);
+    })
+    .on("mouseleave",()=>tip.style("opacity",0));
+  g.append("g").attr("transform",`translate(0,${innerH})`)
+    .call(d3.axisBottom(x).tickValues(agentRange.filter((_,i)=>i%5===0)).tickFormat(d=>d+"%"))
+    .selectAll("text").attr("font-size",10).attr("fill","var(--text-muted)");
+  g.append("g").call(d3.axisLeft(y).tickValues(discRange.filter((_,i)=>i%2===0)).tickFormat(d=>d+"%"))
+    .selectAll("text").attr("font-size",10).attr("fill","var(--text-muted)");
+  g.selectAll(".domain,.tick line").attr("stroke","var(--border-strong)");
+  g.append("text").attr("x",innerW/2).attr("y",innerH+38).attr("text-anchor","middle").attr("font-size",11).attr("fill","var(--text-muted)").text("Agent commission %");
+  g.append("text").attr("transform","rotate(-90)").attr("x",-innerH/2).attr("y",-40).attr("text-anchor","middle").attr("font-size",11).attr("fill","var(--text-muted)").text("Discount %");
+  // legend gradient
+  const legG=svg.append("g").attr("transform",`translate(${width-margin.right+16},${margin.top})`);
+  const legId="sensLegGrad";
+  const defs=svg.append("defs");
+  const grad=defs.append("linearGradient").attr("id",legId).attr("x1","0").attr("x2","0").attr("y1","1").attr("y2","0");
+  d3.range(0,1.01,0.1).forEach(t=>grad.append("stop").attr("offset",(t*100)+"%").attr("stop-color",color(t*Math.min(maxBE,40))));
+  legG.append("rect").attr("width",14).attr("height",innerH).attr("fill",`url(#${legId})`).attr("rx",3);
+  legG.append("text").attr("x",18).attr("y",6).attr("font-size",9).attr("fill","var(--text-muted)").text("high");
+  legG.append("text").attr("x",18).attr("y",innerH).attr("font-size",9).attr("fill","var(--text-muted)").text("low BE");
 }
 
 function renderULEC(s,st){
@@ -842,21 +1018,83 @@ function renderULEC(s,st){
 
   <!-- What-if: sweep mgmt fee -->
   <div class="card">
-    <div class="card-hdr"><div class="card-title">What-if: UCC profit at different ULEC management fees</div><span class="card-badge" style="background:var(--amber-100);color:var(--amber-800)">Teaching ${sgd(s.ulecTeach)} fixed</span></div>
-    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Teaching fee is always ${sgd(s.ulecTeach)} regardless of mgmt fee. Adjust "Course mgmt fee / month" above to move the CURRENT row.</div>
-    <div class="tbl-scroll"><table class="cptbl" style="min-width:480px">
-      <thead><tr>
-        <th style="text-align:right">Mgmt fee/mo</th>
-        <th style="text-align:right">Mgmt total (${c.mo} mo)</th>
-        <th style="text-align:right">Total to ULEC</th>
-        <th style="text-align:right">UCC profit</th>
-        <th style="text-align:right">UCC margin</th>
-        <th style="text-align:right">Profit/mo</th>
-        <th></th>
-      </tr></thead>
-      <tbody>${whatIfRows}</tbody>
-    </table></div>
+    <div class="card-hdr" style="justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:8px"><div class="card-title">What-if: UCC profit at different ULEC management fees</div><span class="card-badge" style="background:var(--amber-100);color:var(--amber-800)">Teaching ${sgd(s.ulecTeach)} fixed</span></div>
+      ${viewToggle("ulec",[{val:"table",label:"▤ Table"},{val:"chart",label:"📈 Chart"}])}
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Teaching fee is always ${sgd(s.ulecTeach)} regardless of mgmt fee. Adjust "Course mgmt fee / month" above to move the CURRENT marker.</div>
+    <div style="${st.views.ulec==="table"?"":"display:none"}">
+      <div class="tbl-scroll"><table class="cptbl" style="min-width:480px">
+        <thead><tr>
+          <th style="text-align:right">Mgmt fee/mo</th>
+          <th style="text-align:right">Mgmt total (${c.mo} mo)</th>
+          <th style="text-align:right">Total to ULEC</th>
+          <th style="text-align:right">UCC profit</th>
+          <th style="text-align:right">UCC margin</th>
+          <th style="text-align:right">Profit/mo</th>
+          <th></th>
+        </tr></thead>
+        <tbody>${whatIfRows}</tbody>
+      </table></div>
+    </div>
+    <div style="${st.views.ulec==="chart"?"":"display:none"}">
+      <div id="ulecChart" style="position:relative;width:100%;height:300px"></div>
+    </div>
   </div>`;
+}
+
+function drawUlecChart(s,st){
+  const el=document.getElementById("ulecChart");
+  if(!el)return;
+  el.innerHTML="";
+  if(typeof d3==="undefined")return chartFallback(el);
+  const c=s.c;
+  const hiMgmt=Math.max(st.ulecMgmt*2,3000);
+  const width=el.clientWidth||600,height=300;
+  const margin={top:28,right:24,bottom:40,left:74};
+  const innerW=Math.max(width-margin.left-margin.right,100),innerH=height-margin.top-margin.bottom;
+  const profitAt=mgmt=>s.revPool-(s.ulecTeach+mgmt*c.mo);
+  const svg=d3.select(el).append("svg").attr("width",width).attr("height",height);
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
+  const x=d3.scaleLinear().domain([0,hiMgmt]).range([0,innerW]);
+  const yLo=Math.min(profitAt(hiMgmt),0),yHi=Math.max(profitAt(0),0);
+  const y=d3.scaleLinear().domain([yLo,yHi]).nice().range([innerH,0]);
+  g.append("g").call(d3.axisLeft(y).ticks(6).tickSize(-innerW).tickFormat("")).call(sel=>sel.select(".domain").remove())
+    .selectAll("line").attr("stroke","var(--border)").attr("stroke-dasharray","2,3");
+  g.append("line").attr("x1",0).attr("x2",innerW).attr("y1",y(0)).attr("y2",y(0)).attr("stroke","var(--border-strong)").attr("stroke-width",1.2);
+  const line=d3.line().x(d=>x(d.mgmt)).y(d=>y(d.profit));
+  const zeroMgmt=c.mo>0?(s.revPool-s.ulecTeach)/c.mo:null;
+  if(zeroMgmt!=null&&zeroMgmt>0&&zeroMgmt<hiMgmt){
+    g.append("path").datum([{mgmt:0,profit:profitAt(0)},{mgmt:zeroMgmt,profit:0}]).attr("fill","none").attr("stroke","#16a34a").attr("stroke-width",2.5).attr("d",line);
+    g.append("path").datum([{mgmt:zeroMgmt,profit:0},{mgmt:hiMgmt,profit:profitAt(hiMgmt)}]).attr("fill","none").attr("stroke","#dc2626").attr("stroke-width",2.5).attr("d",line);
+  }else{
+    const col=profitAt(hiMgmt)>=0?"#16a34a":"#dc2626";
+    g.append("path").datum([{mgmt:0,profit:profitAt(0)},{mgmt:hiMgmt,profit:profitAt(hiMgmt)}]).attr("fill","none").attr("stroke",col).attr("stroke-width",2.5).attr("d",line);
+  }
+  const px=x(st.ulecMgmt),py=y(profitAt(st.ulecMgmt));
+  g.append("line").attr("x1",px).attr("x2",px).attr("y1",0).attr("y2",innerH).attr("stroke","#2563eb").attr("stroke-width",1.3).attr("stroke-dasharray","4,3").attr("opacity",.7);
+  g.append("circle").attr("cx",px).attr("cy",py).attr("r",5).attr("fill","#2563eb").attr("stroke","#fff").attr("stroke-width",1.5);
+  g.append("text").attr("x",px).attr("y",-12).attr("text-anchor","middle").attr("font-size",10).attr("font-weight",700).attr("fill","#2563eb").text("CURRENT");
+  g.append("g").attr("transform",`translate(0,${innerH})`).call(d3.axisBottom(x).ticks(6).tickFormat(d=>"$"+d3.format(",.0f")(d)))
+    .selectAll("text").attr("font-size",10).attr("fill","var(--text-muted)");
+  g.append("g").call(d3.axisLeft(y).ticks(6).tickFormat(d=>"$"+d3.format(",.0f")(d)))
+    .selectAll("text").attr("font-size",10).attr("fill","var(--text-muted)");
+  g.selectAll(".domain,.tick line").attr("stroke","var(--border-strong)");
+  g.append("text").attr("x",innerW/2).attr("y",innerH+34).attr("text-anchor","middle").attr("font-size",11).attr("fill","var(--text-muted)").text("ULEC management fee ($/month)");
+  g.append("text").attr("transform","rotate(-90)").attr("x",-innerH/2).attr("y",-56).attr("text-anchor","middle").attr("font-size",11).attr("fill","var(--text-muted)").text("UCC profit / (loss)");
+  const tip=d3.select(el).append("div").attr("class","whatif-chart-tip");
+  const focusDot=g.append("circle").attr("r",4).attr("fill","var(--blue-600)").attr("stroke","#fff").attr("stroke-width",1.5).attr("opacity",0);
+  g.append("rect").attr("width",innerW).attr("height",innerH).attr("fill","transparent")
+    .on("mousemove",function(event){
+      const [mx]=d3.pointer(event);
+      const mgmt=Math.max(0,Math.min(hiMgmt,x.invert(mx)));
+      const profit=profitAt(mgmt);
+      const cx=x(mgmt),cy=y(profit);
+      focusDot.attr("cx",cx).attr("cy",cy).attr("opacity",1);
+      tip.style("opacity",1).style("left",Math.min(cx+margin.left+14,width-170)+"px").style("top",Math.max(cy+margin.top-40,4)+"px")
+        .html(`<strong>${sgd(Math.round(mgmt))}/mo mgmt fee</strong><br>UCC profit: <span style="color:${profit>=0?"var(--text-success)":"var(--text-danger)"};font-weight:700">${sgd(profit)}</span>`);
+    })
+    .on("mouseleave",()=>{tip.style("opacity",0);focusDot.attr("opacity",0);});
 }
 
 function renderCompare(saved){
@@ -885,16 +1123,61 @@ function renderCompare(saved){
     </div>
   </div>`:"";
   return`<div class="card">
-    <div class="card-hdr"><div class="card-title">Saved scenarios</div><span style="font-size:11px;color:var(--text-muted)">${saved.length} saved</span></div>
-    <div style="overflow-x:auto">
-      <table class="cptbl">
-        <thead><tr>${["Scenario","Course","Disc","Agent","Plan","BE","Cost","Profit","Margin",""].map(h=>`<th>${h}</th>`).join("")}</tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
+    <div class="card-hdr" style="justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:8px"><div class="card-title">Saved scenarios</div><span style="font-size:11px;color:var(--text-muted)">${saved.length} saved</span></div>
+      ${viewToggle("compare",[{val:"table",label:"▤ Table"},{val:"chart",label:"📊 Chart"}])}
     </div>
-    ${qcmp}
+    <div style="${ST.views.compare==="table"?"":"display:none"}">
+      <div style="overflow-x:auto">
+        <table class="cptbl">
+          <thead><tr>${["Scenario","Course","Disc","Agent","Plan","BE","Cost","Profit","Margin",""].map(h=>`<th>${h}</th>`).join("")}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      ${qcmp}
+    </div>
+    <div style="${ST.views.compare==="chart"?"":"display:none"}">
+      <div id="compareChart" style="position:relative;width:100%;height:${Math.max(260,saved.length*46+60)}px"></div>
+    </div>
     <button id="clearAll" style="margin-top:12px;font-size:11px;color:var(--text-danger);background:none;border:none;cursor:pointer">Clear all scenarios</button>
   </div>`;
+}
+
+function drawCompareChart(saved){
+  const el=document.getElementById("compareChart");
+  if(!el)return;
+  el.innerHTML="";
+  if(typeof d3==="undefined")return chartFallback(el);
+  const width=el.clientWidth||600,height=Math.max(260,saved.length*46+60);
+  const margin={top:16,right:70,bottom:30,left:120};
+  const innerW=Math.max(width-margin.left-margin.right,100),innerH=height-margin.top-margin.bottom;
+  const svg=d3.select(el).append("svg").attr("width",width).attr("height",height);
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
+  const y=d3.scaleBand().domain(saved.map((_,i)=>i)).range([0,innerH]).padding(0.3);
+  const maxAbs=Math.max(...saved.map(s=>Math.abs(s.profit)),1);
+  const x=d3.scaleLinear().domain([-maxAbs*1.1,maxAbs*1.1]).range([0,innerW]);
+  g.append("line").attr("x1",x(0)).attr("x2",x(0)).attr("y1",0).attr("y2",innerH).attr("stroke","var(--border-strong)");
+  const tip=d3.select(el).append("div").attr("class","whatif-chart-tip");
+  g.selectAll("rect").data(saved).enter().append("rect")
+    .attr("y",(d,i)=>y(i)).attr("height",y.bandwidth())
+    .attr("x",d=>x(Math.min(0,d.profit))).attr("width",d=>Math.abs(x(d.profit)-x(0)))
+    .attr("fill",d=>d.profit>=0?"#16a34a":"#dc2626").attr("rx",3)
+    .on("mousemove",function(event,d){
+      tip.style("opacity",1).style("left",(event.offsetX+12)+"px").style("top",(event.offsetY-24)+"px")
+        .html(`<strong>${d.name}</strong><br>Profit: ${sgd(d.profit)}<br>Margin: ${fp(d.mgn)} · BE: ${d.be} stu`);
+    })
+    .on("mouseleave",()=>tip.style("opacity",0));
+  g.selectAll(".ylabel").data(saved).enter().append("text")
+    .attr("x",-8).attr("y",(d,i)=>y(i)+y.bandwidth()/2).attr("dy",".35em").attr("text-anchor","end")
+    .attr("font-size",11).attr("fill","var(--text-secondary)")
+    .text(d=>d.name.length>16?d.name.slice(0,15)+"…":d.name);
+  g.selectAll(".vallabel").data(saved).enter().append("text")
+    .attr("x",d=>x(d.profit)+(d.profit>=0?6:-6)).attr("y",(d,i)=>y(i)+y.bandwidth()/2).attr("dy",".35em")
+    .attr("text-anchor",d=>d.profit>=0?"start":"end").attr("font-size",10).attr("font-weight",700)
+    .attr("fill",d=>d.profit>=0?"#16a34a":"#dc2626").text(d=>sgd(d.profit));
+  g.append("g").attr("transform",`translate(0,${innerH})`).call(d3.axisBottom(x).ticks(5).tickFormat(d=>"$"+d3.format(",.0f")(d)))
+    .selectAll("text").attr("font-size",9).attr("fill","var(--text-muted)");
+  g.selectAll(".domain,.tick line").attr("stroke","var(--border-strong)");
 }
 
 function renderPriceList(){
@@ -919,29 +1202,76 @@ function renderPriceList(){
     return catRows;
   });
   return`<div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px">
       <div class="card-hdr" style="margin-bottom:0"><div class="card-title">Editable price list — all courses</div></div>
-      <button id="resetPrices" style="font-size:11px;padding:4px 10px;color:var(--text-danger);border:1px solid var(--border);border-radius:6px;cursor:pointer;background:none">Reset to defaults</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        ${viewToggle("pricelist",[{val:"table",label:"▤ Table"},{val:"chart",label:"📊 $/hr Chart"}])}
+        <button id="resetPrices" style="font-size:11px;padding:4px 10px;color:var(--text-danger);border:1px solid var(--border);border-radius:6px;cursor:pointer;background:none">Reset to defaults</button>
+      </div>
     </div>
     <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Edit hours, months, or any fee — all tabs recalculate immediately. Hours affect teaching cost; months affect overhead total. <strong>$/hr</strong> = course fee ÷ contact hours.</div>
-    <div style="overflow-x:auto;max-height:480px;overflow-y:auto">
-      <table class="pltbl">
-        <thead><tr>
-          <th>Category</th>
-          <th>Course</th>
-          <th style="text-align:right">Hrs</th>
-          <th style="text-align:right">Mo</th>
-          <th style="text-align:right">$/hr</th>
-          <th style="text-align:right">Course fee</th>
-          <th style="text-align:right">Material</th>
-          <th style="text-align:right">Exam/Assign.</th>
-          <th style="text-align:right">Admin</th>
-          <th style="text-align:right">Total/student</th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
+    <div style="${ST.views.pricelist==="table"?"":"display:none"}">
+      <div style="overflow-x:auto;max-height:480px;overflow-y:auto">
+        <table class="pltbl">
+          <thead><tr>
+            <th>Category</th>
+            <th>Course</th>
+            <th style="text-align:right">Hrs</th>
+            <th style="text-align:right">Mo</th>
+            <th style="text-align:right">$/hr</th>
+            <th style="text-align:right">Course fee</th>
+            <th style="text-align:right">Material</th>
+            <th style="text-align:right">Exam/Assign.</th>
+            <th style="text-align:right">Admin</th>
+            <th style="text-align:right">Total/student</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>
+    <div style="${ST.views.pricelist==="chart"?"":"display:none"}">
+      <div id="priceChart" style="position:relative;width:100%;height:${COURSES.length*22+80}px"></div>
     </div>
   </div>`;
+}
+
+function drawPriceChart(){
+  const el=document.getElementById("priceChart");
+  if(!el)return;
+  el.innerHTML="";
+  if(typeof d3==="undefined")return chartFallback(el);
+  const catColors={"English":"#3b82f6","Preparatory":"#7c3aed","Business":"#16a34a","Technology":"#d97706","Tourism & Hospitality":"#dc2626"};
+  const data=COURSES.map((c,i)=>({name:c.abbr,full:c.name,cat:c.cat,rate:c.hrs>0?c.fee/c.hrs:0}))
+    .sort((a,b)=>b.rate-a.rate);
+  const width=el.clientWidth||600,height=data.length*22+80;
+  const margin={top:28,right:60,bottom:16,left:80};
+  const innerW=Math.max(width-margin.left-margin.right,100),innerH=height-margin.top-margin.bottom;
+  const svg=d3.select(el).append("svg").attr("width",width).attr("height",height);
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
+  const y=d3.scaleBand().domain(data.map(d=>d.name)).range([0,innerH]).padding(0.25);
+  const x=d3.scaleLinear().domain([0,d3.max(data,d=>d.rate)*1.1]).range([0,innerW]);
+  const tip=d3.select(el).append("div").attr("class","whatif-chart-tip");
+  g.selectAll("rect").data(data).enter().append("rect")
+    .attr("y",d=>y(d.name)).attr("height",y.bandwidth()).attr("x",0)
+    .attr("width",d=>x(d.rate)).attr("fill",d=>catColors[d.cat]||"#94a3b8").attr("rx",2)
+    .on("mousemove",function(event,d){
+      tip.style("opacity",1).style("left",(event.offsetX+12)+"px").style("top",(event.offsetY-20)+"px")
+        .html(`<strong>${d.full}</strong><br>${d.cat}<br>$${d.rate.toFixed(2)}/hr`);
+    })
+    .on("mouseleave",()=>tip.style("opacity",0));
+  g.selectAll(".vallabel").data(data).enter().append("text")
+    .attr("x",d=>x(d.rate)+5).attr("y",d=>y(d.name)+y.bandwidth()/2).attr("dy",".35em")
+    .attr("font-size",9).attr("fill","var(--text-muted)").text(d=>"$"+d.rate.toFixed(0));
+  g.append("g").call(d3.axisLeft(y)).selectAll("text").attr("font-size",9).attr("fill","var(--text-secondary)");
+  g.selectAll(".domain,.tick line").attr("stroke","var(--border-strong)");
+  const legend=svg.append("g").attr("transform",`translate(${margin.left},4)`);
+  let lx=0;
+  Object.entries(catColors).forEach(([cat,col])=>{
+    const grp=legend.append("g").attr("transform",`translate(${lx},0)`);
+    grp.append("rect").attr("width",8).attr("height",8).attr("fill",col).attr("rx",2);
+    grp.append("text").attr("x",12).attr("y",8).attr("font-size",9).attr("fill","var(--text-muted)").text(cat);
+    lx+=cat.length*5.6+28;
+  });
 }
 
 function renderFeeCalc(st){
@@ -990,22 +1320,70 @@ function renderFeeCalc(st){
       </div>
     </div>
     <div class="card">
-      <div class="card-hdr"><div class="card-title">Instalment plan — ${c.mo} months</div></div>
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Course fee spread over ${c.mo} monthly instalments. Other fees paid at enrolment.</div>
-      <div style="margin-bottom:8px">
-        <div class="instrow"><span style="font-size:12px;color:var(--text-secondary)">Application fee (upfront)</span><span style="font-size:13px;font-weight:500">${sgd(c.app)}</span></div>
-        <div class="instrow"><span style="font-size:12px;color:var(--text-secondary)">Other fees at enrolment (mat + exam + admin)</span><span style="font-size:13px;font-weight:500">${sgd(c.mat+c.exam+c.admin)}</span></div>
-        <div class="instrow" style="border-bottom:none"><span style="font-size:12px;color:var(--text-secondary)">GST on other fees</span><span style="font-size:13px;font-weight:500">${sgd(Math.round((c.mat+c.exam+c.admin)*0.09))}</span></div>
+      <div class="card-hdr" style="justify-content:space-between">
+        <div class="card-title">Instalment plan — ${c.mo} months</div>
+        ${viewToggle("feecalc",[{val:"table",label:"▤ List"},{val:"chart",label:"📊 Timeline"}])}
       </div>
-      <div style="border-top:1.5px solid var(--border-strong);padding-top:8px">
-        ${Array.from({length:c.mo},(_,i)=>`
-        <div class="instrow">
-          <span style="font-size:12px;color:var(--text-secondary)">Month ${i+1}</span>
-          <span style="font-size:13px;color:var(--text-accent);font-weight:600">${sgd(Math.round(instAmt*1.09))}<span style="font-size:10px;color:var(--text-muted);font-weight:400"> incl. GST</span></span>
-        </div>`).join("")}
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Course fee spread over ${c.mo} monthly instalments. Other fees paid at enrolment.</div>
+      <div style="${st.views.feecalc==="table"?"":"display:none"}">
+        <div style="margin-bottom:8px">
+          <div class="instrow"><span style="font-size:12px;color:var(--text-secondary)">Application fee (upfront)</span><span style="font-size:13px;font-weight:500">${sgd(c.app)}</span></div>
+          <div class="instrow"><span style="font-size:12px;color:var(--text-secondary)">Other fees at enrolment (mat + exam + admin)</span><span style="font-size:13px;font-weight:500">${sgd(c.mat+c.exam+c.admin)}</span></div>
+          <div class="instrow" style="border-bottom:none"><span style="font-size:12px;color:var(--text-secondary)">GST on other fees</span><span style="font-size:13px;font-weight:500">${sgd(Math.round((c.mat+c.exam+c.admin)*0.09))}</span></div>
+        </div>
+        <div style="border-top:1.5px solid var(--border-strong);padding-top:8px">
+          ${Array.from({length:c.mo},(_,i)=>`
+          <div class="instrow">
+            <span style="font-size:12px;color:var(--text-secondary)">Month ${i+1}</span>
+            <span style="font-size:13px;color:var(--text-accent);font-weight:600">${sgd(Math.round(instAmt*1.09))}<span style="font-size:10px;color:var(--text-muted);font-weight:400"> incl. GST</span></span>
+          </div>`).join("")}
+        </div>
+      </div>
+      <div style="${st.views.feecalc==="chart"?"":"display:none"}">
+        <div id="feeTimelineChart" style="position:relative;width:100%;height:240px"></div>
       </div>
     </div>
   </div>`;
+}
+
+function drawFeeTimelineChart(st){
+  const el=document.getElementById("feeTimelineChart");
+  if(!el)return;
+  el.innerHTML="";
+  if(typeof d3==="undefined")return chartFallback(el);
+  const c=COURSES[st.fcCi];
+  const schol=st.fcSchol/100;
+  const discFee=c.fee-Math.round(c.fee*schol);
+  const instAmt=Math.round((discFee/c.mo)*1.09);
+  const enrolAmt=Math.round((c.app)+(c.mat+c.exam+c.admin)*1.09);
+  const points=[{label:"Enrolment",amt:enrolAmt,type:"enrol"},...Array.from({length:c.mo},(_,i)=>({label:"M"+(i+1),amt:instAmt,type:"inst"}))];
+  const width=el.clientWidth||600,height=240;
+  const margin={top:20,right:16,bottom:32,left:60};
+  const innerW=Math.max(width-margin.left-margin.right,100),innerH=height-margin.top-margin.bottom;
+  const svg=d3.select(el).append("svg").attr("width",width).attr("height",height);
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
+  const x=d3.scaleBand().domain(points.map((_,i)=>i)).range([0,innerW]).padding(0.3);
+  const y=d3.scaleLinear().domain([0,d3.max(points,d=>d.amt)*1.15]).nice().range([innerH,0]);
+  g.append("g").call(d3.axisLeft(y).ticks(5).tickSize(-innerW).tickFormat("")).call(sel=>sel.select(".domain").remove())
+    .selectAll("line").attr("stroke","var(--border)").attr("stroke-dasharray","2,3");
+  const tip=d3.select(el).append("div").attr("class","whatif-chart-tip");
+  g.selectAll("rect").data(points).enter().append("rect")
+    .attr("x",(d,i)=>x(i)).attr("width",x.bandwidth()).attr("y",d=>y(d.amt)).attr("height",d=>innerH-y(d.amt))
+    .attr("fill",d=>d.type==="enrol"?"#7c3aed":"#2563eb").attr("rx",3)
+    .on("mousemove",function(event,d){
+      tip.style("opacity",1).style("left",(event.offsetX+10)+"px").style("top",(event.offsetY-28)+"px")
+        .html(`<strong>${d.label}</strong><br>${sgd(d.amt)}${d.type==="inst"?" incl. GST":""}`);
+    })
+    .on("mouseleave",()=>tip.style("opacity",0));
+  g.selectAll(".vallabel").data(points).enter().append("text")
+    .attr("x",(d,i)=>x(i)+x.bandwidth()/2).attr("y",d=>y(d.amt)-6).attr("text-anchor","middle")
+    .attr("font-size",9).attr("font-weight",600).attr("fill",d=>d.type==="enrol"?"#7c3aed":"#2563eb").text(d=>sgd(d.amt));
+  g.append("g").attr("transform",`translate(0,${innerH})`).call(d3.axisBottom(x).tickFormat(i=>points[i].label).tickSize(0))
+    .selectAll("text").attr("font-size",9).attr("fill","var(--text-muted)");
+  g.append("g").call(d3.axisLeft(y).ticks(5).tickFormat(d=>"$"+d3.format(",.0f")(d))).selectAll("text").attr("font-size",9).attr("fill","var(--text-muted)");
+  g.selectAll(".domain,.tick line").attr("stroke","var(--border-strong)");
+  const total=points.reduce((s,p)=>s+p.amt,0);
+  svg.append("text").attr("x",width-margin.right).attr("y",14).attr("text-anchor","end").attr("font-size",10).attr("fill","var(--text-muted)").text(`Total: ${sgd(total)}`);
 }
 
 function buildCourseSelector(ci){
@@ -1247,7 +1625,16 @@ function render(){
   ${buildAIPanel(ST)}`;
   bindEvents(s);
   if(ST.aiOpen){const msgs=document.getElementById("aiMsgs");if(msgs)msgs.scrollTop=msgs.scrollHeight;}
-  if(ST.tab==="overview"&&ST.whatIfView==="chart")drawWhatIfChart(s,ST);
+  if(ST.tab==="overview"){
+    if(ST.whatIfView==="chart")drawWhatIfChart(s,ST);
+    if(ST.views.costBreakdown==="donut")drawCostDonutChart(s,ST);
+    if(ST.views.waterfall==="chart")drawWaterfallChart(s,ST);
+  }
+  if(ST.tab==="sensitivity"&&ST.views.sens==="heatmap")drawSensHeatmap(s,ST);
+  if(ST.tab==="ulec"&&ST.views.ulec==="chart")drawUlecChart(s,ST);
+  if(ST.tab==="compare"&&ST.views.compare==="chart")drawCompareChart(ST.saved);
+  if(ST.tab==="pricelist"&&ST.views.pricelist==="chart")drawPriceChart();
+  if(ST.tab==="feecalc"&&ST.views.feecalc==="chart")drawFeeTimelineChart(ST);
 }
 
 function bindEvents(s){
@@ -1293,6 +1680,13 @@ function bindEvents(s){
   /* What-if view toggle (table/chart) */
   document.querySelectorAll("[data-wiview]").forEach(btn=>btn.addEventListener("click",e=>{
     ST.whatIfView=e.currentTarget.dataset.wiview;
+    save_render();
+  }));
+
+  /* Generic table/chart view toggles (cost breakdown, waterfall, sensitivity, ULEC, compare, price list, fee calc) */
+  document.querySelectorAll("[data-viewkey]").forEach(btn=>btn.addEventListener("click",e=>{
+    const k=e.currentTarget.dataset.viewkey,v=e.currentTarget.dataset.viewval;
+    ST.views[k]=v;
     save_render();
   }));
 
