@@ -464,6 +464,20 @@ function sensColor(v){
   return{bg:"var(--bg-danger)",color:"var(--text-danger)"};
 }
 
+function chartLegend(items){
+  // items: [{color,label,shape}] shape: 'box'|'dot'|'line'
+  return`<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:8px;font-size:10px;color:var(--text-muted)">
+    ${items.map(it=>{
+      const shape=it.shape||"box";
+      const swatch=shape==="dot"
+        ?`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${it.color};vertical-align:middle;margin-right:4px"></span>`
+        :shape==="line"
+        ?`<span style="display:inline-block;width:12px;height:2px;background:${it.color};vertical-align:middle;margin-right:4px"></span>`
+        :`<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${it.color};vertical-align:middle;margin-right:4px"></span>`;
+      return`<div>${swatch}${it.label}</div>`;
+    }).join("")}
+  </div>`;
+}
 function viewToggle(key,opts){
   // opts: [{val,label},...]
   const cur=ST.views[key];
@@ -775,7 +789,8 @@ function renderOverview(s,st){
         </div>
       </div>
       <div style="${st.views.costBreakdown==="donut"?"":"display:none"}">
-        <div id="costDonutChart" style="position:relative;width:100%;height:200px;margin-top:6px"></div>
+        ${chartLegend([{color:"#3b82f6",label:"Teaching"},{color:"#94a3b8",label:"Overhead"}])}
+        <div id="costDonutChart" style="position:relative;width:100%;height:190px"></div>
       </div>
     </div>
     <div class="card">
@@ -792,7 +807,8 @@ function renderOverview(s,st){
         ${Row("Net revenue / student",sgd(s.totalNet),"acc bold","",true)}
       </div>
       <div style="${st.views.waterfall==="chart"?"":"display:none"}">
-        <div id="waterfallChart" style="position:relative;width:100%;height:260px"></div>
+        ${chartLegend([{color:"#2563eb",label:"Start / end"},{color:"#dc2626",label:"Deduction"},{color:"#16a34a",label:"Addition"}])}
+        <div id="waterfallChart" style="position:relative;width:100%;height:250px"></div>
       </div>
     </div>
   </div>
@@ -877,6 +893,7 @@ function renderSens(s,st){
       </div>
     </div>
     <div style="${st.views.sens==="heatmap"?"":"display:none"}">
+      ${chartLegend([{color:"#16a34a",label:"Low breakeven (easy)"},{color:"#facc15",label:"Medium"},{color:"#dc2626",label:"High breakeven (hard)"},{color:"#1d4ed8",label:"Current scenario (outlined cell)",shape:"box"}])}
       <div id="sensHeatmap" style="position:relative;width:100%;height:340px"></div>
     </div>
   </div>`;
@@ -1038,7 +1055,8 @@ function renderULEC(s,st){
       </table></div>
     </div>
     <div style="${st.views.ulec==="chart"?"":"display:none"}">
-      <div id="ulecChart" style="position:relative;width:100%;height:300px"></div>
+      ${chartLegend([{color:"#16a34a",label:"UCC profit",shape:"line"},{color:"#dc2626",label:"UCC loss",shape:"line"},{color:"#2563eb",label:"Current mgmt fee",shape:"dot"}])}
+      <div id="ulecChart" style="position:relative;width:100%;height:290px"></div>
     </div>
   </div>`;
 }
@@ -1137,6 +1155,7 @@ function renderCompare(saved){
       ${qcmp}
     </div>
     <div style="${ST.views.compare==="chart"?"":"display:none"}">
+      ${chartLegend([{color:"#16a34a",label:"Profitable scenario"},{color:"#dc2626",label:"Loss-making scenario"}])}
       <div id="compareChart" style="position:relative;width:100%;height:${Math.max(260,saved.length*46+60)}px"></div>
     </div>
     <button id="clearAll" style="margin-top:12px;font-size:11px;color:var(--text-danger);background:none;border:none;cursor:pointer">Clear all scenarios</button>
@@ -1340,7 +1359,8 @@ function renderFeeCalc(st){
         </div>
       </div>
       <div style="${st.views.feecalc==="chart"?"":"display:none"}">
-        <div id="feeTimelineChart" style="position:relative;width:100%;height:240px"></div>
+        ${chartLegend([{color:"#7c3aed",label:"Enrolment (app + other fees)"},{color:"#2563eb",label:"Monthly instalment (incl. GST)"}])}
+        <div id="feeTimelineChart" style="position:relative;width:100%;height:230px"></div>
       </div>
     </div>
   </div>`;
