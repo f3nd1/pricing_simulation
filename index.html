@@ -460,6 +460,9 @@ const INIT_OH=[
    × the Yearly Budget intakes (students per course per year). Only the company
    expense schedule below is seeded (editable), mirroring the Excel line items. */
 const FC_YEARS=[2026,2027,2028,2029,2030,2031];
+/* Budget period = 6 years starting at `start`. FC_YEARS is mutated in place so every
+   module that reads it (revenue, expenses, manpower, valuation, strategy) shifts together. */
+function fcSetPeriod(start){start=parseInt(start)||2026;for(let i=0;i<6;i++)FC_YEARS[i]=start+i;}
 /* Expense schedule — categories → sub-line-items exactly as per the Excel 'Expense Forecast' sheet */
 const FC_EXP={cogs:[
  {label:"Commission",items:[
@@ -544,7 +547,8 @@ const ST={
   cloudOpen:false,sbUrl:SUPABASE_URL,sbKey:SUPABASE_ANON_KEY,sbStatus:"",sbStatusOk:null,sbSaves:[],sbLoading:false,sbSaveName:"",
   fx:{tab:"pnl",scenario:"Base",scen:JSON.parse(JSON.stringify(FC_SCENARIOS)),
       exp:JSON.parse(JSON.stringify(FC_EXP)),
-      baseYear:FC_YEARS[0],monthly:{}},
+      baseYear:FC_YEARS[0],monthly:{},
+      startYear:FC_YEARS[0],expMode:"manual",expMult:1.03},
   op:{tab:"manpower",mp:{...FC_MP},teacherRate:70,contactPct:100,disc:0,comp:{}},
   val:{tab:"dcf",wacc:0.10,g:0.03,
        da:fcExpGroupTotal(FC_EXP.opex[3]),capex:[0,0,0,0,0,0],nwc:[0,0,0,0,0,0],
@@ -590,8 +594,12 @@ function applyFx(dfx){
   if(dfx.scen)ST.fx.scen=dfx.scen;
   /* only accept the new grouped expense shape (categories with sub-items); older flat saves fall back to the seed */
   if(dfx.exp&&Array.isArray(dfx.exp.cogs)&&dfx.exp.cogs[0]&&Array.isArray(dfx.exp.cogs[0].items))ST.fx.exp=dfx.exp;
+  /* restore budget period first so baseYear validation below sees the right FC_YEARS */
+  if(dfx.startYear){fcSetPeriod(dfx.startYear);ST.fx.startYear=FC_YEARS[0];}
   if(dfx.baseYear&&FC_YEARS.includes(dfx.baseYear))ST.fx.baseYear=dfx.baseYear;
   if(dfx.monthly&&typeof dfx.monthly==="object")ST.fx.monthly=dfx.monthly;
+  if(dfx.expMode)ST.fx.expMode=dfx.expMode;
+  if(dfx.expMult!=null)ST.fx.expMult=dfx.expMult;
 }
 function saveToStorage(){
   try{
@@ -2403,7 +2411,23 @@ function fcRevenue(st){
   const sumG=(g)=>FC_YEARS.map((y,i)=>rows.filter(r=>!g||r.group===g).reduce((a,r)=>a+r.rev[i],0));
   return {rows,total:sumG(null),byCat:courseCats().map(cat=>({cat,v:sumG(cat)}))};
 }
+/* In "auto" mode, future years grow from the first year (base) by the yearly
+   multiplier: year[i] = override[i] (if set) else year[i-1] × mult. Year 0 (base)
+   is never touched — it stays as entered (directly or via the monthly split), so
+   changing the growth rate never disturbs the monthly plan. In "manual" mode every
+   year is left exactly as typed. */
+function fcApplyGrowth(st){
+  if(st.fx.expMode!=="auto")return;
+  const mult=Number(st.fx.expMult)||1;
+  ["cogs","opex"].forEach(kb=>st.fx.exp[kb].forEach(g=>g.items.forEach(l=>{
+    const ov=l.ov||{};
+    for(let i=1;i<FC_YEARS.length;i++){
+      l.v[i]=(ov[i]!=null&&ov[i]!=="")?Number(ov[i]):(Number(l.v[i-1])||0)*mult;
+    }
+  })));
+}
 function fcExpenses(st){
+  fcApplyGrowth(st);
   const cogs=st.fx.exp.cogs,opex=st.fx.exp.opex;
   const groupSum=(gs)=>FC_YEARS.map((y,i)=>gs.reduce((a,g)=>a+g.items.reduce((b,l)=>b+(Number(l.v[i])||0),0),0));
   return {cogs,opex,cogsTot:groupSum(cogs),opexTot:groupSum(opex)};
@@ -2424,7 +2448,7 @@ function renderForecastModule(st){
   const p=fcPnl(st);
   const hdr=`
   <div class="hdr" style="background:linear-gradient(135deg,#3730a3 0%,#6366f1 100%)">
-    <div class="hdr-brand"><div class="hdr-label" style="color:#c7d2fe">United Ceres College</div><div class="hdr-title">Forecast & P&amp;L — 2026–2031</div></div>
+    <div class="hdr-brand"><div class="hdr-label" style="color:#c7d2fe">United Ceres College</div><div class="hdr-title">Forecast & P&amp;L — ${FC_YEARS[0]}–${FC_YEARS[5]}</div></div>
     <div class="hdr-actions" style="align-items:center">
       <span style="font-size:11px;color:#e0e7ff">Scenario</span>
       ${["Base","Best","Worst"].map(s=>`<button class="hdr-btn${fx.scenario===s?" primary":""}" data-fcscen="${s}">${s}</button>`).join("")}
@@ -2433,7 +2457,7 @@ function renderForecastModule(st){
   <div class="subhdr" style="gap:16px">
     <div style="font-size:11px;color:var(--text-muted)">Fee growth/yr <strong style="color:var(--text-primary)">${fp(scen.fee)}</strong></div>
     <div style="font-size:11px;color:var(--text-muted)">Volume vs plan/yr <strong style="color:var(--text-primary)">${fp(scen.vol)}</strong></div>
-    <div style="margin-left:auto;font-size:11px;color:var(--text-muted)">2026 net ${sgd(p.net[0])} · 2031 net ${sgd(p.net[5])}</div>
+    <div style="margin-left:auto;font-size:11px;color:var(--text-muted)">${FC_YEARS[0]} net ${sgd(p.net[0])} · ${FC_YEARS[5]} net ${sgd(p.net[5])}</div>
   </div>`;
   const body=`<div class="module-body">
     <div class="tabs-wrap"><div class="tabs">${tabs.map(([k,l])=>`<button class="tab${fx.tab===k?" on":""}" data-fctab="${k}">${l}</button>`).join("")}</div></div>
@@ -2490,7 +2514,7 @@ function fcRenderRevenue(st,p){
       (sub?fcMoneyRow("&nbsp;&nbsp;Sub-total "+cat,sub.v,"muted",true):"");
   }).join("");
   return `<div class="card">
-    <div class="card-hdr"><div class="card-title">Revenue Forecast by course</div><span class="card-badge" style="background:var(--blue-100);color:var(--blue-700)">${sgd(p.rev[0])} in 2026</span></div>
+    <div class="card-hdr"><div class="card-title">Revenue Forecast by course</div><span class="card-badge" style="background:var(--blue-100);color:var(--blue-700)">${sgd(p.rev[0])} in ${FC_YEARS[0]}</span></div>
     <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Each cell = Price-List total/student × planned students from the Yearly Budget for that year, adjusted by the active scenario. ${active.length?"":"No budget intakes yet — add them in the Yearly Budget module."}</div>
     <div class="tbl-scroll"><table class="cptbl" style="min-width:640px">
       <thead><tr><th>Course</th>${fcYearCols()}</tr></thead>
@@ -2503,6 +2527,7 @@ function fcRenderRevenue(st,p){
 }
 
 function fcRenderExpenses(st,p){
+  const auto=st.fx.expMode==="auto";
   const section=(title,groups,keybase)=>`
     <tr><td colspan="7" style="padding:7px 8px;font-weight:800;background:var(--surface-1);font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)">${title}</td></tr>
     ${groups.map((g,gi)=>{
@@ -2513,12 +2538,44 @@ function fcRenderExpenses(st,p){
       </tr>`+
       g.items.map((l,li)=>`<tr>
         <td style="padding:2px 8px 2px 22px;color:var(--text-secondary)">${l.label}</td>
-        ${l.v.map((v,yi)=>`<td style="padding:2px 4px;text-align:right"><input type="number" class="plinp" data-fcexp="${keybase}" data-gi="${gi}" data-li="${li}" data-yi="${yi}" value="${Math.round(v)}" step="100" style="width:78px;text-align:right"></td>`).join("")}
+        ${l.v.map((v,yi)=>{
+          /* in auto mode: year 0 is the editable base; future years show computed
+             values, editable as overrides — overridden cells get a subtle highlight */
+          const isBase=yi===0;
+          const overridden=auto&&!isBase&&l.ov&&l.ov[yi]!=null&&l.ov[yi]!=="";
+          const computed=auto&&!isBase&&!overridden;
+          const bg=overridden?"background:var(--amber-100)":isBase&&auto?"background:var(--blue-50)":"";
+          return `<td style="padding:2px 4px;text-align:right"><input type="number" class="plinp" data-fcexp="${keybase}" data-gi="${gi}" data-li="${li}" data-yi="${yi}" value="${Math.round(v)}" step="100" title="${computed?"auto = prior year × "+st.fx.expMult+" (type to override)":overridden?"manual override (blank the cell to revert to auto)":isBase&&auto?"base year — grows the rest":"editable"}" style="width:78px;text-align:right;${bg}${computed?"color:var(--text-muted)":""}"></td>`;
+        }).join("")}
       </tr>`).join("");
     }).join("")}`;
+  const controls=`
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:10px;padding:10px 12px;background:var(--surface-1);border-radius:8px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:11px;color:var(--text-muted)">Budget period</span>
+        <select id="fcStartYear">${Array.from({length:11},(_,i)=>2024+i).map(y=>`<option value="${y}"${y===FC_YEARS[0]?" selected":""}>${y}</option>`).join("")}</select>
+        <span style="font-size:11px;color:var(--text-muted)">to <strong style="color:var(--text-primary)">${FC_YEARS[5]}</strong> (6 years)</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:11px;color:var(--text-muted)">Future years</span>
+        <div class="view-toggle">
+          <button data-fcexpmode="manual" class="${!auto?"on":""}">Manual</button>
+          <button data-fcexpmode="auto" class="${auto?"on":""}">Auto-grow</button>
+        </div>
+      </div>
+      ${auto?`<div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:11px;color:var(--text-muted)">Yearly increase ×</span>
+        <input type="number" id="fcExpMult" value="${st.fx.expMult}" step="0.01" min="0" style="width:70px" title="e.g. 1.03 = +3% a year · 1.2 = +20% · 2 = double">
+      </div>
+      <button id="fcClearOv" style="font-size:11px;padding:5px 10px;color:var(--text-danger);border:1px solid var(--border);border-radius:6px;background:none;cursor:pointer">Clear overrides</button>`:""}
+    </div>`;
+  const note=auto
+    ? `Only the <strong>${FC_YEARS[0]}</strong> column (blue) is your base — the rest are auto-grown by ×${st.fx.expMult} each year. Type into any later cell to <strong>override</strong> it (turns amber); the years after it then grow from that override. Blank an override to revert it to auto. The monthly tab only plans ${FC_YEARS[0]}, so growth never touches it.`
+    : `Every year is edited by hand (values seeded from the master budget). Switch to <strong>Auto-grow</strong> above to set just ${FC_YEARS[0]} and multiply the rest automatically.`;
   return `<div class="card">
-    <div class="card-hdr"><div class="card-title">Expense Forecast (editable)</div><span class="card-badge" style="background:var(--red-100);color:var(--red-700)">${sgd(p.cogs[0]+p.opex[0])} in 2026</span></div>
-    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Full chart of accounts as per the master budget — category totals are computed from the editable sub-line-items. Edit any cell and the Income Statement, DCF and Dashboard update live.</div>
+    <div class="card-hdr"><div class="card-title">Expense Forecast (editable)</div><span class="card-badge" style="background:var(--red-100);color:var(--red-700)">${sgd(p.cogs[0]+p.opex[0])} in ${FC_YEARS[0]}</span></div>
+    ${controls}
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">${note}</div>
     <div class="tbl-scroll" style="max-height:560px;overflow-y:auto"><table class="cptbl" style="min-width:660px">
       <thead><tr><th>Account</th>${fcYearCols()}</tr></thead>
       <tbody>
@@ -3140,11 +3197,34 @@ function bindForecastEvents(){
   }));
   document.querySelectorAll("[data-fcexp]").forEach(inp=>inp.addEventListener("change",e=>{
     const kb=e.currentTarget.dataset.fcexp,gi=+e.currentTarget.dataset.gi,li=+e.currentTarget.dataset.li,yi=+e.currentTarget.dataset.yi;
-    ST.fx.exp[kb][gi].items[li].v[yi]=parseFloat(e.currentTarget.value)||0;
-    /* clear any stored monthly split for this line/year so it re-defaults to an even 1/12 of the new annual */
+    const l=ST.fx.exp[kb][gi].items[li];
+    const raw=(e.currentTarget.value||"").trim();
+    if(ST.fx.expMode==="auto"&&yi>0){
+      /* future-year cell in auto mode = an override; a blank cell reverts to auto-grow */
+      l.ov=l.ov||{};
+      if(raw==="")delete l.ov[yi]; else l.ov[yi]=parseFloat(raw)||0;
+    }else{
+      l.v[yi]=parseFloat(raw)||0;
+    }
+    /* editing a year's total resets that year's monthly split (re-splits evenly) */
     if(ST.fx.monthly)delete ST.fx.monthly[fcMonthKey(kb,gi,li,FC_YEARS[yi])];
     save_render();
   }));
+  const startSel=document.getElementById("fcStartYear");
+  if(startSel)startSel.addEventListener("change",e=>{
+    fcSetPeriod(e.target.value);ST.fx.startYear=FC_YEARS[0];
+    if(!FC_YEARS.includes(ST.fx.baseYear))ST.fx.baseYear=FC_YEARS[0];
+    save_render();
+  });
+  document.querySelectorAll("[data-fcexpmode]").forEach(b=>b.addEventListener("click",e=>{ST.fx.expMode=e.currentTarget.dataset.fcexpmode;save_render();}));
+  const multInp=document.getElementById("fcExpMult");
+  if(multInp)multInp.addEventListener("change",e=>{ST.fx.expMult=parseFloat(e.target.value)||1;save_render();});
+  const clearOv=document.getElementById("fcClearOv");
+  if(clearOv)clearOv.addEventListener("click",()=>{
+    if(!confirm("Clear all manual overrides so every future year auto-grows from "+FC_YEARS[0]+"?"))return;
+    ["cogs","opex"].forEach(kb=>ST.fx.exp[kb].forEach(g=>g.items.forEach(l=>{delete l.ov;})));
+    save_render();
+  });
   const baseYearSel=document.getElementById("fcBaseYear");
   if(baseYearSel)baseYearSel.addEventListener("change",e=>{ST.fx.baseYear=parseInt(e.target.value)||FC_YEARS[0];save_render();});
   document.querySelectorAll("[data-fcmon]").forEach(inp=>inp.addEventListener("change",e=>{
@@ -3154,7 +3234,11 @@ function bindForecastEvents(){
     arr[mi]=parseFloat(e.currentTarget.value)||0;
     if(!ST.fx.monthly)ST.fx.monthly={};
     ST.fx.monthly[fcMonthKey(kb,gi,li,year)]=arr;
-    ST.fx.exp[kb][gi].items[li].v[yi]=arr.reduce((a,b)=>a+b,0);
+    const sum=arr.reduce((a,b)=>a+b,0);
+    const l=ST.fx.exp[kb][gi].items[li];
+    l.v[yi]=sum;
+    /* in auto mode a month-planned future year must pin as an override or growth would overwrite it */
+    if(ST.fx.expMode==="auto"&&yi>0){l.ov=l.ov||{};l.ov[yi]=sum;}
     save_render();
   }));
 }
