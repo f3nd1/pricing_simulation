@@ -68,6 +68,10 @@ button:hover{background:var(--surface-0)}
 .nav-item-desc{font-size:10.5px;color:inherit;opacity:.7}
 .nav-item.soon{opacity:.45;cursor:not-allowed}
 .nav-drawer-ftr{padding:12px 18px;border-top:1px solid rgba(255,255,255,.1);font-size:10px;color:#64748b}
+.module-body{max-width:1200px;margin:0 auto;padding:16px 20px}
+.module-body select{max-width:100%;min-width:0}
+.yb-form-course{flex:1 1 100%;min-width:0;max-width:100%}
+@media(max-width:640px){.module-body{padding:12px}}
 .hdr{background:linear-gradient(135deg,var(--blue-900) 0%,var(--blue-700) 100%);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .hdr-brand{display:flex;flex-direction:column;gap:1px}
 .hdr-label{font-size:10px;font-weight:500;color:var(--blue-400);text-transform:uppercase;letter-spacing:.1em}
@@ -1612,7 +1616,7 @@ function renderYearlyBudgetModule(st){
     return trs||`<tr><td colspan="5" style="padding:16px;text-align:center;color:var(--text-muted)">No ${kind} intakes for ${st.ybYear} yet.</td></tr>`;
   };
 
-  return`<div class="body">
+  return`<div class="module-body">
   <div class="yb-hero">
     <div class="yb-hero-metric">
       <div class="yb-hero-lbl">Budgeted profit</div>
@@ -1675,7 +1679,7 @@ function renderYearlyBudgetModule(st){
       <button data-ybkind="actual" class="${st.ybForm.kind==="actual"?"on actual":""}">Actual</button>
     </div>
     <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
-      <select id="ybFormCi" style="font-size:12px">${intakeFormOptions}</select>
+      <select id="ybFormCi" class="yb-form-course" style="font-size:12px">${intakeFormOptions}</select>
       <select id="ybFormMonth" style="font-size:12px">${MONTH_NAMES.map((m,i)=>`<option value="${i}"${i===st.ybForm.month?" selected":""}>${m}</option>`).join("")}</select>
       <input id="ybFormYear" type="number" value="${st.ybForm.year}" style="width:64px;font-size:12px">
       <input id="ybFormStudents" type="number" value="${st.ybForm.students}" min="1" style="width:64px;font-size:12px">
