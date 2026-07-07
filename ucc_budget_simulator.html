@@ -74,6 +74,34 @@ button:hover{background:var(--surface-0)}
 .ik-btn{border:1px solid var(--border);background:var(--surface-1);border-radius:5px;width:24px;height:24px;padding:0;font-size:11px;cursor:pointer;color:var(--text-secondary);margin-left:2px;vertical-align:middle}
 .ik-btn:hover:not(:disabled){background:var(--surface-0);color:var(--text-primary)}
 .ik-btn:disabled{opacity:.3;cursor:not-allowed}
+
+/* Yearly Budget — month-by-month intake grid */
+.ybg{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.ybg-row{display:flex;align-items:stretch;border-bottom:1px solid var(--border)}
+.ybg-row:last-child{border-bottom:none}
+.ybg-row:nth-child(even){background:var(--surface-1)}
+.ybg-month{flex:0 0 64px;display:flex;flex-direction:column;justify-content:center;padding:8px 10px;font-size:12px;font-weight:700;color:var(--text-secondary);border-right:1px solid var(--border);background:var(--surface-2)}
+.ybg-row:nth-child(even) .ybg-month{background:var(--surface-1)}
+.ybg-month-sum{font-size:9px;font-weight:600;color:var(--text-muted);margin-top:2px}
+.ybg-cells{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:7px 10px}
+.ybg-empty{color:var(--gray-300);font-size:12px}
+.ybg-chip{display:inline-flex;align-items:center;gap:5px;background:var(--surface-2);border:1px solid var(--border);border-radius:16px;padding:3px 4px 3px 10px;box-shadow:var(--shadow-sm)}
+.ybg-row:nth-child(even) .ybg-chip{background:#fff}
+.ybg-chip-name{font-size:11px;font-weight:700;color:var(--text-primary)}
+.ybg-chip-stu{width:46px;text-align:right;font-size:11px;padding:2px 5px;border:1px solid var(--border);border-radius:6px;background:var(--surface-1)}
+.ybg-chip-x{border:none;background:none;color:var(--text-danger);cursor:pointer;font-size:15px;line-height:1;padding:0 2px}
+.ybg-add{display:inline-flex;align-items:center;gap:4px;margin-left:auto}
+.ybg-add-sel{max-width:150px;font-size:11px;padding:3px 6px}
+.ybg-add-stu{width:44px;text-align:right;font-size:11px;padding:3px 5px}
+.ybg-add-btn{border:none;color:#fff;border-radius:7px;width:26px;height:26px;font-size:15px;font-weight:700;cursor:pointer;flex-shrink:0;line-height:1}
+.ybg-add-btn:hover{opacity:.88}
+@media(max-width:640px){
+  .ybg-row{flex-direction:column}
+  .ybg-month{flex-basis:auto;flex-direction:row;justify-content:space-between;border-right:none;border-bottom:1px solid var(--border)}
+  .ybg-cells{padding:8px 10px}
+  .ybg-add{margin-left:0;width:100%;margin-top:4px}
+  .ybg-add-sel{flex:1;max-width:none}
+}
 @media(max-width:640px){.module-body{padding:12px}}
 
 /* Cloud save (Supabase) */
@@ -1760,27 +1788,33 @@ function renderYearlyBudgetModule(st){
     </div>`;
   }).join("");
 
-  const intakeFormOptions=cats.map(cat=>`<optgroup label="${cat}">${COURSES.map((c,i)=>c.cat===cat?`<option value="${i}"${i===st.ybForm.ci?" selected":""}>${c.name}</option>`:"").join("")}</optgroup>`).join("");
-  const intakeList=kind=>{
-    const list=st.intakes.filter(ik=>(ik.kind||"budget")===kind&&ik.year===st.ybYear).sort((a,b)=>a.month-b.month);
-    const trs=list.map(ik=>{
-      const c=COURSES[ik.ci];
-      if(!c)return"";
-      return`<tr>
-        <td style="padding:5px 8px">${c.abbr}</td>
-        <td style="padding:5px 8px"><span class="card-badge" style="background:var(--blue-100);color:var(--blue-700);font-size:9px">${c.cat}</span></td>
-        <td style="padding:5px 8px">${MONTH_NAMES[ik.month]} ${ik.year}</td>
-        <td style="padding:5px 8px;text-align:right">${ik.students}</td>
-        <td style="padding:4px 6px;text-align:right;white-space:nowrap">
-          <button data-ik-mo-up="${ik.id}" class="ik-btn" title="Move to earlier month"${ik.month<=0?" disabled":""}>▲</button>
-          <button data-ik-mo-dn="${ik.id}" class="ik-btn" title="Move to later month"${ik.month>=11?" disabled":""}>▼</button>
-          <button data-ik-dup="${ik.id}" class="ik-btn" title="Duplicate this intake">⧉</button>
-          <button data-delintake="${ik.id}" class="del-btn" title="Delete">×</button>
-        </td>
-      </tr>`;
+  const kind=st.ybForm.kind;
+  const kindColor=kind==="budget"?"#2563eb":"#16a34a";
+  const addOptions=cats.map(cat=>`<optgroup label="${cat}">${COURSES.map((c,i)=>c.cat===cat?`<option value="${i}">${c.abbr} — ${c.name}</option>`:"").join("")}</optgroup>`).join("");
+  /* Month-by-month grid: one row per month (Jan–Dec), showing intakes of the active kind, with tap-to-add + inline student edit */
+  const monthGrid=MONTH_NAMES.map((mname,m)=>{
+    const rows=st.intakes.filter(ik=>(ik.kind||"budget")===kind&&ik.year===st.ybYear&&ik.month===m).sort((a,b)=>a.ci-b.ci);
+    const monthStu=rows.reduce((s,ik)=>s+ik.students,0);
+    const chips=rows.map(ik=>{
+      const c=COURSES[ik.ci];if(!c)return"";
+      return`<div class="ybg-chip">
+        <span class="ybg-chip-name" title="${c.name}">${c.abbr}</span>
+        <input type="number" class="ybg-chip-stu" data-ikstu="${ik.id}" value="${ik.students}" min="0" title="Students — edit inline">
+        <button class="ybg-chip-x" data-delintake="${ik.id}" title="Remove">×</button>
+      </div>`;
     }).join("");
-    return trs||`<tr><td colspan="5" style="padding:16px;text-align:center;color:var(--text-muted)">No ${kind} intakes for ${st.ybYear} yet.</td></tr>`;
-  };
+    return`<div class="ybg-row">
+      <div class="ybg-month">${mname}<span class="ybg-month-sum">${monthStu?monthStu+" stu":""}</span></div>
+      <div class="ybg-cells">
+        ${chips||`<span class="ybg-empty">—</span>`}
+        <span class="ybg-add">
+          <select class="ybg-add-sel" data-addmonthsel="${m}">${addOptions}</select>
+          <input type="number" class="ybg-add-stu" data-addmonthstu="${m}" value="${st.ybForm.students}" min="1" title="Students">
+          <button class="ybg-add-btn" data-addmonth="${m}" style="background:${kindColor}">+</button>
+        </span>
+      </div>
+    </div>`;
+  }).join("");
 
   return`<div class="module-body">
   <div class="yb-hero">
@@ -1839,34 +1873,17 @@ function renderYearlyBudgetModule(st){
   </div>
 
   <div class="card">
-    <div class="card-hdr"><div class="card-title">Add an intake</div></div>
-    <div class="yb-kindtoggle">
-      <button data-ybkind="budget" class="${st.ybForm.kind==="budget"?"on budget":""}">Budget</button>
-      <button data-ybkind="actual" class="${st.ybForm.kind==="actual"?"on actual":""}">Actual</button>
-    </div>
-    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
-      <select id="ybFormCi" class="yb-form-course" style="font-size:12px">${intakeFormOptions}</select>
-      <select id="ybFormMonth" style="font-size:12px">${MONTH_NAMES.map((m,i)=>`<option value="${i}"${i===st.ybForm.month?" selected":""}>${m}</option>`).join("")}</select>
-      <input id="ybFormYear" type="number" value="${st.ybForm.year}" style="width:64px;font-size:12px">
-      <input id="ybFormStudents" type="number" value="${st.ybForm.students}" min="1" style="width:64px;font-size:12px">
-      <button id="ybAddIntake" class="hdr-btn primary" style="background:${st.ybForm.kind==="budget"?"#2563eb":"#16a34a"};color:#fff;border-color:${st.ybForm.kind==="budget"?"#2563eb":"#16a34a"}">+ Add ${st.ybForm.kind}</button>
-    </div>
-    <div class="g2">
-      <div>
-        <div class="card-title" style="margin-bottom:6px">Budgeted intakes (${st.ybYear})</div>
-        <div class="tbl-scroll"><table class="cptbl">
-          <thead><tr><th>Course</th><th>Category</th><th>Start</th><th style="text-align:right">Stu.</th><th></th></tr></thead>
-          <tbody>${intakeList("budget")}</tbody>
-        </table></div>
-      </div>
-      <div>
-        <div class="card-title" style="margin-bottom:6px">Actual intakes (${st.ybYear})</div>
-        <div class="tbl-scroll"><table class="cptbl">
-          <thead><tr><th>Course</th><th>Category</th><th>Start</th><th style="text-align:right">Stu.</th><th></th></tr></thead>
-          <tbody>${intakeList("actual")}</tbody>
-        </table></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+      <div class="card-title" style="margin-bottom:0">Intake planner — ${st.ybYear}</div>
+      <div class="yb-kindtoggle" style="margin-bottom:0">
+        <button data-ybkind="budget" class="${kind==="budget"?"on budget":""}">Budget plan</button>
+        <button data-ybkind="actual" class="${kind==="actual"?"on actual":""}">Actual</button>
       </div>
     </div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">
+      Editing <strong style="color:${kindColor}">${kind==="budget"?"Budget plan":"Actual"}</strong> — pick a course in any month, set students, tap <strong>+</strong>. Edit any student number inline. Switch the toggle above to plan the other set.
+    </div>
+    <div class="ybg">${monthGrid}</div>
   </div>
   </div>`;
 }
@@ -2369,44 +2386,33 @@ function bindYearlyBudgetEvents(){
   const ybCatSel=document.getElementById("ybCat");
   if(ybCatSel)ybCatSel.addEventListener("change",e=>{ST.ybCat=e.target.value;save_render();});
 
-  const ybFormCi=document.getElementById("ybFormCi");
-  if(ybFormCi)ybFormCi.addEventListener("change",e=>{ST.ybForm.ci=parseInt(e.target.value);saveToStorage();});
-  const ybFormMonth=document.getElementById("ybFormMonth");
-  if(ybFormMonth)ybFormMonth.addEventListener("change",e=>{ST.ybForm.month=parseInt(e.target.value);saveToStorage();});
-  const ybFormYear=document.getElementById("ybFormYear");
-  if(ybFormYear)ybFormYear.addEventListener("change",e=>{ST.ybForm.year=parseInt(e.target.value)||ST.ybForm.year;saveToStorage();});
-  const ybFormStudents=document.getElementById("ybFormStudents");
-  if(ybFormStudents)ybFormStudents.addEventListener("change",e=>{ST.ybForm.students=parseInt(e.target.value)||1;saveToStorage();});
-
   document.querySelectorAll("[data-ybkind]").forEach(btn=>btn.addEventListener("click",e=>{
     ST.ybForm.kind=e.currentTarget.dataset.ybkind;
     save_render();
   }));
-  const ybAddBtn=document.getElementById("ybAddIntake");
-  if(ybAddBtn)ybAddBtn.addEventListener("click",()=>{
+
+  /* Month grid: add a course to a month (tap-to-add) */
+  document.querySelectorAll("[data-addmonth]").forEach(btn=>btn.addEventListener("click",e=>{
+    const m=parseInt(e.currentTarget.dataset.addmonth);
+    const sel=document.querySelector(`[data-addmonthsel="${m}"]`);
+    const stuInp=document.querySelector(`[data-addmonthstu="${m}"]`);
+    if(!sel)return;
+    const ci=parseInt(sel.value);
+    const students=Math.max(1,parseInt(stuInp?stuInp.value:0)||1);
+    ST.ybForm.students=students;
     const nextId=Math.max(0,...ST.intakes.map(i=>i.id))+1;
-    ST.intakes.push({id:nextId,kind:ST.ybForm.kind,ci:ST.ybForm.ci,month:ST.ybForm.month,year:ST.ybForm.year,students:ST.ybForm.students});
+    ST.intakes.push({id:nextId,kind:ST.ybForm.kind,ci,month:m,year:ST.ybYear,students});
     save_render();
-  });
+  }));
+  /* Inline student edit */
+  document.querySelectorAll("[data-ikstu]").forEach(inp=>inp.addEventListener("change",e=>{
+    const ik=ST.intakes.find(i=>i.id===parseInt(e.currentTarget.dataset.ikstu));
+    if(ik){ik.students=Math.max(0,parseInt(e.currentTarget.value)||0);save_render();}
+  }));
+  /* Remove an intake */
   document.querySelectorAll("[data-delintake]").forEach(b=>b.addEventListener("click",e=>{
     ST.intakes=ST.intakes.filter(i=>i.id!==parseInt(e.currentTarget.dataset.delintake));
     save_render();
-  }));
-  const findIk=id=>ST.intakes.find(i=>i.id===parseInt(id));
-  document.querySelectorAll("[data-ik-dup]").forEach(b=>b.addEventListener("click",e=>{
-    const src=findIk(e.currentTarget.dataset.ikDup);
-    if(!src)return;
-    const nextId=Math.max(0,...ST.intakes.map(i=>i.id))+1;
-    ST.intakes.push({...src,id:nextId});
-    save_render();
-  }));
-  document.querySelectorAll("[data-ik-mo-up]").forEach(b=>b.addEventListener("click",e=>{
-    const ik=findIk(e.currentTarget.dataset.ikMoUp);
-    if(ik&&ik.month>0){ik.month--;save_render();}
-  }));
-  document.querySelectorAll("[data-ik-mo-dn]").forEach(b=>b.addEventListener("click",e=>{
-    const ik=findIk(e.currentTarget.dataset.ikMoDn);
-    if(ik&&ik.month<11){ik.month++;save_render();}
   }));
 }
 
