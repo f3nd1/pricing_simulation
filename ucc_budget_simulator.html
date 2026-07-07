@@ -75,33 +75,29 @@ button:hover{background:var(--surface-0)}
 .ik-btn:hover:not(:disabled){background:var(--surface-0);color:var(--text-primary)}
 .ik-btn:disabled{opacity:.3;cursor:not-allowed}
 
-/* Yearly Budget — month-by-month intake grid */
-.ybg{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;overflow:hidden}
-.ybg-row{display:flex;align-items:stretch;border-bottom:1px solid var(--border)}
-.ybg-row:last-child{border-bottom:none}
-.ybg-row:nth-child(even){background:var(--surface-1)}
-.ybg-month{flex:0 0 64px;display:flex;flex-direction:column;justify-content:center;padding:8px 10px;font-size:12px;font-weight:700;color:var(--text-secondary);border-right:1px solid var(--border);background:var(--surface-2)}
-.ybg-row:nth-child(even) .ybg-month{background:var(--surface-1)}
-.ybg-month-sum{font-size:9px;font-weight:600;color:var(--text-muted);margin-top:2px}
-.ybg-cells{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:7px 10px}
-.ybg-empty{color:var(--gray-300);font-size:12px}
-.ybg-chip{display:inline-flex;align-items:center;gap:5px;background:var(--surface-2);border:1px solid var(--border);border-radius:16px;padding:3px 4px 3px 10px;box-shadow:var(--shadow-sm)}
-.ybg-row:nth-child(even) .ybg-chip{background:#fff}
-.ybg-chip-name{font-size:11px;font-weight:700;color:var(--text-primary)}
-.ybg-chip-stu{width:46px;text-align:right;font-size:11px;padding:2px 5px;border:1px solid var(--border);border-radius:6px;background:var(--surface-1)}
-.ybg-chip-x{border:none;background:none;color:var(--text-danger);cursor:pointer;font-size:15px;line-height:1;padding:0 2px}
-.ybg-add{display:inline-flex;align-items:center;gap:4px;margin-left:auto}
-.ybg-add-sel{max-width:150px;font-size:11px;padding:3px 6px}
-.ybg-add-stu{width:44px;text-align:right;font-size:11px;padding:3px 5px}
-.ybg-add-btn{border:none;color:#fff;border-radius:7px;width:26px;height:26px;font-size:15px;font-weight:700;cursor:pointer;flex-shrink:0;line-height:1}
+/* Yearly Budget — horizontal month columns */
+.ybg-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}
+.ybg{display:flex;gap:8px;min-width:min-content;align-items:stretch}
+.ybg-col{flex:0 0 148px;display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;background:var(--surface-1);overflow:hidden}
+.ybg-col-hd{display:flex;justify-content:space-between;align-items:baseline;padding:7px 9px;font-size:12px;font-weight:700;color:var(--text-secondary);background:var(--surface-2);border-bottom:1px solid var(--border)}
+.ybg-col-sum{font-size:9px;font-weight:600;color:var(--text-accent)}
+.ybg-col-body{flex:1;padding:7px;display:flex;flex-direction:column;gap:6px;min-height:52px;transition:background .12s}
+.ybg-col-body.drag-over{background:var(--bg-accent);box-shadow:inset 0 0 0 2px var(--blue-600)}
+.ybg-col-empty{color:var(--gray-300);font-size:12px;text-align:center;padding:8px 0}
+.ybg-node{background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:6px 7px;box-shadow:var(--shadow-sm);cursor:grab}
+.ybg-node:active{cursor:grabbing}
+.ybg-node.dragging{opacity:.4}
+.ybg-node-top{display:flex;align-items:center;justify-content:space-between;gap:4px;margin-bottom:4px}
+.ybg-node-name{font-size:11px;font-weight:700;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ybg-node-actions{display:flex;gap:1px;flex-shrink:0}
+.ybg-node-btn{border:none;background:none;cursor:pointer;font-size:12px;line-height:1;padding:1px 3px;color:var(--text-muted)}
+.ybg-node-btn:hover{color:var(--text-primary)}
+.ybg-node-stu{width:100%;text-align:right;font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface-1)}
+.ybg-col-add{padding:7px;border-top:1px dashed var(--border);display:flex;flex-direction:column;gap:4px;background:var(--surface-2)}
+.ybg-add-sel{width:100%;font-size:11px;padding:4px 5px}
+.ybg-add-stu{width:44px;text-align:right;font-size:11px;padding:4px 5px}
+.ybg-add-btn{border:none;color:#fff;border-radius:7px;padding:4px 0;font-size:11px;font-weight:700;cursor:pointer;flex:1;line-height:1.4}
 .ybg-add-btn:hover{opacity:.88}
-@media(max-width:640px){
-  .ybg-row{flex-direction:column}
-  .ybg-month{flex-basis:auto;flex-direction:row;justify-content:space-between;border-right:none;border-bottom:1px solid var(--border)}
-  .ybg-cells{padding:8px 10px}
-  .ybg-add{margin-left:0;width:100%;margin-top:4px}
-  .ybg-add-sel{flex:1;max-width:none}
-}
 @media(max-width:640px){.module-body{padding:12px}}
 
 /* Cloud save (Supabase) */
@@ -1790,28 +1786,35 @@ function renderYearlyBudgetModule(st){
 
   const kind=st.ybForm.kind;
   const kindColor=kind==="budget"?"#2563eb":"#16a34a";
-  const addOptions=cats.map(cat=>`<optgroup label="${cat}">${COURSES.map((c,i)=>c.cat===cat?`<option value="${i}">${c.abbr} — ${c.name}</option>`:"").join("")}</optgroup>`).join("");
-  /* Month-by-month grid: one row per month (Jan–Dec), showing intakes of the active kind, with tap-to-add + inline student edit */
+  const addOptions=cats.map(cat=>`<optgroup label="${cat}">${COURSES.map((c,i)=>c.cat===cat?`<option value="${i}">${c.abbr}</option>`:"").join("")}</optgroup>`).join("");
+  /* Month-by-month grid: one COLUMN per month (Jan–Dec) laid out horizontally. Nodes: tap-to-add, inline student edit, duplicate, drag to another month. */
   const monthGrid=MONTH_NAMES.map((mname,m)=>{
     const rows=st.intakes.filter(ik=>(ik.kind||"budget")===kind&&ik.year===st.ybYear&&ik.month===m).sort((a,b)=>a.ci-b.ci);
     const monthStu=rows.reduce((s,ik)=>s+ik.students,0);
-    const chips=rows.map(ik=>{
+    const nodes=rows.map(ik=>{
       const c=COURSES[ik.ci];if(!c)return"";
-      return`<div class="ybg-chip">
-        <span class="ybg-chip-name" title="${c.name}">${c.abbr}</span>
-        <input type="number" class="ybg-chip-stu" data-ikstu="${ik.id}" value="${ik.students}" min="0" title="Students — edit inline">
-        <button class="ybg-chip-x" data-delintake="${ik.id}" title="Remove">×</button>
+      return`<div class="ybg-node" draggable="true" data-iknode="${ik.id}" title="Drag to another month">
+        <div class="ybg-node-top">
+          <span class="ybg-node-name" title="${c.name}">${c.abbr}</span>
+          <span class="ybg-node-actions">
+            <button class="ybg-node-btn" data-ikdup="${ik.id}" title="Duplicate">⧉</button>
+            <button class="ybg-node-btn" data-delintake="${ik.id}" title="Remove" style="color:var(--text-danger)">×</button>
+          </span>
+        </div>
+        <input type="number" class="ybg-node-stu" data-ikstu="${ik.id}" value="${ik.students}" min="0" title="Students — edit inline">
       </div>`;
     }).join("");
-    return`<div class="ybg-row">
-      <div class="ybg-month">${mname}<span class="ybg-month-sum">${monthStu?monthStu+" stu":""}</span></div>
-      <div class="ybg-cells">
-        ${chips||`<span class="ybg-empty">—</span>`}
-        <span class="ybg-add">
-          <select class="ybg-add-sel" data-addmonthsel="${m}">${addOptions}</select>
+    return`<div class="ybg-col">
+      <div class="ybg-col-hd"><span>${mname}</span><span class="ybg-col-sum">${monthStu?monthStu+" stu":""}</span></div>
+      <div class="ybg-col-body" data-dropmonth="${m}">
+        ${nodes||`<span class="ybg-col-empty">—</span>`}
+      </div>
+      <div class="ybg-col-add">
+        <select class="ybg-add-sel" data-addmonthsel="${m}">${addOptions}</select>
+        <div style="display:flex;gap:4px">
           <input type="number" class="ybg-add-stu" data-addmonthstu="${m}" value="${st.ybForm.students}" min="1" title="Students">
-          <button class="ybg-add-btn" data-addmonth="${m}" style="background:${kindColor}">+</button>
-        </span>
+          <button class="ybg-add-btn" data-addmonth="${m}" style="background:${kindColor}">+ Add</button>
+        </div>
       </div>
     </div>`;
   }).join("");
@@ -1880,10 +1883,13 @@ function renderYearlyBudgetModule(st){
         <button data-ybkind="actual" class="${kind==="actual"?"on actual":""}">Actual</button>
       </div>
     </div>
-    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">
-      Editing <strong style="color:${kindColor}">${kind==="budget"?"Budget plan":"Actual"}</strong> — pick a course in any month, set students, tap <strong>+</strong>. Edit any student number inline. Switch the toggle above to plan the other set.
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+      <div style="font-size:11px;color:var(--text-muted)">
+        Editing <strong style="color:${kindColor}">${kind==="budget"?"Budget plan":"Actual"}</strong> — pick a course in any month, tap <strong>+ Add</strong>. Edit students inline, <strong>drag</strong> a node to another month, or <strong>⧉</strong> to duplicate.
+      </div>
+      <button id="ybCopyBudToAct" class="hdr-btn" style="background:var(--surface-1);border:1px solid var(--border);color:var(--text-secondary);font-size:11px;padding:6px 11px">⧉ Copy Budget plan → Actual</button>
     </div>
-    <div class="ybg">${monthGrid}</div>
+    <div class="ybg-scroll"><div class="ybg">${monthGrid}</div></div>
   </div>
   </div>`;
 }
@@ -2414,6 +2420,49 @@ function bindYearlyBudgetEvents(){
     ST.intakes=ST.intakes.filter(i=>i.id!==parseInt(e.currentTarget.dataset.delintake));
     save_render();
   }));
+  /* Duplicate a node */
+  document.querySelectorAll("[data-ikdup]").forEach(b=>b.addEventListener("click",e=>{
+    const src=ST.intakes.find(i=>i.id===parseInt(e.currentTarget.dataset.ikdup));
+    if(!src)return;
+    const nextId=Math.max(0,...ST.intakes.map(i=>i.id))+1;
+    ST.intakes.push({...src,id:nextId});
+    save_render();
+  }));
+  /* Drag a node to another month */
+  let dragId=null;
+  document.querySelectorAll("[data-iknode]").forEach(node=>{
+    node.addEventListener("dragstart",e=>{
+      dragId=parseInt(node.dataset.iknode);
+      e.dataTransfer.effectAllowed="move";
+      try{e.dataTransfer.setData("text/plain",String(dragId));}catch(_){}
+      node.classList.add("dragging");
+    });
+    node.addEventListener("dragend",()=>{node.classList.remove("dragging");dragId=null;});
+  });
+  document.querySelectorAll("[data-dropmonth]").forEach(col=>{
+    col.addEventListener("dragover",e=>{e.preventDefault();e.dataTransfer.dropEffect="move";col.classList.add("drag-over");});
+    col.addEventListener("dragleave",()=>col.classList.remove("drag-over"));
+    col.addEventListener("drop",e=>{
+      e.preventDefault();col.classList.remove("drag-over");
+      const m=parseInt(col.dataset.dropmonth);
+      let id=dragId;
+      if(id==null){const t=e.dataTransfer.getData("text/plain");id=t?parseInt(t):null;}
+      const ik=ST.intakes.find(i=>i.id===id);
+      if(ik&&ik.month!==m){ik.month=m;save_render();}
+    });
+  });
+  /* Copy Budget plan → Actual for the current year */
+  const copyBtn=document.getElementById("ybCopyBudToAct");
+  if(copyBtn)copyBtn.addEventListener("click",()=>{
+    const budgets=ST.intakes.filter(i=>(i.kind||"budget")==="budget"&&i.year===ST.ybYear);
+    if(!budgets.length){alert("No budget intakes for "+ST.ybYear+" to copy.");return;}
+    if(!confirm(`Copy all ${budgets.length} budget intakes for ${ST.ybYear} into Actual?\n\nThis replaces any existing Actual intakes for ${ST.ybYear}.`))return;
+    ST.intakes=ST.intakes.filter(i=>!((i.kind||"budget")==="actual"&&i.year===ST.ybYear));
+    let nextId=Math.max(0,...ST.intakes.map(i=>i.id))+1;
+    budgets.forEach(b=>{ST.intakes.push({...b,id:nextId++,kind:"actual"});});
+    ST.ybForm.kind="actual";
+    save_render();
+  });
 }
 
 function bindEvents(s){
