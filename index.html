@@ -72,6 +72,36 @@ button:hover{background:var(--surface-0)}
 .module-body select{max-width:100%;min-width:0}
 .yb-form-course{flex:1 1 100%;min-width:0;max-width:100%}
 @media(max-width:640px){.module-body{padding:12px}}
+
+/* Cloud save (Supabase) */
+.cloud-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);border-radius:8px;color:#fff;font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;white-space:nowrap}
+.cloud-btn:hover{background:rgba(255,255,255,.2)}
+.cloud-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2100;opacity:0;pointer-events:none;transition:opacity .2s;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px}
+.cloud-backdrop.open{opacity:1;pointer-events:all}
+.cloud-modal{background:var(--surface-2);border-radius:16px;width:100%;max-width:520px;box-shadow:var(--shadow-md);overflow:hidden;max-height:calc(100vh - 80px);display:flex;flex-direction:column}
+.cloud-hdr{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.cloud-hdr-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+.cloud-close{background:none;border:none;font-size:22px;line-height:1;color:var(--text-muted);cursor:pointer;padding:2px 6px}
+.cloud-body{padding:16px 18px;overflow-y:auto}
+.cloud-section-title{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+.cloud-field{margin-bottom:10px}
+.cloud-field label{display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px}
+.cloud-field input{width:100%;font-size:12px;padding:7px 10px}
+.cloud-btnrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;margin-bottom:14px}
+.cloud-btnrow button{font-size:11px;padding:6px 11px}
+.cloud-status{font-size:11px;padding:6px 10px;border-radius:7px;margin-bottom:14px;display:inline-flex;align-items:center;gap:6px}
+.cloud-status.ok{background:var(--bg-success);color:var(--text-success)}
+.cloud-status.bad{background:var(--bg-danger);color:var(--text-danger)}
+.cloud-status.neutral{background:var(--surface-1);color:var(--text-muted)}
+.cloud-divider{border-top:1px solid var(--border);margin:14px 0}
+.cloud-save-row{display:flex;gap:6px;margin-bottom:12px}
+.cloud-save-row input{flex:1;font-size:12px;padding:7px 10px}
+.cloud-list{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto}
+.cloud-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-1)}
+.cloud-item-name{flex:1;min-width:0;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cloud-item-date{font-size:10px;color:var(--text-muted);white-space:nowrap}
+.cloud-item button{font-size:11px;padding:4px 9px}
+@media(max-width:640px){.cloud-backdrop{padding:0}.cloud-modal{max-width:100%;height:100%;max-height:100%;border-radius:0}}
 .hdr{background:linear-gradient(135deg,var(--blue-900) 0%,var(--blue-700) 100%);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .hdr-brand{display:flex;flex-direction:column;gap:1px}
 .hdr-label{font-size:10px;font-weight:500;color:var(--blue-400);text-transform:uppercase;letter-spacing:.1em}
@@ -390,7 +420,8 @@ const ST={
   views:{costBreakdown:"bars",waterfall:"rows",sens:"table",ulec:"table",compare:"table",pricelist:"table",feecalc:"table"},
   module:"simulator",navOpen:false,
   intakes:[],ybView:"monthly",ybYear:new Date().getFullYear(),ybCat:"All",
-  ybForm:{kind:"budget",ci:0,month:0,year:new Date().getFullYear(),students:15}
+  ybForm:{kind:"budget",ci:0,month:0,year:new Date().getFullYear(),students:15},
+  cloudOpen:false,sbUrl:"",sbKey:"",sbStatus:"",sbStatusOk:null,sbSaves:[],sbLoading:false,sbSaveName:""
 };
 const sgd=n=>{const a=Math.abs(Math.round(n));const s="$"+a.toLocaleString();return n<0?"("+s+")":s;};
 const fp=n=>(n*100).toFixed(1)+"%";
@@ -399,8 +430,8 @@ const LS_KEY="ucc_sim_v3";
 function saveToStorage(){
   try{
     const prices=COURSES.map(c=>({fee:c.fee,mat:c.mat,exam:c.exam,admin:c.admin,hrs:c.hrs,mo:c.mo}));
-    const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat}=ST;
-    localStorage.setItem(LS_KEY,JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat}));
+    const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey}=ST;
+    localStorage.setItem(LS_KEY,JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey}));
   }catch(e){}
 }
 function loadFromStorage(){
@@ -431,6 +462,8 @@ function loadFromStorage(){
     if(d.ybView)ST.ybView=d.ybView;
     if(d.ybYear)ST.ybYear=d.ybYear;
     if(d.ybCat)ST.ybCat=d.ybCat;
+    if(d.sbUrl)ST.sbUrl=d.sbUrl;
+    if(d.sbKey)ST.sbKey=d.sbKey;
   }catch(e){}
 }
 function exportData(){
@@ -459,6 +492,115 @@ function importData(file){
     }catch(err){alert("Invalid file — could not import.");}
   };
   reader.readAsText(file);
+}
+
+/* ── Cloud save (Supabase) ──────────────────────────────────────────── */
+
+function buildFullSnapshot(){
+  const prices=COURSES.map(c=>({fee:c.fee,mat:c.mat,exam:c.exam,admin:c.admin,hrs:c.hrs,mo:c.mo}));
+  const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,saved,fcCi,fcSchol,intakes,ybYear,ybCat,ybView}=ST;
+  return{prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,saved,fcCi,fcSchol,intakes,ybYear,ybCat,ybView};
+}
+function applyFullSnapshot(d){
+  if(d.prices&&d.prices.length===COURSES.length){
+    d.prices.forEach((p,i)=>{
+      COURSES[i].fee=p.fee;COURSES[i].mat=p.mat;COURSES[i].exam=p.exam;COURSES[i].admin=p.admin;
+      if(p.hrs!==undefined)COURSES[i].hrs=p.hrs;
+      if(p.mo!==undefined)COURSES[i].mo=p.mo;
+    });
+  }
+  const nums=["ci","disc","agent","uni","tf","cp","plan","act","aDisc","aAgent","aUni","ulecMgmt","fcCi","fcSchol","ybYear"];
+  nums.forEach(k=>{if(d[k]!==undefined)ST[k]=d[k];});
+  if(Array.isArray(d.saved))ST.saved=d.saved;
+  if(Array.isArray(d.oh)&&d.oh.length===ST.oh.length)ST.oh=d.oh;
+  if(Array.isArray(d.intakes))ST.intakes=d.intakes.map(ik=>({kind:"budget",...ik}));
+  if(d.ybCat)ST.ybCat=d.ybCat;
+  if(d.ybView)ST.ybView=d.ybView;
+}
+
+function sbHeaders(){
+  return{apikey:ST.sbKey,Authorization:`Bearer ${ST.sbKey}`,"Content-Type":"application/json"};
+}
+function sbConfigured(){
+  return!!(ST.sbUrl&&ST.sbKey);
+}
+async function sbTestConnection(url,key){
+  try{
+    const res=await fetch(`${url.replace(/\/$/,"")}/rest/v1/ucc_saves?select=id&limit=1`,{
+      headers:{apikey:key,Authorization:`Bearer ${key}`}
+    });
+    if(!res.ok){
+      const body=await res.text().catch(()=>"");
+      throw new Error(`HTTP ${res.status}${body?" — "+body.slice(0,140):""}`);
+    }
+    return{ok:true,message:"Connected ✓"};
+  }catch(e){
+    return{ok:false,message:"Connection failed — "+(e.message||"network error")};
+  }
+}
+async function sbFetchSaves(){
+  if(!sbConfigured())return;
+  ST.sbLoading=true;render();
+  try{
+    const res=await fetch(`${ST.sbUrl.replace(/\/$/,"")}/rest/v1/ucc_saves?select=id,name,updated_at&order=updated_at.desc`,{
+      headers:sbHeaders()
+    });
+    if(!res.ok)throw new Error("HTTP "+res.status);
+    ST.sbSaves=await res.json();
+    ST.sbStatus="Configured";ST.sbStatusOk=true;
+  }catch(e){
+    ST.sbStatus="Could not load saves — "+(e.message||"network error");ST.sbStatusOk=false;
+  }
+  ST.sbLoading=false;
+  saveToStorage();render();
+}
+async function sbSaveScenario(name){
+  if(!sbConfigured()||!name.trim())return;
+  ST.sbLoading=true;render();
+  try{
+    const res=await fetch(`${ST.sbUrl.replace(/\/$/,"")}/rest/v1/ucc_saves`,{
+      method:"POST",
+      headers:{...sbHeaders(),Prefer:"return=minimal"},
+      body:JSON.stringify({name:name.trim(),data:buildFullSnapshot()})
+    });
+    if(!res.ok)throw new Error("HTTP "+res.status);
+    ST.sbSaveName="";
+    await sbFetchSaves();
+  }catch(e){
+    ST.sbStatus="Save failed — "+(e.message||"network error");ST.sbStatusOk=false;
+    ST.sbLoading=false;render();
+  }
+}
+async function sbLoadScenario(id){
+  if(!sbConfigured())return;
+  ST.sbLoading=true;render();
+  try{
+    const res=await fetch(`${ST.sbUrl.replace(/\/$/,"")}/rest/v1/ucc_saves?id=eq.${id}&select=data`,{
+      headers:sbHeaders()
+    });
+    if(!res.ok)throw new Error("HTTP "+res.status);
+    const rows=await res.json();
+    if(rows[0]&&rows[0].data)applyFullSnapshot(rows[0].data);
+    ST.cloudOpen=false;
+  }catch(e){
+    ST.sbStatus="Load failed — "+(e.message||"network error");ST.sbStatusOk=false;
+  }
+  ST.sbLoading=false;
+  saveToStorage();render();
+}
+async function sbDeleteScenario(id){
+  if(!sbConfigured())return;
+  ST.sbLoading=true;render();
+  try{
+    const res=await fetch(`${ST.sbUrl.replace(/\/$/,"")}/rest/v1/ucc_saves?id=eq.${id}`,{
+      method:"DELETE",headers:sbHeaders()
+    });
+    if(!res.ok)throw new Error("HTTP "+res.status);
+    await sbFetchSaves();
+  }catch(e){
+    ST.sbStatus="Delete failed — "+(e.message||"network error");ST.sbStatusOk=false;
+    ST.sbLoading=false;render();
+  }
 }
 
 function calc(st){
@@ -1983,6 +2125,7 @@ function buildModuleNav(){
       <div class="module-nav-brand">United Ceres College — Planning Suite</div>
       <div class="module-nav-current">${current.icon} ${current.label}</div>
     </div>
+    <button class="cloud-btn" id="cloudOpenBtn" style="margin-left:auto">☁ ${sbConfigured()?"Cloud saves":"Save to cloud"}</button>
   </div>
   <div class="nav-backdrop${ST.navOpen?" open":""}" id="navBackdrop"></div>
   <div class="nav-drawer${ST.navOpen?" open":""}" id="navDrawer">
@@ -2002,6 +2145,60 @@ function buildModuleNav(){
       </button>`).join("")}
     </div>
     <div class="nav-drawer-ftr">More modules will appear here as they're added.</div>
+  </div>
+  ${buildCloudModal()}`;
+}
+
+function buildCloudModal(){
+  const configured=sbConfigured();
+  const statusClass=ST.sbStatusOk===true?"ok":ST.sbStatusOk===false?"bad":"neutral";
+  const statusText=ST.sbStatus||(configured?"Configured":"Not configured");
+  const keyMasked=ST.sbKey?"•".repeat(Math.min(ST.sbKey.length,40)):"";
+  return`
+  <div class="cloud-backdrop${ST.cloudOpen?" open":""}" id="cloudBackdrop">
+    <div class="cloud-modal" onclick="event.stopPropagation()">
+      <div class="cloud-hdr">
+        <div class="cloud-hdr-title">☁ Cloud Save <span style="font-size:11px;font-weight:400;color:var(--text-muted)">(Supabase)</span></div>
+        <button class="cloud-close" id="cloudCloseBtn">×</button>
+      </div>
+      <div class="cloud-body">
+        <div class="cloud-section-title">Connection settings</div>
+        <div class="cloud-field">
+          <label>Project URL</label>
+          <input type="text" id="sbUrlInput" placeholder="https://xxxx.supabase.co" value="${ST.sbUrl||""}">
+        </div>
+        <div class="cloud-field">
+          <label>Anon / publishable key</label>
+          <input type="password" id="sbKeyInput" placeholder="eyJhbGciOi..." value="${ST.sbKey||""}">
+        </div>
+        <div class="cloud-status ${statusClass}">${ST.sbLoading?"⏳ Working…":(statusClass==="ok"?"✓ ":statusClass==="bad"?"✗ ":"— ")+statusText}</div>
+        <div class="cloud-btnrow">
+          <button id="sbSaveReloadBtn" class="primary" style="background:var(--blue-600);color:#fff;border-color:var(--blue-600)">Save &amp; reload</button>
+          <button id="sbTestBtn">Test connection</button>
+          <button id="sbReloadBtn"${configured?"":" disabled"}>Reload from Supabase</button>
+          <button id="sbClearBtn" style="color:var(--text-danger)">Clear (use local storage only)</button>
+        </div>
+        <div class="cloud-divider"></div>
+        <div class="cloud-section-title">Save current state as a scenario</div>
+        <div class="cloud-save-row">
+          <input type="text" id="sbSaveNameInput" placeholder="e.g. 2026 Budget — Draft 2" value="${ST.sbSaveName||""}"${configured?"":" disabled"}>
+          <button id="sbSaveBtn" class="primary" style="background:var(--green-800);color:#fff;border-color:var(--green-800)"${configured?"":" disabled"}>💾 Save to cloud</button>
+        </div>
+        <div class="cloud-section-title">Saved scenarios ${ST.sbSaves.length?`(${ST.sbSaves.length})`:""}</div>
+        <div class="cloud-list">
+          ${!configured?`<div style="font-size:11px;color:var(--text-muted);padding:8px 0">Configure and save your connection above to see cloud scenarios.</div>`:
+            ST.sbSaves.length===0?`<div style="font-size:11px;color:var(--text-muted);padding:8px 0">No scenarios saved yet.</div>`:
+            ST.sbSaves.map(s=>`
+            <div class="cloud-item">
+              <div class="cloud-item-name" title="${s.name}">${s.name}</div>
+              <div class="cloud-item-date">${new Date(s.updated_at).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}</div>
+              <button data-sbload="${s.id}">Load</button>
+              <button data-sbdel="${s.id}" style="color:var(--text-danger)">Delete</button>
+            </div>`).join("")
+          }
+        </div>
+      </div>
+    </div>
   </div>`;
 }
 
@@ -2079,6 +2276,56 @@ function bindModuleNavEvents(){
     ST.module=e.currentTarget.dataset.module;
     ST.navOpen=false;
     saveToStorage();render();
+  }));
+
+  /* Cloud save (Supabase) */
+  const cloudOpenBtn=document.getElementById("cloudOpenBtn");
+  const cloudBackdrop=document.getElementById("cloudBackdrop");
+  const cloudCloseBtn=document.getElementById("cloudCloseBtn");
+  if(cloudOpenBtn)cloudOpenBtn.addEventListener("click",()=>{ST.cloudOpen=true;render();});
+  if(cloudBackdrop)cloudBackdrop.addEventListener("click",()=>{ST.cloudOpen=false;render();});
+  if(cloudCloseBtn)cloudCloseBtn.addEventListener("click",()=>{ST.cloudOpen=false;render();});
+
+  const sbUrlInput=document.getElementById("sbUrlInput");
+  const sbKeyInput=document.getElementById("sbKeyInput");
+  const sbSaveNameInput=document.getElementById("sbSaveNameInput");
+  if(sbSaveNameInput)sbSaveNameInput.addEventListener("input",e=>{ST.sbSaveName=e.target.value;});
+
+  const sbSaveReloadBtn=document.getElementById("sbSaveReloadBtn");
+  if(sbSaveReloadBtn)sbSaveReloadBtn.addEventListener("click",async()=>{
+    const url=(sbUrlInput?.value||"").trim(),key=(sbKeyInput?.value||"").trim();
+    if(!url||!key){ST.sbStatus="Enter both a Project URL and an anon key first";ST.sbStatusOk=false;render();return;}
+    ST.sbUrl=url;ST.sbKey=key;
+    saveToStorage();
+    await sbFetchSaves();
+  });
+  const sbTestBtn=document.getElementById("sbTestBtn");
+  if(sbTestBtn)sbTestBtn.addEventListener("click",async()=>{
+    const url=(sbUrlInput?.value||"").trim(),key=(sbKeyInput?.value||"").trim();
+    if(!url||!key){ST.sbStatus="Enter both a Project URL and an anon key first";ST.sbStatusOk=false;render();return;}
+    ST.sbLoading=true;render();
+    const result=await sbTestConnection(url,key);
+    ST.sbLoading=false;ST.sbStatus=result.message;ST.sbStatusOk=result.ok;
+    render();
+  });
+  const sbReloadBtn=document.getElementById("sbReloadBtn");
+  if(sbReloadBtn)sbReloadBtn.addEventListener("click",()=>{sbFetchSaves();});
+  const sbClearBtn=document.getElementById("sbClearBtn");
+  if(sbClearBtn)sbClearBtn.addEventListener("click",()=>{
+    ST.sbUrl="";ST.sbKey="";ST.sbSaves=[];ST.sbStatus="";ST.sbStatusOk=null;
+    saveToStorage();render();
+  });
+  const sbSaveBtn=document.getElementById("sbSaveBtn");
+  if(sbSaveBtn)sbSaveBtn.addEventListener("click",()=>{
+    const name=(sbSaveNameInput?.value||"").trim();
+    if(!name){ST.sbStatus="Enter a name for this scenario";ST.sbStatusOk=false;render();return;}
+    sbSaveScenario(name);
+  });
+  document.querySelectorAll("[data-sbload]").forEach(b=>b.addEventListener("click",e=>{
+    sbLoadScenario(e.currentTarget.dataset.sbload);
+  }));
+  document.querySelectorAll("[data-sbdel]").forEach(b=>b.addEventListener("click",e=>{
+    if(confirm("Delete this saved scenario? This cannot be undone."))sbDeleteScenario(e.currentTarget.dataset.sbdel);
   }));
 }
 
@@ -2213,7 +2460,7 @@ async function doAISend(msg,s){
   if(msgs)msgs.scrollTop=msgs.scrollHeight;
 }
 
-function init(){loadFromStorage();render();}
+function init(){loadFromStorage();render();if(sbConfigured())sbFetchSaves();}
 if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",init);}else{init();}
 </script>
 </body>
