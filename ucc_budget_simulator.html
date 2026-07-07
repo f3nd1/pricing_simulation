@@ -332,7 +332,8 @@ const ST={
   aiKey:"",aiModel:"gpt-4o-mini",aiMessages:[],aiOpen:false,aiSettingsOpen:false,aiThinking:false,
   lpSections:{params:true,inputs:true,actual:false,overhead:true},
   whatIfView:"table",
-  views:{costBreakdown:"bars",waterfall:"rows",sens:"table",ulec:"table",compare:"table",pricelist:"table",feecalc:"table"}
+  views:{costBreakdown:"bars",waterfall:"rows",sens:"table",ulec:"table",compare:"table",pricelist:"table",feecalc:"table"},
+  intakes:[],pfView:"monthly",pfYear:new Date().getFullYear(),pfCat:"All",pfForm:{ci:0,month:0,year:new Date().getFullYear(),students:15}
 };
 const sgd=n=>{const a=Math.abs(Math.round(n));const s="$"+a.toLocaleString();return n<0?"("+s+")":s;};
 const fp=n=>(n*100).toFixed(1)+"%";
@@ -341,8 +342,8 @@ const LS_KEY="ucc_sim_v3";
 function saveToStorage(){
   try{
     const prices=COURSES.map(c=>({fee:c.fee,mat:c.mat,exam:c.exam,admin:c.admin,hrs:c.hrs,mo:c.mo}));
-    const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views}=ST;
-    localStorage.setItem(LS_KEY,JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views}));
+    const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,intakes,pfView,pfYear,pfCat}=ST;
+    localStorage.setItem(LS_KEY,JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,intakes,pfView,pfYear,pfCat}));
   }catch(e){}
 }
 function loadFromStorage(){
@@ -368,6 +369,10 @@ function loadFromStorage(){
     if(d.lpSections)ST.lpSections={...ST.lpSections,...d.lpSections};
     if(d.whatIfView)ST.whatIfView=d.whatIfView;
     if(d.views)ST.views={...ST.views,...d.views};
+    if(Array.isArray(d.intakes))ST.intakes=d.intakes;
+    if(d.pfView)ST.pfView=d.pfView;
+    if(d.pfYear)ST.pfYear=d.pfYear;
+    if(d.pfCat)ST.pfCat=d.pfCat;
   }catch(e){}
 }
 function exportData(){
@@ -438,6 +443,72 @@ function calc(st){
     varStu:st.act-st.plan,varBE:st.act-beStu,
     varRevG:aGross-pGross,varRevN:aTotal-pTotal,varProfit:aProfit-pProfit,varMgnPp:(aMgn-pMgn)*100,
     sens,DR,AR,ulecTeach,ulecMgmtTotal,ulecTotal,revPool,uccProfit,uccMgn,ulecShare};
+}
+
+const MONTH_NAMES=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+/* Portfolio: per-course economics using the same global simulation inputs as the Overview tab */
+function econForCourse(c,st){
+  const totalFee=c.fee+c.mat+c.exam+c.admin,otherFees=c.mat+c.exam+c.admin;
+  const teachCost=st.tf*c.hrs*(st.cp/100);
+  const fixedCostMonthly=st.oh.reduce((s,o)=>s+(Number(o.cost)||0),0);
+  const totalCost=teachCost+fixedCostMonthly*c.mo;
+  const d=st.disc/100,a=st.agent/100,u=st.uni/100;
+  const netPerStudent=totalFee*(1-d)-c.fee*a-c.fee*u+c.app+otherFees;
+  return{totalCost,netPerStudent,mo:c.mo};
+}
+
+function buildPortfolioLedger(intakes,st,catFilter){
+  const ledger={};
+  const ensure=k=>{if(!ledger[k])ledger[k]={revenue:0,cost:0,newStudents:0};return ledger[k];};
+  intakes.forEach(ik=>{
+    const c=COURSES[ik.ci];
+    if(!c)return;
+    if(catFilter!=="All"&&c.cat!==catFilter)return;
+    const econ=econForCourse(c,st);
+    const monthlyRev=(econ.netPerStudent*ik.students)/econ.mo;
+    const monthlyCost=econ.totalCost/econ.mo;
+    ensure(`${ik.year}-${ik.month}`).newStudents+=ik.students;
+    for(let k=0;k<econ.mo;k++){
+      const idx=ik.year*12+ik.month+k;
+      const y=Math.floor(idx/12),m=((idx%12)+12)%12;
+      const b=ensure(`${y}-${m}`);
+      b.revenue+=monthlyRev;b.cost+=monthlyCost;
+    }
+  });
+  return ledger;
+}
+
+function portfolioPeriods(ledger,view,year){
+  const keys=Object.keys(ledger);
+  if(view==="monthly"){
+    return MONTH_NAMES.map((name,m)=>{
+      const b=ledger[`${year}-${m}`]||{revenue:0,cost:0,newStudents:0};
+      return{label:name,...b,profit:b.revenue-b.cost};
+    });
+  }
+  if(view==="quarterly"){
+    const qs=[[0,1,2],[3,4,5],[6,7,8],[9,10,11]];
+    return qs.map((months,qi)=>{
+      const agg=months.reduce((acc,m)=>{
+        const b=ledger[`${year}-${m}`]||{revenue:0,cost:0,newStudents:0};
+        acc.revenue+=b.revenue;acc.cost+=b.cost;acc.newStudents+=b.newStudents;return acc;
+      },{revenue:0,cost:0,newStudents:0});
+      return{label:"Q"+(qi+1),...agg,profit:agg.revenue-agg.cost};
+    });
+  }
+  if(view==="yearly"){
+    if(!keys.length)return[];
+    const years=[...new Set(keys.map(k=>parseInt(k.split("-")[0])))].sort((a,b)=>a-b);
+    return years.map(y=>{
+      const agg={revenue:0,cost:0,newStudents:0};
+      for(let m=0;m<12;m++){const b=ledger[`${y}-${m}`];if(b){agg.revenue+=b.revenue;agg.cost+=b.cost;agg.newStudents+=b.newStudents;}}
+      return{label:String(y),...agg,profit:agg.revenue-agg.cost};
+    });
+  }
+  if(!keys.length)return[{label:"All-time",revenue:0,cost:0,newStudents:0,profit:0}];
+  const agg=keys.reduce((acc,k)=>{const b=ledger[k];acc.revenue+=b.revenue;acc.cost+=b.cost;acc.newStudents+=b.newStudents;return acc;},{revenue:0,cost:0,newStudents:0});
+  return[{label:"All-time",...agg,profit:agg.revenue-agg.cost}];
 }
 
 function Row(label,val,cls,note,isTotal){
@@ -1406,6 +1477,136 @@ function drawFeeTimelineChart(st){
   svg.append("text").attr("x",width-margin.right).attr("y",14).attr("text-anchor","end").attr("font-size",10).attr("fill","var(--text-muted)").text(`Total: ${sgd(total)}`);
 }
 
+function renderPortfolio(st){
+  const ledger=buildPortfolioLedger(st.intakes,st,st.pfCat);
+  const periods=portfolioPeriods(ledger,st.pfView,st.pfYear);
+  const totals=periods.reduce((a,p)=>({revenue:a.revenue+p.revenue,cost:a.cost+p.cost,profit:a.profit+p.profit,newStudents:a.newStudents+p.newStudents}),{revenue:0,cost:0,profit:0,newStudents:0});
+  const margin=totals.revenue>0?totals.profit/totals.revenue:0;
+  const years=[...new Set(st.intakes.map(i=>i.year))];
+  let yearRange=years.length?[Math.min(...years),Math.max(...years)]:[st.pfYear,st.pfYear];
+  const availYears=[];
+  for(let y=yearRange[0];y<=yearRange[1];y++)availYears.push(y);
+  if(!availYears.includes(st.pfYear))availYears.push(st.pfYear);
+  availYears.sort((a,b)=>a-b);
+
+  const pviews=[{val:"monthly",label:"Monthly"},{val:"quarterly",label:"Quarterly"},{val:"yearly",label:"Yearly"},{val:"total",label:"Total"}];
+
+  const rows=periods.map(p=>`<tr>
+    <td style="padding:5px 8px;font-weight:600">${p.label}</td>
+    <td style="padding:5px 8px;text-align:right">${sgd(p.revenue)}</td>
+    <td style="padding:5px 8px;text-align:right;color:var(--text-muted)">${sgd(p.cost)}</td>
+    <td style="padding:5px 8px;text-align:right;font-weight:700;color:${p.profit>=0?"var(--text-success)":"var(--text-danger)"}">${sgd(p.profit)}</td>
+    <td style="padding:5px 8px;text-align:right">${p.revenue>0?fp(p.profit/p.revenue):"—"}</td>
+    <td style="padding:5px 8px;text-align:right">${p.newStudents}</td>
+  </tr>`).join("");
+
+  const cats=["English","Preparatory","Business","Technology","Tourism & Hospitality"];
+  const intakeFormOptions=cats.map(cat=>`<optgroup label="${cat}">${COURSES.map((c,i)=>c.cat===cat?`<option value="${i}"${i===st.pfForm.ci?" selected":""}>${c.name}</option>`:"").join("")}</optgroup>`).join("");
+  const intakeRows=st.intakes.slice().sort((a,b)=>a.year-b.year||a.month-b.month).map(ik=>{
+    const c=COURSES[ik.ci];
+    if(!c)return"";
+    return`<tr>
+      <td style="padding:5px 8px">${c.abbr}</td>
+      <td style="padding:5px 8px"><span class="card-badge" style="background:var(--blue-100);color:var(--blue-700);font-size:9px">${c.cat}</span></td>
+      <td style="padding:5px 8px">${MONTH_NAMES[ik.month]} ${ik.year}</td>
+      <td style="padding:5px 8px;text-align:right">${ik.students}</td>
+      <td style="padding:5px 8px;text-align:right">${c.mo} mo</td>
+      <td style="padding:5px 8px;text-align:center"><button data-delintake="${ik.id}" class="del-btn" style="color:var(--text-danger);border:none;background:none;cursor:pointer;font-size:16px;padding:0;line-height:1">×</button></td>
+    </tr>`;
+  }).join("");
+
+  return`
+  <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;padding:8px 12px;background:var(--blue-50);border-radius:8px;border:1px solid var(--blue-100)">
+    💡 Revenue and cost for each intake (cohort) are recognised <strong>straight-line across its course duration</strong> — a 6-month course's economics are spread evenly over those 6 months, so overlapping cohorts stack correctly into any month/quarter/year. Uses the same <strong>global simulation inputs</strong> (teacher rate, discount, commissions, overhead) as the Overview tab — editable in the left panel.
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-card-lbl">Total revenue</div><div class="kpi-card-val" style="color:var(--text-accent)">${sgd(totals.revenue)}</div><div class="kpi-card-sub">${st.pfView} view</div></div>
+    <div class="kpi-card"><div class="kpi-card-lbl">Total cost</div><div class="kpi-card-val" style="color:var(--text-danger)">${sgd(totals.cost)}</div><div class="kpi-card-sub">&nbsp;</div></div>
+    <div class="kpi-card"><div class="kpi-card-lbl">Total profit</div><div class="kpi-card-val" style="color:${totals.profit>=0?"var(--text-success)":"var(--text-danger)"}">${sgd(totals.profit)}</div><div class="kpi-card-sub">${fp(margin)} margin</div></div>
+    <div class="kpi-card"><div class="kpi-card-lbl">New enrolments</div><div class="kpi-card-val">${totals.newStudents}</div><div class="kpi-card-sub">students, in scope</div></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+      <div class="view-toggle">
+        ${pviews.map(v=>`<button data-pview="${v.val}" class="${st.pfView===v.val?"on":""}">${v.label}</button>`).join("")}
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        ${(st.pfView==="monthly"||st.pfView==="quarterly")?`<select id="pfYear">${availYears.map(y=>`<option value="${y}"${y===st.pfYear?" selected":""}>${y}</option>`).join("")}</select>`:""}
+        <select id="pfCat">
+          <option value="All"${st.pfCat==="All"?" selected":""}>All categories</option>
+          ${cats.map(c=>`<option value="${c}"${st.pfCat===c?" selected":""}>${c}</option>`).join("")}
+        </select>
+      </div>
+    </div>
+    ${chartLegend([{color:"#2563eb",label:"Revenue"},{color:"#94a3b8",label:"Cost"},{color:"#16a34a",label:"Profit"},{color:"#dc2626",label:"Loss"}])}
+    <div id="portfolioChart" style="position:relative;width:100%;height:300px"></div>
+    <div class="tbl-scroll" style="margin-top:10px"><table class="cptbl" style="min-width:520px">
+      <thead><tr>
+        <th>Period</th><th style="text-align:right">Revenue</th><th style="text-align:right">Cost</th>
+        <th style="text-align:right">Profit</th><th style="text-align:right">Margin</th><th style="text-align:right">New students</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">Course intakes (cohorts)</div><span style="font-size:11px;color:var(--text-muted)">${st.intakes.length} intakes</span></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+      <select id="pfFormCi" style="font-size:12px">${intakeFormOptions}</select>
+      <select id="pfFormMonth" style="font-size:12px">${MONTH_NAMES.map((m,i)=>`<option value="${i}"${i===st.pfForm.month?" selected":""}>${m}</option>`).join("")}</select>
+      <input id="pfFormYear" type="number" value="${st.pfForm.year}" style="width:70px;font-size:12px">
+      <input id="pfFormStudents" type="number" value="${st.pfForm.students}" min="1" style="width:70px;font-size:12px">
+      <button id="pfAddIntake" class="hdr-btn primary" style="background:var(--blue-600);color:#fff;border-color:var(--blue-600)">+ Add intake</button>
+    </div>
+    <div class="tbl-scroll"><table class="cptbl" style="min-width:480px">
+      <thead><tr><th>Course</th><th>Category</th><th>Start</th><th style="text-align:right">Students</th><th style="text-align:right">Duration</th><th></th></tr></thead>
+      <tbody>${intakeRows||`<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text-muted)">No intakes yet — add one above.</td></tr>`}</tbody>
+    </table></div>
+  </div>`;
+}
+
+function drawPortfolioChart(periods){
+  const el=document.getElementById("portfolioChart");
+  if(!el)return;
+  el.innerHTML="";
+  if(typeof d3==="undefined")return chartFallback(el);
+  const width=el.clientWidth||600,height=300;
+  const margin={top:16,right:16,bottom:34,left:64};
+  const innerW=Math.max(width-margin.left-margin.right,100),innerH=height-margin.top-margin.bottom;
+  const maxAbs=Math.max(1,...periods.flatMap(p=>[p.revenue,p.cost,Math.abs(p.profit)]));
+  const svg=d3.select(el).append("svg").attr("width",width).attr("height",height);
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
+  const x0=d3.scaleBand().domain(periods.map((_,i)=>i)).range([0,innerW]).padding(0.25);
+  const x1=d3.scaleBand().domain(["revenue","cost","profit"]).range([0,x0.bandwidth()]).padding(0.15);
+  const y=d3.scaleLinear().domain([0,maxAbs]).nice().range([innerH,0]);
+  const zeroY=y(0);
+  g.append("g").call(d3.axisLeft(y).ticks(5).tickSize(-innerW).tickFormat("")).call(sel=>sel.select(".domain").remove())
+    .selectAll("line").attr("stroke","var(--border)").attr("stroke-dasharray","2,3");
+  const tip=d3.select(el).append("div").attr("class","whatif-chart-tip");
+  const seriesColor={revenue:"#2563eb",cost:"#94a3b8"};
+  periods.forEach((p,i)=>{
+    ["revenue","cost","profit"].forEach(key=>{
+      const v=p[key];
+      const color=key==="profit"?(v>=0?"#16a34a":"#dc2626"):seriesColor[key];
+      g.append("rect")
+        .attr("x",x0(i)+x1(key)).attr("width",x1.bandwidth())
+        .attr("y",v>=0?y(v):zeroY).attr("height",Math.max(Math.abs(y(0)-y(v)),1))
+        .attr("fill",color).attr("rx",2)
+        .on("mousemove",function(event){
+          tip.style("opacity",1).style("left",(event.offsetX+10)+"px").style("top",(event.offsetY-24)+"px")
+            .html(`<strong>${p.label}</strong><br>${key[0].toUpperCase()+key.slice(1)}: ${sgd(v)}`);
+        })
+        .on("mouseleave",()=>tip.style("opacity",0));
+    });
+  });
+  g.append("line").attr("x1",0).attr("x2",innerW).attr("y1",zeroY).attr("y2",zeroY).attr("stroke","var(--border-strong)");
+  g.append("g").attr("transform",`translate(0,${innerH})`)
+    .call(d3.axisBottom(x0).tickFormat(i=>periods[i].label).tickSize(0))
+    .selectAll("text").attr("font-size",10).attr("fill","var(--text-muted)");
+  g.append("g").call(d3.axisLeft(y).ticks(5).tickFormat(d=>"$"+d3.format(",.0f")(d)))
+    .selectAll("text").attr("font-size",9).attr("fill","var(--text-muted)");
+  g.selectAll(".domain,.tick line").attr("stroke","var(--border-strong)");
+}
+
 function buildCourseSelector(ci){
   const cats=["English","Preparatory","Business","Technology","Tourism & Hospitality"];
   return cats.map(cat=>`<optgroup label="${cat}">${COURSES.map((c,i)=>c.cat===cat?`<option value="${i}"${i===ci?" selected":""}>${c.name}</option>`:"").join("")}</optgroup>`).join("");
@@ -1606,8 +1807,8 @@ async function sendToAI(userMsg,s,st){
 
 function render(){
   const s=calc(ST);
-  const tabs=["overview","sensitivity","ulec","compare","pricelist","feecalc"];
-  const tlbls=["Overview","Sensitivity","ULEC subcontract",`Scenarios (${ST.saved.length})`,"Price List","Fee Calculator"];
+  const tabs=["overview","sensitivity","ulec","compare","pricelist","feecalc","portfolio"];
+  const tlbls=["Overview","Sensitivity","ULEC subcontract",`Scenarios (${ST.saved.length})`,"Price List","Fee Calculator","Portfolio"];
   document.getElementById("app").innerHTML=`
   <div class="hdr">
     <div class="hdr-brand">
@@ -1638,7 +1839,8 @@ function render(){
         ST.tab==="ulec"?renderULEC(s,ST):
         ST.tab==="compare"?renderCompare(ST.saved):
         ST.tab==="pricelist"?renderPriceList():
-        renderFeeCalc(ST)
+        ST.tab==="feecalc"?renderFeeCalc(ST):
+        renderPortfolio(ST)
       }</div>
     </div>
   </div>
@@ -1655,6 +1857,10 @@ function render(){
   if(ST.tab==="compare"&&ST.views.compare==="chart")drawCompareChart(ST.saved);
   if(ST.tab==="pricelist"&&ST.views.pricelist==="chart")drawPriceChart();
   if(ST.tab==="feecalc"&&ST.views.feecalc==="chart")drawFeeTimelineChart(ST);
+  if(ST.tab==="portfolio"){
+    const ledger=buildPortfolioLedger(ST.intakes,ST,ST.pfCat);
+    drawPortfolioChart(portfolioPeriods(ledger,ST.pfView,ST.pfYear));
+  }
 }
 
 function bindEvents(s){
@@ -1707,6 +1913,34 @@ function bindEvents(s){
   document.querySelectorAll("[data-viewkey]").forEach(btn=>btn.addEventListener("click",e=>{
     const k=e.currentTarget.dataset.viewkey,v=e.currentTarget.dataset.viewval;
     ST.views[k]=v;
+    save_render();
+  }));
+
+  /* Portfolio tab: period menu (monthly/quarterly/yearly/total), filters, intake manager */
+  document.querySelectorAll("[data-pview]").forEach(btn=>btn.addEventListener("click",e=>{
+    ST.pfView=e.currentTarget.dataset.pview;
+    save_render();
+  }));
+  const pfYearSel=document.getElementById("pfYear");
+  if(pfYearSel)pfYearSel.addEventListener("change",e=>{ST.pfYear=parseInt(e.target.value);save_render();});
+  const pfCatSel=document.getElementById("pfCat");
+  if(pfCatSel)pfCatSel.addEventListener("change",e=>{ST.pfCat=e.target.value;save_render();});
+  const pfFormCi=document.getElementById("pfFormCi");
+  if(pfFormCi)pfFormCi.addEventListener("change",e=>{ST.pfForm.ci=parseInt(e.target.value);saveToStorage();});
+  const pfFormMonth=document.getElementById("pfFormMonth");
+  if(pfFormMonth)pfFormMonth.addEventListener("change",e=>{ST.pfForm.month=parseInt(e.target.value);saveToStorage();});
+  const pfFormYear=document.getElementById("pfFormYear");
+  if(pfFormYear)pfFormYear.addEventListener("change",e=>{ST.pfForm.year=parseInt(e.target.value)||ST.pfForm.year;saveToStorage();});
+  const pfFormStudents=document.getElementById("pfFormStudents");
+  if(pfFormStudents)pfFormStudents.addEventListener("change",e=>{ST.pfForm.students=parseInt(e.target.value)||1;saveToStorage();});
+  const pfAddBtn=document.getElementById("pfAddIntake");
+  if(pfAddBtn)pfAddBtn.addEventListener("click",()=>{
+    const nextId=Math.max(0,...ST.intakes.map(i=>i.id))+1;
+    ST.intakes.push({id:nextId,ci:ST.pfForm.ci,month:ST.pfForm.month,year:ST.pfForm.year,students:ST.pfForm.students});
+    save_render();
+  });
+  document.querySelectorAll("[data-delintake]").forEach(b=>b.addEventListener("click",e=>{
+    ST.intakes=ST.intakes.filter(i=>i.id!==parseInt(e.currentTarget.dataset.delintake));
     save_render();
   }));
 
