@@ -526,8 +526,8 @@ const FC_MP={cls:14,tmo:120,adms:0.5,amo:160}; /* manpower: class size, teacher 
 /* Fixed Supabase project — set these two values once and the Cloud Save fields lock to them.
    The anon/publishable key is safe to ship client-side (Supabase's Row Level Security is what
    actually protects the data, not secrecy of this key). Leave both "" to let users enter their own. */
-const SUPABASE_URL="";
-const SUPABASE_ANON_KEY="";
+const SUPABASE_URL="https://miwtrwmyfgcepcgxjryo.supabase.co";
+const SUPABASE_ANON_KEY="sb_publishable_MwIJK-K5VrYySJ6iqLQj1Q_hjNjF9yu";
 const ST={
   ci:7,disc:0,agent:40,uni:0,tf:70,cp:100,plan:9,
   act:40,aDisc:0,aAgent:40,aUni:0,
@@ -543,7 +543,8 @@ const ST={
   ybForm:{kind:"budget",ci:0,month:0,year:new Date().getFullYear(),students:15},
   cloudOpen:false,sbUrl:SUPABASE_URL,sbKey:SUPABASE_ANON_KEY,sbStatus:"",sbStatusOk:null,sbSaves:[],sbLoading:false,sbSaveName:"",
   fx:{tab:"pnl",scenario:"Base",scen:JSON.parse(JSON.stringify(FC_SCENARIOS)),
-      exp:JSON.parse(JSON.stringify(FC_EXP))},
+      exp:JSON.parse(JSON.stringify(FC_EXP)),
+      baseYear:FC_YEARS[0],monthly:{}},
   op:{tab:"manpower",mp:{...FC_MP},teacherRate:70,contactPct:100,disc:0,comp:{}},
   val:{tab:"dcf",wacc:0.10,g:0.03,
        da:fcExpGroupTotal(FC_EXP.opex[3]),capex:[0,0,0,0,0,0],nwc:[0,0,0,0,0,0],
@@ -589,6 +590,8 @@ function applyFx(dfx){
   if(dfx.scen)ST.fx.scen=dfx.scen;
   /* only accept the new grouped expense shape (categories with sub-items); older flat saves fall back to the seed */
   if(dfx.exp&&Array.isArray(dfx.exp.cogs)&&dfx.exp.cogs[0]&&Array.isArray(dfx.exp.cogs[0].items))ST.fx.exp=dfx.exp;
+  if(dfx.baseYear&&FC_YEARS.includes(dfx.baseYear))ST.fx.baseYear=dfx.baseYear;
+  if(dfx.monthly&&typeof dfx.monthly==="object")ST.fx.monthly=dfx.monthly;
 }
 function saveToStorage(){
   try{
@@ -2416,7 +2419,7 @@ function fcPnl(st){
 
 function renderForecastModule(st){
   const fx=st.fx;
-  const tabs=[["pnl","Income Statement"],["revenue","Revenue"],["expenses","Expenses"],["assumptions","Assumptions"],["dashboard","Dashboard"]];
+  const tabs=[["pnl","Income Statement"],["revenue","Revenue"],["expenses","Expenses (yearly)"],["monthly","Expenses (monthly)"],["assumptions","Assumptions"],["dashboard","Dashboard"]];
   const scen=fcScen(st);
   const p=fcPnl(st);
   const hdr=`
@@ -2438,6 +2441,7 @@ function renderForecastModule(st){
       fx.tab==="pnl"?fcRenderPnl(st,p):
       fx.tab==="revenue"?fcRenderRevenue(st,p):
       fx.tab==="expenses"?fcRenderExpenses(st,p):
+      fx.tab==="monthly"?fcRenderMonthly(st):
       fx.tab==="assumptions"?fcRenderAssumptions(st):
       fcRenderDashboard(st,p)
     }</div>
@@ -2523,6 +2527,71 @@ function fcRenderExpenses(st,p){
         ${section("Operating Expenses",st.fx.exp.opex,"opex")}
         ${fcMoneyRow("Total OPEX",p.opex,"muted",true)}
         ${fcMoneyRow("TOTAL EXPENSES",p.cogs.map((v,i)=>v+p.opex[i]),"",true)}
+      </tbody>
+    </table></div>
+  </div>`;
+}
+
+/* ── Monthly expense breakdown for a chosen base year ──
+   Each expense sub-line can be split Jan–Dec. Stored per line/year in st.fx.monthly;
+   when nothing is stored it defaults to an even 1/12 split of that year's annual value.
+   Editing a month writes the whole 12-month array AND recomputes that year's annual
+   total (= sum of the 12 months) so the yearly Expenses tab / P&L stay consistent. */
+function fcMonthKey(keybase,gi,li,year){return `${keybase}:${gi}:${li}:${year}`;}
+function fcMonthlyArr(st,keybase,gi,li,year){
+  const stored=st.fx.monthly&&st.fx.monthly[fcMonthKey(keybase,gi,li,year)];
+  if(stored&&stored.length===12)return stored.map(v=>Number(v)||0);
+  const yi=FC_YEARS.indexOf(year);
+  const annual=Number(st.fx.exp[keybase][gi].items[li].v[yi])||0;
+  return Array.from({length:12},()=>annual/12);
+}
+function fcRenderMonthly(st){
+  const year=FC_YEARS.includes(st.fx.baseYear)?st.fx.baseYear:FC_YEARS[0];
+  const monthCols=MONTH_NAMES.map(m=>`<th style="text-align:right">${m}</th>`).join("");
+  const grand=Array.from({length:12},()=>0);
+  const section=(title,groups,keybase)=>`
+    <tr><td colspan="14" style="padding:7px 8px;font-weight:800;background:var(--surface-1);font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)">${title}</td></tr>
+    ${groups.map((g,gi)=>{
+      const gm=Array.from({length:12},(_,mi)=>g.items.reduce((a,l,li)=>a+fcMonthlyArr(st,keybase,gi,li,year)[mi],0));
+      gm.forEach((v,mi)=>grand[mi]+=v);
+      const gAnnual=gm.reduce((a,b)=>a+b,0);
+      return `<tr>
+        <td style="padding:5px 8px;font-weight:700">${g.label}</td>
+        ${gm.map(v=>`<td style="padding:5px 4px;text-align:right;font-weight:700;color:var(--text-secondary)">${sgd(v)}</td>`).join("")}
+        <td style="padding:5px 8px;text-align:right;font-weight:700;color:var(--text-accent)">${sgd(gAnnual)}</td>
+      </tr>`+
+      g.items.map((l,li)=>{
+        const arr=fcMonthlyArr(st,keybase,gi,li,year);
+        const rowTot=arr.reduce((a,b)=>a+b,0);
+        return `<tr>
+          <td style="padding:2px 8px 2px 22px;color:var(--text-secondary)">${l.label}</td>
+          ${arr.map((v,mi)=>`<td style="padding:2px 3px;text-align:right"><input type="number" class="plinp sm" data-fcmon="${keybase}" data-gi="${gi}" data-li="${li}" data-mi="${mi}" value="${Math.round(v)}" step="100" style="width:60px;text-align:right"></td>`).join("")}
+          <td style="padding:2px 8px;text-align:right;font-weight:600;color:var(--text-accent);white-space:nowrap">${sgd(rowTot)}</td>
+        </tr>`;
+      }).join("");
+    }).join("")}`;
+  const cogsBody=section("Cost of Goods Sold",st.fx.exp.cogs,"cogs");
+  const opexBody=section("Operating Expenses",st.fx.exp.opex,"opex");
+  const grandTot=grand.reduce((a,b)=>a+b,0);
+  return `<div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+      <div class="card-hdr" style="margin-bottom:0"><div class="card-title">Monthly expense breakdown</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:11px;color:var(--text-muted)">Base year</span>
+        <select id="fcBaseYear">${FC_YEARS.map(y=>`<option value="${y}"${y===year?" selected":""}>${y}</option>`).join("")}</select>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Split each expense line across <strong>Jan–Dec</strong> for the selected base year. Cells default to an even 1/12 of the yearly figure; edit any month and the row + the <strong>${year}</strong> yearly total recompute (the 12 months always sum to the year). Different years carry their own inflation-adjusted totals, so pick the year above to plan its months.</div>
+    <div class="tbl-scroll" style="max-height:560px;overflow-y:auto"><table class="cptbl" style="min-width:1040px">
+      <thead><tr><th>Account (${year})</th>${monthCols}<th style="text-align:right">Year total</th></tr></thead>
+      <tbody>
+        ${cogsBody}
+        ${opexBody}
+        <tr style="border-top:1.5px solid var(--border-strong)">
+          <td style="padding:6px 8px;font-weight:800">TOTAL EXPENSES</td>
+          ${grand.map(v=>`<td style="padding:6px 4px;text-align:right;font-weight:800">${sgd(v)}</td>`).join("")}
+          <td style="padding:6px 8px;text-align:right;font-weight:800;color:var(--text-accent)">${sgd(grandTot)}</td>
+        </tr>
       </tbody>
     </table></div>
   </div>`;
@@ -3071,7 +3140,22 @@ function bindForecastEvents(){
   }));
   document.querySelectorAll("[data-fcexp]").forEach(inp=>inp.addEventListener("change",e=>{
     const kb=e.currentTarget.dataset.fcexp,gi=+e.currentTarget.dataset.gi,li=+e.currentTarget.dataset.li,yi=+e.currentTarget.dataset.yi;
-    ST.fx.exp[kb][gi].items[li].v[yi]=parseFloat(e.currentTarget.value)||0;save_render();
+    ST.fx.exp[kb][gi].items[li].v[yi]=parseFloat(e.currentTarget.value)||0;
+    /* clear any stored monthly split for this line/year so it re-defaults to an even 1/12 of the new annual */
+    if(ST.fx.monthly)delete ST.fx.monthly[fcMonthKey(kb,gi,li,FC_YEARS[yi])];
+    save_render();
+  }));
+  const baseYearSel=document.getElementById("fcBaseYear");
+  if(baseYearSel)baseYearSel.addEventListener("change",e=>{ST.fx.baseYear=parseInt(e.target.value)||FC_YEARS[0];save_render();});
+  document.querySelectorAll("[data-fcmon]").forEach(inp=>inp.addEventListener("change",e=>{
+    const kb=e.currentTarget.dataset.fcmon,gi=+e.currentTarget.dataset.gi,li=+e.currentTarget.dataset.li,mi=+e.currentTarget.dataset.mi;
+    const year=FC_YEARS.includes(ST.fx.baseYear)?ST.fx.baseYear:FC_YEARS[0],yi=FC_YEARS.indexOf(year);
+    const arr=fcMonthlyArr(ST,kb,gi,li,year).slice();
+    arr[mi]=parseFloat(e.currentTarget.value)||0;
+    if(!ST.fx.monthly)ST.fx.monthly={};
+    ST.fx.monthly[fcMonthKey(kb,gi,li,year)]=arr;
+    ST.fx.exp[kb][gi].items[li].v[yi]=arr.reduce((a,b)=>a+b,0);
+    save_render();
   }));
 }
 
