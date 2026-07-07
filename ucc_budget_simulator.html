@@ -459,13 +459,60 @@ const INIT_OH=[
    Revenue is NOT seeded here: it is derived live from the Price List (fee/student)
    × the Yearly Budget intakes (students per course per year). Only the company
    expense schedule below is seeded (editable), mirroring the Excel line items. */
-/* Fixed budget horizon: 2026 → 2040 (15 years). Every module reads FC_YEARS so
-   they all share the same columns. */
-const FC_YEARS=Array.from({length:15},(_,i)=>2026+i);
-const FC_LAST=FC_YEARS.length-1;
-/* Kept for backward-compat with older saves that stored a startYear; the horizon
-   is now fixed at 15 years, so this only re-anchors the (unused) span start. */
-function fcSetPeriod(start){start=parseInt(start)||2026;for(let i=0;i<FC_YEARS.length;i++)FC_YEARS[i]=start+i;}
+/* Budget period is a rolling 5-year window with a user-chosen start year (default
+   2026). FC_YEARS is mutated in place (length can change too) so every module
+   that reads it shifts together. Users can save the current window as a named
+   period (e.g. "2026 review") and reload it later — see ST.fx.periodPresets. */
+const FC_PERIOD_LEN=5;
+let FC_YEARS=Array.from({length:FC_PERIOD_LEN},(_,i)=>2026+i);
+let FC_LAST=FC_YEARS.length-1;
+function fcSetPeriod(start,len){
+  start=parseInt(start)||FC_YEARS[0]||2026;
+  len=parseInt(len)||FC_YEARS.length||FC_PERIOD_LEN;
+  const next=Array.from({length:len},(_,i)=>start+i);
+  FC_YEARS.length=0;
+  FC_YEARS.push(...next);
+  FC_LAST=FC_YEARS.length-1;
+}
+/* Extend/trim an expense schedule's per-line v[] arrays to match FC_YEARS.length.
+   New years continue the ~3% trend from the last known value; zero lines stay zero. */
+function fcPadExp(exp){
+  const GROW=1.03;
+  ["cogs","opex"].forEach(kb=>(exp[kb]||[]).forEach(g=>(g.items||[]).forEach(l=>{
+    if(!Array.isArray(l.v))l.v=[];
+    while(l.v.length<FC_YEARS.length){
+      const prev=Number(l.v[l.v.length-1])||0;
+      l.v.push(prev?Math.round(prev*GROW):0);
+    }
+    l.v.length=FC_YEARS.length;
+  })));
+  return exp;
+}
+/* Pad/trim a flat numeric array (capex, nwc, D&A, funding lines, …) to FC_YEARS.length,
+   carrying the last known value forward into new years; extra years are trimmed. */
+function fcPadArr(arr,fill){
+  arr=Array.isArray(arr)?arr.slice():[];
+  while(arr.length<FC_YEARS.length)arr.push(arr.length?Number(arr[arr.length-1])||0:(fill||0));
+  arr.length=FC_YEARS.length;
+  return arr;
+}
+/* Re-sync every per-year array in ST to the active FC_YEARS window. Call this
+   after fcSetPeriod() or after restoring saved state, so columns never drift. */
+function fcSyncPeriodArrays(){
+  if(!ST.fx||!ST.fx.exp)return;
+  fcPadExp(ST.fx.exp);
+  if(ST.val){
+    ST.val.da=fcPadArr(ST.val.da);
+    ST.val.capex=fcPadArr(ST.val.capex);
+    ST.val.nwc=fcPadArr(ST.val.nwc);
+  }
+  if(ST.strat&&ST.strat.funding){
+    ST.strat.funding.equity=fcPadArr(ST.strat.funding.equity);
+    ST.strat.funding.loan=fcPadArr(ST.strat.funding.loan);
+    ST.strat.funding.donations=fcPadArr(ST.strat.funding.donations);
+  }
+  if(!FC_YEARS.includes(ST.fx.baseYear))ST.fx.baseYear=FC_YEARS[0];
+}
 /* Expense schedule — categories → sub-line-items exactly as per the Excel 'Expense Forecast' sheet */
 const FC_EXP={cogs:[
  {label:"Commission",items:[
@@ -522,19 +569,8 @@ const FC_EXP={cogs:[
     {label:"Staff Training",v:[4800,4944,5092,5245,5402,5565]},
     {label:"Staff Transport",v:[1200,1236,1273,1311,1351,1391]},
     {label:"Staff Welfare",v:[7200,7416,7638,7868,8104,8347]}]}]};
-/* The Excel gave us 6 reconciled years (2026–2031). The horizon is now 15 years
-   (2026–2040), so extend each line to FC_YEARS.length by continuing the ~3% trend
-   from the last known year. Zero lines stay zero. */
-(function padExp(){
-  const GROW=1.03;
-  ["cogs","opex"].forEach(kb=>FC_EXP[kb].forEach(g=>g.items.forEach(l=>{
-    while(l.v.length<FC_YEARS.length){
-      const prev=Number(l.v[l.v.length-1])||0;
-      l.v.push(prev?Math.round(prev*GROW):0);
-    }
-    l.v.length=FC_YEARS.length; /* trim if ever longer */
-  })));
-})();
+/* The seed above is the Excel's own 6 reconciled years (2026–2031); it is padded
+   to the active FC_YEARS.length (via fcPadExp) when ST.fx.exp is first built. */
 /* Scenario presets: fee = annual fee growth; vol = extra volume growth vs plan (Base=0 reconciles Excel) */
 const FC_SCENARIOS={Base:{fee:0.05,vol:0},Best:{fee:0.07,vol:0.12},Worst:{fee:0.03,vol:-0.18}};
 function courseCats(){return [...new Set(COURSES.map(c=>c.cat))];}
@@ -563,12 +599,13 @@ const ST={
   ybForm:{kind:"budget",ci:0,month:0,year:new Date().getFullYear(),students:15},
   cloudOpen:false,sbUrl:SUPABASE_URL,sbKey:SUPABASE_ANON_KEY,sbStatus:"",sbStatusOk:null,sbSaves:[],sbLoading:false,sbSaveName:"",
   fx:{tab:"pnl",scenario:"Base",scen:JSON.parse(JSON.stringify(FC_SCENARIOS)),
-      exp:JSON.parse(JSON.stringify(FC_EXP)),
+      exp:fcPadExp(JSON.parse(JSON.stringify(FC_EXP))),
       baseYear:FC_YEARS[0],monthly:{},
-      startYear:FC_YEARS[0],expMode:"manual",expMult:1.03},
+      startYear:FC_YEARS[0],periodLen:FC_YEARS.length,periodPresets:[],expMode:"manual",expMult:1.03},
   op:{tab:"manpower",mp:{...FC_MP},teacherRate:70,contactPct:100,disc:0,comp:{}},
   val:{tab:"dcf",wacc:0.10,g:0.03,
-       da:fcExpGroupTotal(FC_EXP.opex[3]),capex:[0,0,0,0,0,0],nwc:[0,0,0,0,0,0],
+       da:fcExpGroupTotal(fcPadExp(JSON.parse(JSON.stringify(FC_EXP))).opex[3]),
+       capex:Array(FC_YEARS.length).fill(0),nwc:Array(FC_YEARS.length).fill(0),
        gstRate:0.09,taxableRevPct:0,corpTax:0.17},
   strat:{tab:"growth",disc:0.10,
     inits:[{name:"New Initiative 1",start:2027,rev:500000,gm:0.5,opex:120000,capex:150000,r1:0.5,r2:1}],
@@ -583,7 +620,7 @@ const ST={
       {req:"Budget variance review completed",status:"No"},
       {req:"Asset register updated",status:"No"},
       {req:"Segregation of duties confirmed",status:"Yes"}],
-    funding:{equity:[0,0,0,0,0,0],loan:[0,0,0,0,0,0],donations:[0,0,0,0,0,0]}}
+    funding:{equity:Array(FC_YEARS.length).fill(0),loan:Array(FC_YEARS.length).fill(0),donations:Array(FC_YEARS.length).fill(0)}}
 };
 const sgd=n=>{const a=Math.abs(Math.round(n));const s="$"+a.toLocaleString();return n<0?"("+s+")":s;};
 const fp=n=>(n*100).toFixed(1)+"%";
@@ -609,18 +646,16 @@ function applyFx(dfx){
   if(dfx.tab)ST.fx.tab=dfx.tab;
   if(dfx.scenario)ST.fx.scenario=dfx.scenario;
   if(dfx.scen)ST.fx.scen=dfx.scen;
+  /* restore the saved budget period (start year + length) first — everything else
+     below (exp arrays, baseYear) is sized/validated against the resulting FC_YEARS */
+  fcSetPeriod(dfx.startYear||FC_YEARS[0],dfx.periodLen||FC_YEARS.length);
+  ST.fx.startYear=FC_YEARS[0];
+  ST.fx.periodLen=FC_YEARS.length;
+  if(Array.isArray(dfx.periodPresets))ST.fx.periodPresets=dfx.periodPresets;
   /* only accept the new grouped expense shape (categories with sub-items); older flat saves fall back to the seed */
   if(dfx.exp&&Array.isArray(dfx.exp.cogs)&&dfx.exp.cogs[0]&&Array.isArray(dfx.exp.cogs[0].items)){
-    ST.fx.exp=dfx.exp;
-    /* a save made under the old 6-year horizon has short v arrays — extend to 15 years */
-    ["cogs","opex"].forEach(kb=>(ST.fx.exp[kb]||[]).forEach(g=>(g.items||[]).forEach(l=>{
-      if(!Array.isArray(l.v))l.v=[];
-      while(l.v.length<FC_YEARS.length){const prev=Number(l.v[l.v.length-1])||0;l.v.push(prev?Math.round(prev*1.03):0);}
-      l.v.length=FC_YEARS.length;
-    })));
+    ST.fx.exp=fcPadExp(dfx.exp);
   }
-  /* horizon is now fixed at 2026–2040; ignore any legacy saved startYear so the columns don't shift */
-  ST.fx.startYear=FC_YEARS[0];
   if(dfx.baseYear&&FC_YEARS.includes(dfx.baseYear))ST.fx.baseYear=dfx.baseYear;
   if(dfx.monthly&&typeof dfx.monthly==="object")ST.fx.monthly=dfx.monthly;
   if(dfx.expMode)ST.fx.expMode=dfx.expMode;
@@ -676,6 +711,7 @@ function loadFromStorage(){
     if(d.op)ST.op={...ST.op,...d.op,mp:{...FC_MP,...(d.op.mp||{})},comp:d.op.comp||{}};
     if(d.val)ST.val={...ST.val,...d.val};
     if(d.strat)ST.strat={...ST.strat,...d.strat};
+    fcSyncPeriodArrays();
   }catch(e){}
 }
 function exportData(){
@@ -718,6 +754,7 @@ function applyFullSnapshot(d){
   if(d.ybView)ST.ybView=d.ybView;
   if(Array.isArray(d.audit))ST.audit=d.audit;
   applyFx(d.fx);
+  fcSyncPeriodArrays();
 }
 
 function sbHeaders(){
@@ -2564,9 +2601,42 @@ function bindLogEvents(){
   if(clr)clr.addEventListener("click",()=>{if(confirm("Clear your edit history? App version history is not affected.")){ST.audit=[];saveToStorage();render();}});
 }
 
+/* Budget period setup: pick which 5-year window (start year) the whole forecast
+   uses, and save/reload named periods (e.g. "2026 review", "2027 review"). */
+function fcRenderSetup(st){
+  const fx=st.fx;
+  const yearOpts=Array.from({length:41},(_,i)=>2020+i);
+  const presets=fx.periodPresets||[];
+  return `<div class="card">
+    <div class="card-hdr"><div class="card-title">Budget period</div></div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px">Choose the 5-year window the whole forecast uses (Revenue, Expenses, Income Statement, Dashboard, Valuation, Strategy). Save the current window as a named period so you can jump straight back to it — e.g. "2026 review", "2027 review".</div>
+    <div style="display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:18px;padding:12px;background:var(--surface-1);border-radius:8px">
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Start year</div>
+        <select id="fcSetupStart">${yearOpts.map(y=>`<option value="${y}"${y===fx.startYear?" selected":""}>${y}</option>`).join("")}</select>
+      </div>
+      <div style="font-size:12px;color:var(--text-primary);padding-bottom:8px">→ window is <strong>${FC_YEARS[0]} – ${FC_YEARS[FC_LAST]}</strong> (${FC_YEARS.length} years)</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:18px">
+      <input type="text" id="fcSetupPresetName" placeholder="Name this period — e.g. 2026 review" style="flex:1;min-width:220px">
+      <button id="fcSetupPresetSave" class="hdr-btn primary" style="background:var(--blue-600);color:#fff;border-color:var(--blue-600)">💾 Save current period</button>
+    </div>
+    <div class="card-title" style="font-size:13px;margin-bottom:8px">Saved periods ${presets.length?`(${presets.length})`:""}</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      ${!presets.length?`<div style="font-size:11px;color:var(--text-muted)">No saved periods yet. Pick a start year above and save it to build a list you can jump between.</div>`:
+        presets.map((pr,i)=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface-1);border-radius:8px${pr.start===fx.startYear?";border:1px solid var(--blue-400)":""}">
+          <span style="font-size:12px;font-weight:600;flex:1;min-width:0">${esc(pr.name)}</span>
+          <span style="font-size:11px;color:var(--text-muted);white-space:nowrap">${pr.start}–${pr.start+(pr.len||FC_PERIOD_LEN)-1}</span>
+          <button data-setupload="${i}" style="font-size:11px;padding:4px 10px">Load</button>
+          <button data-setupdel="${i}" style="font-size:11px;padding:4px 10px;color:var(--text-danger)">Delete</button>
+        </div>`).join("")}
+    </div>
+  </div>`;
+}
 function renderForecastModule(st){
   const fx=st.fx;
-  const tabs=[["pnl","Income Statement"],["revenue","Revenue"],["expenses","Expenses (yearly)"],["monthly","Expenses (monthly)"],["assumptions","Assumptions"],["dashboard","Dashboard"]];
+  const tabs=[["setup","⚙ Setup"],["pnl","Income Statement"],["revenue","Revenue"],["expenses","Expenses (yearly)"],["monthly","Expenses (monthly)"],["assumptions","Assumptions"],["dashboard","Dashboard"]];
   const scen=fcScen(st);
   const p=fcPnl(st);
   const hdr=`
@@ -2585,6 +2655,7 @@ function renderForecastModule(st){
   const body=`<div class="module-body">
     <div class="tabs-wrap"><div class="tabs">${tabs.map(([k,l])=>`<button class="tab${fx.tab===k?" on":""}" data-fctab="${k}">${l}</button>`).join("")}</div></div>
     <div id="fccontent">${
+      fx.tab==="setup"?fcRenderSetup(st):
       fx.tab==="pnl"?fcRenderPnl(st,p):
       fx.tab==="revenue"?fcRenderRevenue(st,p):
       fx.tab==="expenses"?fcRenderExpenses(st,p):
@@ -2677,7 +2748,7 @@ function fcRenderExpenses(st,p){
       <div style="display:flex;align-items:center;gap:6px">
         <span style="font-size:11px;color:var(--text-muted)">Budget period</span>
         <strong style="color:var(--text-primary)">${FC_YEARS[0]} – ${FC_YEARS[FC_LAST]}</strong>
-        <span style="font-size:11px;color:var(--text-muted)">(${FC_YEARS.length} years)</span>
+        <button data-fctabgoto="setup" style="font-size:11px;padding:2px 8px;color:var(--text-accent);border:1px solid var(--border);border-radius:6px;background:none;cursor:pointer">Change…</button>
       </div>
       <div style="display:flex;align-items:center;gap:6px">
         <span style="font-size:11px;color:var(--text-muted)">Future years</span>
@@ -3316,6 +3387,45 @@ function bindForecastEvents(){
     const dest=e.currentTarget.dataset.fcgoto;
     if(dest==="pricelist"){ST.module="simulator";ST.tab="pricelist";}
     else ST.module=dest;
+    save_render();
+  }));
+  document.querySelectorAll("[data-fctabgoto]").forEach(b=>b.addEventListener("click",e=>{ST.fx.tab=e.currentTarget.dataset.fctabgoto;save_render();}));
+  const setupStart=document.getElementById("fcSetupStart");
+  if(setupStart)setupStart.addEventListener("change",e=>{
+    const nv=parseInt(e.target.value)||FC_YEARS[0];
+    logAudit("Forecast Setup","Budget period start year",ST.fx.startYear,nv);
+    fcSetPeriod(nv,FC_YEARS.length);
+    ST.fx.startYear=FC_YEARS[0];
+    fcSyncPeriodArrays();
+    save_render();
+  });
+  const presetSave=document.getElementById("fcSetupPresetSave");
+  if(presetSave)presetSave.addEventListener("click",()=>{
+    const nameInp=document.getElementById("fcSetupPresetName");
+    const name=(nameInp&&nameInp.value.trim())||`${FC_YEARS[0]} review`;
+    if(!Array.isArray(ST.fx.periodPresets))ST.fx.periodPresets=[];
+    const existing=ST.fx.periodPresets.findIndex(p=>p.name===name);
+    const preset={name,start:FC_YEARS[0],len:FC_YEARS.length};
+    if(existing>=0)ST.fx.periodPresets[existing]=preset; else ST.fx.periodPresets.push(preset);
+    logAudit("Forecast Setup","Save period preset","",`${name} (${preset.start}–${preset.start+preset.len-1})`);
+    save_render();
+  });
+  document.querySelectorAll("[data-setupload]").forEach(b=>b.addEventListener("click",e=>{
+    const pr=(ST.fx.periodPresets||[])[+e.currentTarget.dataset.setupload];
+    if(!pr)return;
+    logAudit("Forecast Setup","Load period preset",`${ST.fx.startYear}`,`${pr.name} (${pr.start})`);
+    fcSetPeriod(pr.start,pr.len||FC_YEARS.length);
+    ST.fx.startYear=FC_YEARS[0];
+    fcSyncPeriodArrays();
+    save_render();
+  }));
+  document.querySelectorAll("[data-setupdel]").forEach(b=>b.addEventListener("click",e=>{
+    const idx=+e.currentTarget.dataset.setupdel;
+    const pr=(ST.fx.periodPresets||[])[idx];
+    if(!pr)return;
+    if(!confirm(`Delete saved period "${pr.name}"?`))return;
+    ST.fx.periodPresets.splice(idx,1);
+    logAudit("Forecast Setup","Delete period preset",pr.name,"removed");
     save_render();
   }));
   document.querySelectorAll("[data-fcexp]").forEach(inp=>inp.addEventListener("change",e=>{
