@@ -490,7 +490,10 @@ const ST={
   fx:{tab:"pnl",scenario:"Base",scen:JSON.parse(JSON.stringify(FC_SCENARIOS)),
       courses:FC_SEED.map(c=>({...c,s:c.s.slice()})),
       exp:JSON.parse(JSON.stringify(FC_EXP))},
-  op:{tab:"manpower",mp:{...FC_MP},teacherRate:70,contactPct:100,disc:0,comp:{}}
+  op:{tab:"manpower",mp:{...FC_MP},teacherRate:70,contactPct:100,disc:0,comp:{}},
+  val:{tab:"dcf",wacc:0.10,g:0.03,
+       da:FC_EXP.opex[3].v.slice(),capex:[0,0,0,0,0,0],nwc:[0,0,0,0,0,0],
+       gstRate:0.09,taxableRevPct:0,corpTax:0.17}
 };
 const sgd=n=>{const a=Math.abs(Math.round(n));const s="$"+a.toLocaleString();return n<0?"("+s+")":s;};
 const fp=n=>(n*100).toFixed(1)+"%";
@@ -499,8 +502,8 @@ const LS_KEY="ucc_sim_v4";
 function saveToStorage(){
   try{
     const prices=COURSES.map(c=>({fee:c.fee,mat:c.mat,exam:c.exam,admin:c.admin,hrs:c.hrs,mo:c.mo}));
-    const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx,op}=ST;
-    localStorage.setItem(LS_KEY,JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx,op}));
+    const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx,op,val}=ST;
+    localStorage.setItem(LS_KEY,JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx,op,val}));
   }catch(e){}
 }
 function loadFromStorage(){
@@ -539,6 +542,7 @@ function loadFromStorage(){
       if(!ST.fx.exp)ST.fx.exp=JSON.parse(JSON.stringify(FC_EXP));
     }
     if(d.op)ST.op={...ST.op,...d.op,mp:{...FC_MP,...(d.op.mp||{})},comp:d.op.comp||{}};
+    if(d.val)ST.val={...ST.val,...d.val};
   }catch(e){}
 }
 function exportData(){
@@ -2214,7 +2218,7 @@ const MODULES=[
   {key:"yearlybudget",icon:"📅",label:"Yearly Budget",desc:"Budget vs actual, all courses"},
   {key:"forecast",icon:"📈",label:"Forecast & P&L",desc:"5-year revenue, expenses, income statement"},
   {key:"operating",icon:"🛠️",label:"Operating Detail",desc:"Manpower FTE, breakeven, competitor pricing"},
-  {key:"financials",icon:"🏦",label:"Valuation & Statements",desc:"Coming soon",soon:true},
+  {key:"financials",icon:"🏦",label:"Valuation & Statements",desc:"DCF value, ratios, GST & tax"},
 ];
 
 function buildModuleNav(){
@@ -2362,7 +2366,7 @@ function renderForecastModule(st){
 function fcYearCols(){return FC_YEARS.map(y=>`<th style="text-align:right">${y}</th>`).join("");}
 function fcMoneyRow(label,arr,cls,strong){
   return `<tr>${strong?`<td style="padding:5px 8px;font-weight:700">${label}</td>`:`<td style="padding:5px 8px">${label}</td>`}
-    ${arr.map(v=>`<td style="padding:5px 8px;text-align:right;${strong?"font-weight:700;":""}${cls==="net"?`color:${v>=0?"var(--text-success)":"var(--text-danger)"}`:cls==="muted"?"color:var(--text-muted)":""}">${cls==="pct"?fp(v):sgd(v)}</td>`).join("")}</tr>`;
+    ${arr.map(v=>`<td style="padding:5px 8px;text-align:right;${strong?"font-weight:700;":""}${cls==="net"?`color:${v>=0?"var(--text-success)":"var(--text-danger)"}`:(cls==="muted"||cls==="pctraw")?"color:var(--text-muted)":""}">${cls==="pct"?fp(v):cls==="pctraw"?v.toFixed(3):sgd(v)}</td>`).join("")}</tr>`;
 }
 
 function fcRenderPnl(st,p){
@@ -2704,6 +2708,139 @@ function bindOperatingEvents(){
   }));
 }
 
+/* ═══════════════ VALUATION & STATEMENTS MODULE (Phase C) ═══════════════ */
+function valDcf(st){
+  const p=fcPnl(st),net=p.net,v=st.val;
+  const fcff=net.map((n,i)=>n+(Number(v.da[i])||0)-(Number(v.nwc[i])||0)-(Number(v.capex[i])||0));
+  const df=FC_YEARS.map((y,i)=>1/Math.pow(1+v.wacc,i+1));
+  const pv=fcff.map((f,i)=>f*df[i]);
+  const sumPV=pv.reduce((a,b)=>a+b,0);
+  const tv=(v.wacc>v.g)?((fcff[5]*(1+v.g))/(v.wacc-v.g))*df[5]:0;
+  return {p,net,fcff,df,pv,sumPV,tv,ev:sumPV+tv};
+}
+function renderFinancialsModule(st){
+  const tabs=[["dcf","DCF Valuation"],["ratios","Ratios & EBITDA"],["gst","GST & Tax"]];
+  const hdr=`<div class="hdr" style="background:linear-gradient(135deg,#78350f 0%,#b45309 100%)">
+    <div class="hdr-brand"><div class="hdr-label" style="color:#fde68a">United Ceres College</div><div class="hdr-title">Valuation & Statements</div></div>
+  </div>`;
+  return hdr+`<div class="module-body">
+    <div class="tabs-wrap"><div class="tabs">${tabs.map(([k,l])=>`<button class="tab${st.val.tab===k?" on":""}" data-valtab="${k}">${l}</button>`).join("")}</div></div>
+    <div id="valcontent">${st.val.tab==="dcf"?valRenderDcf(st):st.val.tab==="ratios"?valRenderRatios(st):valRenderGst(st)}</div>
+  </div>`;
+}
+function valRenderDcf(st){
+  const d=valDcf(st),v=st.val;
+  const editRow=(label,key)=>`<tr><td style="padding:4px 8px">${label}</td>${v[key].map((x,i)=>`<td style="padding:2px 4px;text-align:right"><input type="number" class="plinp" data-valarr="${key}" data-yi="${i}" value="${Math.round(x)}" step="10000" style="width:80px;text-align:right"></td>`).join("")}</tr>`;
+  return `
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-card-lbl">Implied Enterprise Value</div><div class="kpi-card-val" style="color:var(--amber-800)">${sgd(d.ev)}</div><div class="kpi-card-sub">DCF, WACC ${fp(v.wacc)} · g ${fp(v.g)}</div></div>
+    <div class="kpi-card"><div class="kpi-card-lbl">PV of cash flows</div><div class="kpi-card-val">${sgd(d.sumPV)}</div><div class="kpi-card-sub">2026–2031 discounted</div></div>
+    <div class="kpi-card"><div class="kpi-card-lbl">Terminal value (PV)</div><div class="kpi-card-val">${sgd(d.tv)}</div><div class="kpi-card-sub">Gordon growth</div></div>
+    <div class="kpi-card"><div class="kpi-card-lbl">2031 free cash flow</div><div class="kpi-card-val" style="color:${d.fcff[5]>=0?"var(--text-success)":"var(--text-danger)"}">${sgd(d.fcff[5])}</div><div class="kpi-card-sub">FCFF</div></div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">Discounted cash flow</div></div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px">
+      <div><div style="font-size:11px;color:var(--text-muted)">WACC %</div><input type="number" data-valnum="wacc" value="${(v.wacc*100)}" step="0.5" style="width:80px"></div>
+      <div><div style="font-size:11px;color:var(--text-muted)">Terminal growth %</div><input type="number" data-valnum="g" value="${(v.g*100)}" step="0.5" style="width:80px"></div>
+    </div>
+    <div class="tbl-scroll"><table class="cptbl" style="min-width:640px">
+      <thead><tr><th>FCFF build</th>${fcYearCols()}</tr></thead>
+      <tbody>
+        ${fcMoneyRow("Net profit / (loss)",d.net,"net")}
+        ${editRow("Plus: Depreciation & amortisation","da")}
+        ${editRow("Less: Change in working capital","nwc")}
+        ${editRow("Less: Capital expenditure","capex")}
+        ${fcMoneyRow("Free Cash Flow (FCFF)",d.fcff,"net",true)}
+        ${fcMoneyRow("Discount factor",d.df,"pctraw")}
+        ${fcMoneyRow("Discounted cash flow",d.pv,"muted")}
+      </tbody>
+    </table></div>
+    <div id="fcffChart" style="position:relative;width:100%;height:260px;margin-top:12px"></div>
+  </div>`;
+}
+function valRenderRatios(st){
+  const p=fcPnl(st),v=st.val;
+  const ebitda=p.net.map((n,i)=>n+(Number(v.da[i])||0));
+  const grossMgn=p.rev.map((r,i)=>r>0?p.gp[i]/r:0);
+  const ebitdaMgn=p.rev.map((r,i)=>r>0?ebitda[i]/r:0);
+  return `<div class="card">
+    <div class="card-hdr"><div class="card-title">Profitability & margins</div></div>
+    <div class="tbl-scroll"><table class="cptbl" style="min-width:640px">
+      <thead><tr><th>Metric</th>${fcYearCols()}</tr></thead>
+      <tbody>
+        ${fcMoneyRow("Revenue",p.rev,"",true)}
+        ${fcMoneyRow("Gross profit",p.gp,"muted")}
+        ${fcMoneyRow("Gross margin",grossMgn,"pct")}
+        ${fcMoneyRow("EBITDA",ebitda,"net",true)}
+        ${fcMoneyRow("EBITDA margin",ebitdaMgn,"pct")}
+        ${fcMoneyRow("Net profit",p.net,"net",true)}
+        ${fcMoneyRow("Net margin",p.mgn,"pct")}
+      </tbody>
+    </table></div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:10px">EBITDA ≈ net profit + depreciation/amortisation (interest and tax assumed nil). Balance-sheet ratios (current/quick, reserves) require the balance-sheet inputs, which are a later phase.</div>
+  </div>`;
+}
+function valRenderGst(st){
+  const p=fcPnl(st),v=st.val;
+  const outGST=p.rev.map(r=>r*v.taxableRevPct*v.gstRate);
+  const taxable=p.net.map(n=>Math.max(0,n));
+  const taxProv=taxable.map(t=>t*v.corpTax);
+  return `<div class="card">
+    <div class="card-hdr"><div class="card-title">GST & corporate tax</div></div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px">
+      <div><div style="font-size:11px;color:var(--text-muted)">GST rate %</div><input type="number" data-valnum="gstRate" value="${v.gstRate*100}" step="1" style="width:80px"></div>
+      <div><div style="font-size:11px;color:var(--text-muted)">Taxable revenue %</div><input type="number" data-valnum="taxableRevPct" value="${v.taxableRevPct*100}" step="5" style="width:80px" title="Share of revenue that is GST-taxable"></div>
+      <div><div style="font-size:11px;color:var(--text-muted)">Corporate tax rate %</div><input type="number" data-valnum="corpTax" value="${v.corpTax*100}" step="1" style="width:80px"></div>
+    </div>
+    <div class="tbl-scroll"><table class="cptbl" style="min-width:640px">
+      <thead><tr><th>Line</th>${fcYearCols()}</tr></thead>
+      <tbody>
+        ${fcMoneyRow("Revenue",p.rev,"muted")}
+        ${fcMoneyRow("Output GST",outGST,"")}
+        ${fcMoneyRow("Pre-tax profit",p.net,"net")}
+        ${fcMoneyRow("Taxable profit",taxable,"muted")}
+        ${fcMoneyRow("Corporate tax provision",taxProv,"")}
+      </tbody>
+    </table></div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:10px">Singapore GST is 9%. Set the taxable-revenue share (education is often GST-exempt) and corporate tax rate. Tax provision applies only to positive taxable profit.</div>
+  </div>`;
+}
+function drawFcffChart(d){
+  const el=document.getElementById("fcffChart");if(!el)return;el.innerHTML="";
+  if(typeof d3==="undefined")return chartFallback(el);
+  const width=el.clientWidth||600,height=260,margin={top:16,right:16,bottom:30,left:64};
+  const innerW=Math.max(width-margin.left-margin.right,100),innerH=height-margin.top-margin.bottom;
+  const svg=d3.select(el).append("svg").attr("width",width).attr("height",height);
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
+  const x=d3.scaleBand().domain(FC_YEARS.map((_,i)=>i)).range([0,innerW]).padding(0.3);
+  const y=d3.scaleLinear().domain([Math.min(0,...d.fcff),Math.max(1,...d.fcff)]).nice().range([innerH,0]);
+  const zeroY=y(0);
+  g.append("g").call(d3.axisLeft(y).ticks(5).tickSize(-innerW).tickFormat("")).call(s=>s.select(".domain").remove()).selectAll("line").attr("stroke","var(--border)").attr("stroke-dasharray","2,3");
+  const tip=d3.select(el).append("div").attr("class","whatif-chart-tip");
+  FC_YEARS.forEach((yr,i)=>g.append("rect").attr("x",x(i)).attr("width",x.bandwidth())
+    .attr("y",d.fcff[i]>=0?y(d.fcff[i]):zeroY).attr("height",Math.max(Math.abs(y(0)-y(d.fcff[i])),1))
+    .attr("fill",d.fcff[i]>=0?"#b45309":"#dc2626").attr("rx",2)
+    .on("mousemove",function(ev){tip.style("opacity",1).style("left",(ev.offsetX+10)+"px").style("top",(ev.offsetY-24)+"px").html(`<strong>${yr}</strong><br>FCFF: ${sgd(d.fcff[i])}<br>PV: ${sgd(d.pv[i])}`);})
+    .on("mouseleave",()=>tip.style("opacity",0)));
+  g.append("line").attr("x1",0).attr("x2",innerW).attr("y1",zeroY).attr("y2",zeroY).attr("stroke","var(--border-strong)");
+  g.append("g").attr("transform",`translate(0,${innerH})`).call(d3.axisBottom(x).tickFormat(i=>FC_YEARS[i]).tickSize(0)).selectAll("text").attr("font-size",10).attr("fill","var(--text-muted)");
+  g.append("g").call(d3.axisLeft(y).ticks(5).tickFormat(v=>"$"+d3.format(",.0f")(v))).selectAll("text").attr("font-size",9).attr("fill","var(--text-muted)");
+  g.selectAll(".domain,.tick line").attr("stroke","var(--border-strong)");
+}
+function bindFinancialsEvents(){
+  const save_render=()=>{saveToStorage();render();};
+  document.querySelectorAll("[data-valtab]").forEach(b=>b.addEventListener("click",e=>{ST.val.tab=e.currentTarget.dataset.valtab;save_render();}));
+  document.querySelectorAll("[data-valnum]").forEach(inp=>inp.addEventListener("change",e=>{
+    const k=e.currentTarget.dataset.valnum;let val=parseFloat(e.currentTarget.value)||0;
+    if(["wacc","g","gstRate","taxableRevPct","corpTax"].includes(k))val=val/100;
+    ST.val[k]=val;save_render();
+  }));
+  document.querySelectorAll("[data-valarr]").forEach(inp=>inp.addEventListener("change",e=>{
+    ST.val[e.currentTarget.dataset.valarr][+e.currentTarget.dataset.yi]=parseFloat(e.currentTarget.value)||0;save_render();
+  }));
+}
+
 function bindForecastEvents(){
   const save_render=()=>{saveToStorage();render();};
   document.querySelectorAll("[data-fctab]").forEach(b=>b.addEventListener("click",e=>{ST.fx.tab=e.currentTarget.dataset.fctab;save_render();}));
@@ -2745,6 +2882,13 @@ function render(){
     bindModuleNavEvents();
     bindOperatingEvents();
     if(ST.op.tab==="manpower")drawFteChart();
+    return;
+  }
+  if(ST.module==="financials"){
+    document.getElementById("app").innerHTML=buildModuleNav()+renderFinancialsModule(ST);
+    bindModuleNavEvents();
+    bindFinancialsEvents();
+    if(ST.val.tab==="dcf")drawFcffChart(valDcf(ST));
     return;
   }
   const s=calc(ST);
