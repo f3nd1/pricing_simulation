@@ -624,6 +624,26 @@ const ST={
 };
 const sgd=n=>{const a=Math.abs(Math.round(n));const s="$"+a.toLocaleString();return n<0?"("+s+")":s;};
 const fp=n=>(n*100).toFixed(1)+"%";
+/* Comma-formatted editable number fields: shown as "24,000" instead of "24000".
+   These render as type="text" (native <input type=number> can't display commas)
+   with class="numfmt" — a delegated focus/blur pair (see initNumfmtDelegation)
+   strips commas for editing and reformats on blur. Change handlers must parse
+   the raw value with parseNumInput(), which strips commas before parseFloat. */
+const fmtN=n=>{n=Number(n);return isNaN(n)?"":Math.round(n).toLocaleString();};
+const parseNumInput=raw=>parseFloat(String(raw||"").replace(/,/g,""))||0;
+function initNumfmtDelegation(){
+  document.addEventListener("focusin",e=>{
+    if(e.target&&e.target.classList&&e.target.classList.contains("numfmt")){
+      e.target.value=e.target.value.replace(/,/g,"");
+    }
+  });
+  document.addEventListener("focusout",e=>{
+    if(e.target&&e.target.classList&&e.target.classList.contains("numfmt")){
+      const raw=e.target.value.trim();
+      e.target.value=raw===""?"":fmtN(parseNumInput(raw));
+    }
+  });
+}
 const LS_KEY="ucc_sim_v4";
 
 /* Restore the course catalog. New format = full course rows (dynamic add/delete);
@@ -1738,10 +1758,10 @@ function renderPriceList(){
         <td style="text-align:right"><input class="plinp sm" type="number" data-pci="${i}" data-pf="hrs" value="${cr.hrs}" min="0" step="8" title="Contact hours — affects teaching cost"></td>
         <td style="text-align:right"><input class="plinp sm" type="number" data-pci="${i}" data-pf="mo" value="${cr.mo}" min="1" step="1" title="Duration in months — affects overhead total"></td>
         <td style="text-align:right;font-size:11px;color:var(--text-muted);white-space:nowrap">$${hrRate}</td>
-        <td style="text-align:right"><input class="plinp" type="number" data-pci="${i}" data-pf="fee" value="${cr.fee}" min="0" step="10"></td>
-        <td style="text-align:right"><input class="plinp" type="number" data-pci="${i}" data-pf="mat" value="${cr.mat}" min="0" step="10"></td>
-        <td style="text-align:right"><input class="plinp" type="number" data-pci="${i}" data-pf="exam" value="${cr.exam}" min="0" step="10"></td>
-        <td style="text-align:right"><input class="plinp" type="number" data-pci="${i}" data-pf="admin" value="${cr.admin}" min="0" step="10"></td>
+        <td style="text-align:right"><input class="plinp numfmt" type="text" inputmode="decimal" data-pci="${i}" data-pf="fee" value="${fmtN(cr.fee)}"></td>
+        <td style="text-align:right"><input class="plinp numfmt" type="text" inputmode="decimal" data-pci="${i}" data-pf="mat" value="${fmtN(cr.mat)}"></td>
+        <td style="text-align:right"><input class="plinp numfmt" type="text" inputmode="decimal" data-pci="${i}" data-pf="exam" value="${fmtN(cr.exam)}"></td>
+        <td style="text-align:right"><input class="plinp numfmt" type="text" inputmode="decimal" data-pci="${i}" data-pf="admin" value="${fmtN(cr.admin)}"></td>
         <td class="tot">${sgd(cr.fee+cr.mat+cr.exam+cr.admin)}</td>
         <td><button data-delcourse="${i}" title="Delete course (also removes its Yearly Budget intakes)" style="border:none;background:none;color:var(--text-danger);cursor:pointer;font-size:13px;padding:2px 6px">✕</button></td>
       </tr>`;
@@ -2231,7 +2251,7 @@ function buildLP(st){
       <span class="ohlbl" title="${o.label}">${o.label}</span>
       <div style="display:flex;align-items:center;gap:3px;flex-shrink:0">
         <span style="font-size:10px;color:var(--text-muted)">$</span>
-        <input type="number" data-oh="${i}" value="${o.cost}" min="0" step="100" style="width:54px;text-align:right;font-size:11px;padding:2px 4px">
+        <input type="text" inputmode="decimal" class="numfmt" data-oh="${i}" value="${fmtN(o.cost)}" style="width:60px;text-align:right;font-size:11px;padding:2px 4px">
         <span style="font-size:10px;color:var(--text-accent);font-weight:500;min-width:44px;text-align:right">${sgd((Number(o.cost)||0)*c.mo)}</span>
       </div>
     </div>`).join("")}
@@ -2739,7 +2759,7 @@ function fcRenderExpenses(st,p){
           const overridden=auto&&!isBase&&l.ov&&l.ov[yi]!=null&&l.ov[yi]!=="";
           const computed=auto&&!isBase&&!overridden;
           const bg=overridden?"background:var(--amber-100)":isBase&&auto?"background:var(--blue-50)":"";
-          return `<td style="padding:2px 4px;text-align:right"><input type="number" class="plinp" data-fcexp="${keybase}" data-gi="${gi}" data-li="${li}" data-yi="${yi}" value="${Math.round(v)}" step="100" title="${computed?"auto = prior year × "+st.fx.expMult+" (type to override)":overridden?"manual override (blank the cell to revert to auto)":isBase&&auto?"base year — grows the rest":"editable"}" style="width:78px;text-align:right;${bg}${computed?"color:var(--text-muted)":""}"></td>`;
+          return `<td style="padding:2px 4px;text-align:right"><input type="text" inputmode="decimal" class="plinp numfmt" data-fcexp="${keybase}" data-gi="${gi}" data-li="${li}" data-yi="${yi}" value="${fmtN(v)}" title="${computed?"auto = prior year × "+st.fx.expMult+" (type to override)":overridden?"manual override (blank the cell to revert to auto)":isBase&&auto?"base year — grows the rest":"editable"}" style="width:82px;text-align:right;${bg}${computed?"color:var(--text-muted)":""}"></td>`;
         }).join("")}
       </tr>`).join("");
     }).join("")}`;
@@ -2816,7 +2836,7 @@ function fcRenderMonthly(st){
         const rowTot=arr.reduce((a,b)=>a+b,0);
         return `<tr>
           <td style="padding:2px 8px 2px 22px;color:var(--text-secondary)">${l.label}</td>
-          ${arr.map((v,mi)=>`<td style="padding:2px 3px;text-align:right"><input type="number" class="plinp sm" data-fcmon="${keybase}" data-gi="${gi}" data-li="${li}" data-mi="${mi}" value="${Math.round(v)}" step="100" style="width:60px;text-align:right"></td>`).join("")}
+          ${arr.map((v,mi)=>`<td style="padding:2px 3px;text-align:right"><input type="text" inputmode="decimal" class="plinp sm numfmt" data-fcmon="${keybase}" data-gi="${gi}" data-li="${li}" data-mi="${mi}" value="${fmtN(v)}" style="width:64px;text-align:right"></td>`).join("")}
           <td style="padding:2px 8px;text-align:right;font-weight:600;color:var(--text-accent);white-space:nowrap">${sgd(rowTot)}</td>
         </tr>`;
       }).join("");
@@ -3088,7 +3108,7 @@ function opRenderCompetitor(st){
       <tbody>${rows.map(r=>`<tr>
         <td style="padding:4px 8px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.name}">${r.name}</td>
         <td style="padding:4px 8px;text-align:right;font-weight:600">${sgd(r.fee)}</td>
-        ${[0,1,2].map(ci=>`<td style="padding:2px 4px;text-align:right"><input type="number" class="plinp" data-opcomp="${r.idx}" data-ci="${ci}" value="${(r.comp[ci]!=null?r.comp[ci]:"")}" step="50" style="width:74px;text-align:right"></td>`).join("")}
+        ${[0,1,2].map(ci=>`<td style="padding:2px 4px;text-align:right"><input type="text" inputmode="decimal" class="plinp numfmt" data-opcomp="${r.idx}" data-ci="${ci}" value="${(r.comp[ci]!=null?fmtN(r.comp[ci]):"")}" style="width:74px;text-align:right"></td>`).join("")}
         <td style="padding:4px 8px;text-align:right;color:var(--text-muted)">${r.avg!=null?sgd(r.avg):"—"}</td>
         <td style="padding:4px 8px;text-align:right;font-weight:600;color:${r.gap==null?"var(--text-muted)":r.gap<=0?"var(--text-success)":"var(--text-danger)"}">${r.gap==null?"—":(r.gap>0?"+":"")+sgd(r.gap)+(r.gapPct!=null?` (${(r.gapPct*100).toFixed(0)}%)`:"")}</td>
       </tr>`).join("")}</tbody>
@@ -3122,7 +3142,7 @@ function bindOperatingEvents(){
   document.querySelectorAll("[data-opcomp]").forEach(inp=>inp.addEventListener("change",e=>{
     const idx=e.currentTarget.dataset.opcomp,ci=+e.currentTarget.dataset.ci;
     if(!ST.op.comp[idx])ST.op.comp[idx]=[null,null,null];
-    const v=e.currentTarget.value===""?null:(parseFloat(e.currentTarget.value)||0);
+    const v=e.currentTarget.value.trim()===""?null:parseNumInput(e.currentTarget.value);
     ST.op.comp[idx][ci]=v;save_render();
   }));
 }
@@ -3149,7 +3169,7 @@ function renderFinancialsModule(st){
 }
 function valRenderDcf(st){
   const d=valDcf(st),v=st.val;
-  const editRow=(label,key)=>`<tr><td style="padding:4px 8px">${label}</td>${v[key].map((x,i)=>`<td style="padding:2px 4px;text-align:right"><input type="number" class="plinp" data-valarr="${key}" data-yi="${i}" value="${Math.round(x)}" step="10000" style="width:80px;text-align:right"></td>`).join("")}</tr>`;
+  const editRow=(label,key)=>`<tr><td style="padding:4px 8px">${label}</td>${v[key].map((x,i)=>`<td style="padding:2px 4px;text-align:right"><input type="text" inputmode="decimal" class="plinp numfmt" data-valarr="${key}" data-yi="${i}" value="${fmtN(x)}"></td>`).join("")}</tr>`;
   return `
   <div class="kpi-grid">
     <div class="kpi-card"><div class="kpi-card-lbl">Implied Enterprise Value</div><div class="kpi-card-val" style="color:var(--amber-800)">${sgd(d.ev)}</div><div class="kpi-card-sub">DCF, WACC ${fp(v.wacc)} · g ${fp(v.g)}</div></div>
@@ -3277,14 +3297,15 @@ function stratRenderGrowth(st){
   const cards=st.strat.inits.map((it,idx)=>{
     const r=stratInit(it,disc);
     const fld=(lbl,key,step,pct)=>`<div><div style="font-size:10px;color:var(--text-muted)">${lbl}</div><input type="number" data-stratinit="${idx}" data-k="${key}" value="${pct?it[key]*100:it[key]}" step="${step}" style="width:92px"></div>`;
+    const fldM=(lbl,key)=>`<div><div style="font-size:10px;color:var(--text-muted)">${lbl}</div><input type="text" inputmode="decimal" class="numfmt" data-stratinit="${idx}" data-k="${key}" value="${fmtN(it[key])}" style="width:92px"></div>`;
     return `<div class="card">
       <div class="card-hdr" style="justify-content:space-between;flex-wrap:wrap;gap:6px">
         <input type="text" data-stratinit="${idx}" data-k="name" value="${it.name}" style="font-weight:700;font-size:13px;border:none;background:transparent;flex:1;min-width:120px;max-width:100%">
         <button data-stratdel="${idx}" class="del-btn" title="Remove initiative">×</button>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
-        ${fld("Start year","start",1)}${fld("Revenue @ maturity","rev",10000)}${fld("Gross margin %","gm",5,true)}
-        ${fld("Annual OPEX","opex",5000)}${fld("Upfront capex","capex",10000)}${fld("Yr-1 ramp %","r1",10,true)}${fld("Yr-2+ ramp %","r2",10,true)}
+        ${fld("Start year","start",1)}${fldM("Revenue @ maturity","rev")}${fld("Gross margin %","gm",5,true)}
+        ${fldM("Annual OPEX","opex")}${fldM("Upfront capex","capex")}${fld("Yr-1 ramp %","r1",10,true)}${fld("Yr-2+ ramp %","r2",10,true)}
       </div>
       <div class="kpi-grid">
         <div class="kpi-card"><div class="kpi-card-lbl">NPV @ ${fp(disc)}</div><div class="kpi-card-val" style="color:${r.npv>=0?"var(--text-success)":"var(--text-danger)"}">${sgd(r.npv)}</div></div>
@@ -3328,7 +3349,7 @@ function stratRenderCompliance(st){
   }).join("");
   const yesN=st.strat.compliance.filter(c=>c.status==="Yes").length;
   const fund=st.strat.funding;
-  const fRow=(lbl,key)=>`<tr><td style="padding:4px 8px">${lbl}</td>${fund[key].map((v,i)=>`<td style="padding:2px 4px;text-align:right"><input type="number" class="plinp" data-stratfund="${key}" data-yi="${i}" value="${v}" step="10000" style="width:80px;text-align:right"></td>`).join("")}</tr>`;
+  const fRow=(lbl,key)=>`<tr><td style="padding:4px 8px">${lbl}</td>${fund[key].map((v,i)=>`<td style="padding:2px 4px;text-align:right"><input type="text" inputmode="decimal" class="plinp numfmt" data-stratfund="${key}" data-yi="${i}" value="${fmtN(v)}"></td>`).join("")}</tr>`;
   const netFund=FC_YEARS.map((y,i)=>(fund.equity[i]||0)+(fund.loan[i]||0)+(fund.donations[i]||0));
   return `
   <div class="g2">
@@ -3359,11 +3380,11 @@ function bindStrategyEvents(){
   document.querySelectorAll("[data-stratinit]").forEach(inp=>inp.addEventListener("change",e=>{
     const idx=+e.currentTarget.dataset.stratinit,k=e.currentTarget.dataset.k;
     if(k==="name")ST.strat.inits[idx][k]=e.currentTarget.value;
-    else{let v=parseFloat(e.currentTarget.value)||0;if(["gm","r1","r2"].includes(k))v=v/100;ST.strat.inits[idx][k]=v;}
+    else{let v=parseNumInput(e.currentTarget.value);if(["gm","r1","r2"].includes(k))v=v/100;ST.strat.inits[idx][k]=v;}
     save_render();
   }));
   document.querySelectorAll("[data-stratcomp]").forEach(sel=>sel.addEventListener("change",e=>{ST.strat.compliance[+e.currentTarget.dataset.stratcomp].status=e.currentTarget.value;save_render();}));
-  document.querySelectorAll("[data-stratfund]").forEach(inp=>inp.addEventListener("change",e=>{ST.strat.funding[e.currentTarget.dataset.stratfund][+e.currentTarget.dataset.yi]=parseFloat(e.currentTarget.value)||0;save_render();}));
+  document.querySelectorAll("[data-stratfund]").forEach(inp=>inp.addEventListener("change",e=>{ST.strat.funding[e.currentTarget.dataset.stratfund][+e.currentTarget.dataset.yi]=parseNumInput(e.currentTarget.value);save_render();}));
 }
 
 function bindFinancialsEvents(){
@@ -3375,7 +3396,7 @@ function bindFinancialsEvents(){
     ST.val[k]=val;save_render();
   }));
   document.querySelectorAll("[data-valarr]").forEach(inp=>inp.addEventListener("change",e=>{
-    ST.val[e.currentTarget.dataset.valarr][+e.currentTarget.dataset.yi]=parseFloat(e.currentTarget.value)||0;save_render();
+    ST.val[e.currentTarget.dataset.valarr][+e.currentTarget.dataset.yi]=parseNumInput(e.currentTarget.value);save_render();
   }));
 }
 
@@ -3436,11 +3457,11 @@ function bindForecastEvents(){
     if(ST.fx.expMode==="auto"&&yi>0){
       /* future-year cell in auto mode = an override; a blank cell reverts to auto-grow */
       l.ov=l.ov||{};
-      if(raw==="")delete l.ov[yi]; else l.ov[yi]=parseFloat(raw)||0;
+      if(raw==="")delete l.ov[yi]; else l.ov[yi]=parseNumInput(raw);
     }else{
-      l.v[yi]=parseFloat(raw)||0;
+      l.v[yi]=parseNumInput(raw);
     }
-    logAudit("Expenses",`${l.label} ${FC_YEARS[yi]}`,oldVal,raw===""?"(auto)":Math.round(parseFloat(raw)||0));
+    logAudit("Expenses",`${l.label} ${FC_YEARS[yi]}`,oldVal,raw===""?"(auto)":Math.round(parseNumInput(raw)));
     /* editing a year's total resets that year's monthly split (re-splits evenly) */
     if(ST.fx.monthly)delete ST.fx.monthly[fcMonthKey(kb,gi,li,FC_YEARS[yi])];
     save_render();
@@ -3460,7 +3481,7 @@ function bindForecastEvents(){
     const kb=e.currentTarget.dataset.fcmon,gi=+e.currentTarget.dataset.gi,li=+e.currentTarget.dataset.li,mi=+e.currentTarget.dataset.mi;
     const year=FC_YEARS.includes(ST.fx.baseYear)?ST.fx.baseYear:FC_YEARS[0],yi=FC_YEARS.indexOf(year);
     const arr=fcMonthlyArr(ST,kb,gi,li,year).slice();
-    arr[mi]=parseFloat(e.currentTarget.value)||0;
+    arr[mi]=parseNumInput(e.currentTarget.value);
     if(!ST.fx.monthly)ST.fx.monthly={};
     ST.fx.monthly[fcMonthKey(kb,gi,li,year)]=arr;
     const sum=arr.reduce((a,b)=>a+b,0);
@@ -3754,7 +3775,7 @@ function bindEvents(s){
   nums.forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener("change",e=>{ST[id]=parseFloat(e.target.value)||0;save_render();});});
   const ulec=document.getElementById("ulecMgmt");
   if(ulec)ulec.addEventListener("change",e=>{ST.ulecMgmt=parseFloat(e.target.value)||0;save_render();});
-  document.querySelectorAll("[data-oh]").forEach(inp=>inp.addEventListener("change",e=>{ST.oh[parseInt(e.target.dataset.oh)].cost=parseFloat(e.target.value)||0;save_render();}));
+  document.querySelectorAll("[data-oh]").forEach(inp=>inp.addEventListener("change",e=>{ST.oh[parseInt(e.target.dataset.oh)].cost=parseNumInput(e.target.value);save_render();}));
   document.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",e=>{ST.saved.splice(parseInt(e.target.dataset.del),1);save_render();}));
   const ca=document.getElementById("clearAll");if(ca)ca.addEventListener("click",()=>{ST.saved=[];save_render();});
   const fcSel=document.getElementById("fcCoursesel");if(fcSel)fcSel.addEventListener("change",e=>{ST.fcCi=parseInt(e.target.value);save_render();});
@@ -3766,7 +3787,7 @@ function bindEvents(s){
       const v=e.target.value.trim();
       if(v){logAudit("Price List",`${cname} · ${field}`,oldV,v);COURSES[i][field]=v;}
     }else{
-      const nv=parseFloat(e.target.value)||0;
+      const nv=parseNumInput(e.target.value);
       logAudit("Price List",`${cname} · ${field}`,oldV,nv);
       COURSES[i][field]=nv;
     }
@@ -3871,7 +3892,7 @@ async function doAISend(msg,s){
   if(msgs)msgs.scrollTop=msgs.scrollHeight;
 }
 
-function init(){loadFromStorage();render();if(sbConfigured())sbFetchSaves();}
+function init(){loadFromStorage();initNumfmtDelegation();render();if(sbConfigured())sbFetchSaves();}
 if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",init);}else{init();}
 </script>
 </body>
