@@ -459,10 +459,13 @@ const INIT_OH=[
    Revenue is NOT seeded here: it is derived live from the Price List (fee/student)
    × the Yearly Budget intakes (students per course per year). Only the company
    expense schedule below is seeded (editable), mirroring the Excel line items. */
-const FC_YEARS=[2026,2027,2028,2029,2030,2031];
-/* Budget period = 6 years starting at `start`. FC_YEARS is mutated in place so every
-   module that reads it (revenue, expenses, manpower, valuation, strategy) shifts together. */
-function fcSetPeriod(start){start=parseInt(start)||2026;for(let i=0;i<6;i++)FC_YEARS[i]=start+i;}
+/* Fixed budget horizon: 2026 → 2040 (15 years). Every module reads FC_YEARS so
+   they all share the same columns. */
+const FC_YEARS=Array.from({length:15},(_,i)=>2026+i);
+const FC_LAST=FC_YEARS.length-1;
+/* Kept for backward-compat with older saves that stored a startYear; the horizon
+   is now fixed at 15 years, so this only re-anchors the (unused) span start. */
+function fcSetPeriod(start){start=parseInt(start)||2026;for(let i=0;i<FC_YEARS.length;i++)FC_YEARS[i]=start+i;}
 /* Expense schedule — categories → sub-line-items exactly as per the Excel 'Expense Forecast' sheet */
 const FC_EXP={cogs:[
  {label:"Commission",items:[
@@ -519,6 +522,19 @@ const FC_EXP={cogs:[
     {label:"Staff Training",v:[4800,4944,5092,5245,5402,5565]},
     {label:"Staff Transport",v:[1200,1236,1273,1311,1351,1391]},
     {label:"Staff Welfare",v:[7200,7416,7638,7868,8104,8347]}]}]};
+/* The Excel gave us 6 reconciled years (2026–2031). The horizon is now 15 years
+   (2026–2040), so extend each line to FC_YEARS.length by continuing the ~3% trend
+   from the last known year. Zero lines stay zero. */
+(function padExp(){
+  const GROW=1.03;
+  ["cogs","opex"].forEach(kb=>FC_EXP[kb].forEach(g=>g.items.forEach(l=>{
+    while(l.v.length<FC_YEARS.length){
+      const prev=Number(l.v[l.v.length-1])||0;
+      l.v.push(prev?Math.round(prev*GROW):0);
+    }
+    l.v.length=FC_YEARS.length; /* trim if ever longer */
+  })));
+})();
 /* Scenario presets: fee = annual fee growth; vol = extra volume growth vs plan (Base=0 reconciles Excel) */
 const FC_SCENARIOS={Base:{fee:0.05,vol:0},Best:{fee:0.07,vol:0.12},Worst:{fee:0.03,vol:-0.18}};
 function courseCats(){return [...new Set(COURSES.map(c=>c.cat))];}
@@ -542,6 +558,7 @@ const ST={
   whatIfView:"table",
   views:{costBreakdown:"bars",waterfall:"rows",sens:"table",ulec:"table",compare:"table",pricelist:"table",feecalc:"table"},
   module:"simulator",navOpen:false,
+  audit:[],logTab:"edits",logSearch:"",
   intakes:[],ybView:"monthly",ybYear:new Date().getFullYear(),ybCat:"All",
   ybForm:{kind:"budget",ci:0,month:0,year:new Date().getFullYear(),students:15},
   cloudOpen:false,sbUrl:SUPABASE_URL,sbKey:SUPABASE_ANON_KEY,sbStatus:"",sbStatusOk:null,sbSaves:[],sbLoading:false,sbSaveName:"",
@@ -593,9 +610,17 @@ function applyFx(dfx){
   if(dfx.scenario)ST.fx.scenario=dfx.scenario;
   if(dfx.scen)ST.fx.scen=dfx.scen;
   /* only accept the new grouped expense shape (categories with sub-items); older flat saves fall back to the seed */
-  if(dfx.exp&&Array.isArray(dfx.exp.cogs)&&dfx.exp.cogs[0]&&Array.isArray(dfx.exp.cogs[0].items))ST.fx.exp=dfx.exp;
-  /* restore budget period first so baseYear validation below sees the right FC_YEARS */
-  if(dfx.startYear){fcSetPeriod(dfx.startYear);ST.fx.startYear=FC_YEARS[0];}
+  if(dfx.exp&&Array.isArray(dfx.exp.cogs)&&dfx.exp.cogs[0]&&Array.isArray(dfx.exp.cogs[0].items)){
+    ST.fx.exp=dfx.exp;
+    /* a save made under the old 6-year horizon has short v arrays — extend to 15 years */
+    ["cogs","opex"].forEach(kb=>(ST.fx.exp[kb]||[]).forEach(g=>(g.items||[]).forEach(l=>{
+      if(!Array.isArray(l.v))l.v=[];
+      while(l.v.length<FC_YEARS.length){const prev=Number(l.v[l.v.length-1])||0;l.v.push(prev?Math.round(prev*1.03):0);}
+      l.v.length=FC_YEARS.length;
+    })));
+  }
+  /* horizon is now fixed at 2026–2040; ignore any legacy saved startYear so the columns don't shift */
+  ST.fx.startYear=FC_YEARS[0];
   if(dfx.baseYear&&FC_YEARS.includes(dfx.baseYear))ST.fx.baseYear=dfx.baseYear;
   if(dfx.monthly&&typeof dfx.monthly==="object")ST.fx.monthly=dfx.monthly;
   if(dfx.expMode)ST.fx.expMode=dfx.expMode;
@@ -604,8 +629,21 @@ function applyFx(dfx){
 function saveToStorage(){
   try{
     const prices=COURSES.map(c=>({...c}));
-    const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx,op,val,strat}=ST;
-    localStorage.setItem(LS_KEY,JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx,op,val,strat}));
+    const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx,op,val,strat,audit}=ST;
+    localStorage.setItem(LS_KEY,JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx,op,val,strat,audit}));
+  }catch(e){}
+}
+/* ── Audit trail ─────────────────────────────────────────────────────────
+   Records every meaningful edit the user makes (what changed, when), newest
+   first. Persisted with the rest of the state (localStorage + cloud snapshot).
+   Call logAudit("Expenses", "Audit Fees 2027", oldVal, newVal) from a handler. */
+function logAudit(area,what,from,to){
+  try{
+    if(!Array.isArray(ST.audit))ST.audit=[];
+    /* skip no-op edits (same value re-entered) */
+    if(from!=null&&to!=null&&String(from)===String(to))return;
+    ST.audit.unshift({t:new Date().toISOString(),area,what,from:from==null?"":String(from),to:to==null?"":String(to)});
+    if(ST.audit.length>1000)ST.audit.length=1000; /* cap history */
   }catch(e){}
 }
 function loadFromStorage(){
@@ -630,6 +668,7 @@ function loadFromStorage(){
     if(d.ybView)ST.ybView=d.ybView;
     if(d.ybYear)ST.ybYear=d.ybYear;
     if(d.ybCat)ST.ybCat=d.ybCat;
+    if(Array.isArray(d.audit))ST.audit=d.audit;
     /* fixed connection wins over anything a user saved locally before it was locked */
     if(!SUPABASE_URL&&d.sbUrl)ST.sbUrl=d.sbUrl;
     if(!SUPABASE_ANON_KEY&&d.sbKey)ST.sbKey=d.sbKey;
@@ -665,8 +704,8 @@ function importData(file){
 
 function buildFullSnapshot(){
   const prices=COURSES.map(c=>({...c}));
-  const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,saved,fcCi,fcSchol,intakes,ybYear,ybCat,ybView,fx}=ST;
-  return{prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,saved,fcCi,fcSchol,intakes,ybYear,ybCat,ybView,fx};
+  const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,saved,fcCi,fcSchol,intakes,ybYear,ybCat,ybView,fx,audit}=ST;
+  return{prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,saved,fcCi,fcSchol,intakes,ybYear,ybCat,ybView,fx,audit};
 }
 function applyFullSnapshot(d){
   applyPrices(d.prices);
@@ -677,6 +716,7 @@ function applyFullSnapshot(d){
   if(Array.isArray(d.intakes))ST.intakes=d.intakes.map(ik=>({kind:"budget",...ik}));
   if(d.ybCat)ST.ybCat=d.ybCat;
   if(d.ybView)ST.ybView=d.ybView;
+  if(Array.isArray(d.audit))ST.audit=d.audit;
   applyFx(d.fx);
 }
 
@@ -1869,7 +1909,7 @@ function renderYearlyBudgetModule(st){
   const aTot=aPeriods.reduce((a,p)=>({revenue:a.revenue+p.revenue,cost:a.cost+p.cost,profit:a.profit+p.profit,newStudents:a.newStudents+p.newStudents}),{revenue:0,cost:0,profit:0,newStudents:0});
   const attainment=bTot.profit>0?aTot.profit/bTot.profit:(aTot.profit>0?1:0);
 
-  /* offer every forecast year (2026–2031) plus any year that already has intakes — the Forecast module reads these plans per year */
+  /* offer every forecast year (2026–2040) plus any year that already has intakes — the Forecast module reads these plans per year */
   const years=[...new Set([...st.intakes.map(i=>i.year),...FC_YEARS,st.ybYear])];
   const yearRange=[Math.min(...years),Math.max(...years)];
   const availYears=[];
@@ -2304,6 +2344,7 @@ const MODULES=[
   {key:"operating",icon:"🛠️",label:"Operating Detail",desc:"Manpower FTE, breakeven, competitor pricing"},
   {key:"financials",icon:"🏦",label:"Valuation & Statements",desc:"DCF value, ratios, GST & tax"},
   {key:"strategy",icon:"🎯",label:"Strategy & Governance",desc:"Growth business cases, compliance"},
+  {key:"log",icon:"📝",label:"Change Log",desc:"Your edits + app version history"},
 ];
 
 function buildModuleNav(){
@@ -2441,6 +2482,88 @@ function fcPnl(st){
     mgn:rev.map((v,i)=>v>0?(v-cogs[i]-opex[i])/v:0)};
 }
 
+const APP_CHANGELOG=[{"h": "pending", "d": "2026-07-07", "t": "14:30", "s": "Extend forecast horizon to 2026–2040 (15 years) + add Change Log (your edits + app history)"}, {"h": "056a4ef", "d": "2026-07-07", "t": "14:10", "s": "Add yearly expense growth model + budget period selector"}, {"h": "93407a4", "d": "2026-07-07", "t": "13:54", "s": "Add monthly expense breakdown (base-year drill-down) + bake in Supabase config"}, {"h": "b9c34e3", "d": "2026-07-07", "t": "13:20", "s": "Add fixed Supabase config option that locks the Cloud Save fields"}, {"h": "bdd773b", "d": "2026-07-07", "t": "09:27", "s": "Link all modules to live data: revenue from Price List × Yearly Budget, Excel expense sub-items, dynamic course catalog"}, {"h": "e324f9e", "d": "2026-07-07", "t": "09:07", "s": "Add Strategy & Governance module (Phase D): growth initiatives NPV/payback, compliance tracker, funding register; fix mobile overflow"}, {"h": "9d069c9", "d": "2026-07-07", "t": "09:00", "s": "Add Valuation & Statements module (Phase C of Excel master-budget port)"}, {"h": "e209b5e", "d": "2026-07-07", "t": "08:56", "s": "Add Operating Detail module (Phase B of Excel master-budget port)"}, {"h": "f76ed77", "d": "2026-07-07", "t": "08:47", "s": "Add Forecast & P&L module (Phase A of Excel master-budget port)"}, {"h": "352f494", "d": "2026-07-07", "t": "07:47", "s": "Re-add drag-to-move to Yearly Budget nodes with a grip handle"}, {"h": "674ded3", "d": "2026-07-07", "t": "07:25", "s": "Yearly Budget planner: back to vertical month rows, add per-month duplicate + price"}, {"h": "0278c90", "d": "2026-07-07", "t": "07:16", "s": "Yearly Budget planner: horizontal month columns with drag, duplicate, copy"}, {"h": "1a8a09a", "d": "2026-07-07", "t": "07:08", "s": "Redesign Yearly Budget intake area as a month-by-month planner grid"}, {"h": "ff7957c", "d": "2026-07-07", "t": "06:56", "s": "Add duplicate + month-shift controls to Yearly Budget intakes"}, {"h": "c97000b", "d": "2026-07-07", "t": "06:52", "s": "Add \"Save over\" (overwrite) to cloud-saved scenarios"}, {"h": "5c6ff65", "d": "2026-07-07", "t": "02:49", "s": "Add cloud save/load via Supabase"}, {"h": "66c8c12", "d": "2026-07-07", "t": "02:16", "s": "Fix Yearly Budget responsiveness across tablet and small-phone widths"}, {"h": "486dc2b", "d": "2026-07-07", "t": "02:10", "s": "Replace top nav bar with hamburger drawer menu"}, {"h": "2e80831", "d": "2026-07-07", "t": "02:00", "s": "Redesign Yearly Budget module — teal hero banner + attainment strip"}, {"h": "efda20c", "d": "2026-07-07", "t": "01:37", "s": "Add readable TypeScript/React version of the Yearly Budget module"}, {"h": "9c742f7", "d": "2026-07-07", "t": "01:32", "s": "Split into two top-level modules: Course Simulator + Yearly Budget"}, {"h": "35123f6", "d": "2026-07-07", "t": "01:14", "s": "Add Portfolio tab: multi-course Monthly/Quarterly/Yearly/Total menu"}, {"h": "3501c6d", "d": "2026-07-07", "t": "00:51", "s": "Add portfolio performance React prototype"}, {"h": "b716e62", "d": "2026-07-06", "t": "23:55", "s": "Add legends to all D3 chart views"}, {"h": "f2fd130", "d": "2026-07-06", "t": "23:47", "s": "Add D3.js charts to all remaining tabs (6 new chart views)"}, {"h": "b915c0d", "d": "2026-07-06", "t": "23:25", "s": "Add D3.js chart view for What-if profit-by-students, alongside existing table"}, {"h": "13776d3", "d": "2026-06-30", "t": "03:37", "s": "Clarify breakeven is total enrolment for one run, not per month"}, {"h": "2efacb5", "d": "2026-06-30", "t": "02:04", "s": "Widen left panel and redesign ULEC subcontract tab"}, {"h": "64fcb77", "d": "2026-06-30", "t": "01:50", "s": "Rename student inputs to 'Planned/Actual students (total)' with per-month sub-label"}, {"h": "2b2b1a7", "d": "2026-06-30", "t": "01:48", "s": "Clarify Planned/Actual students labels: show total cohort + per-month sub-label"}, {"h": "ebf05c9", "d": "2026-06-30", "t": "01:46", "s": "Split what-if table: separate Students (total) and Per month columns"}, {"h": "8418481", "d": "2026-06-30", "t": "01:42", "s": "Add what-if enrolment table and per-month student figures to Overview"}, {"h": "ae816dd", "d": "2026-06-30", "t": "01:32", "s": "Redesign layout, add AI chatbot, price list with hours/months, and finance advisor skill"}, {"h": "274a2b1", "d": "2026-06-30", "t": "01:10", "s": "Add localStorage persistence + JSON export/import"}, {"h": "b8c60d6", "d": "2026-06-29", "t": "23:29", "s": "Add QuickLook fallback message and DOMContentLoaded guard"}, {"h": "05a4e6d", "d": "2026-06-29", "t": "23:27", "s": "Fix blank page: add proper HTML5 document structure"}, {"h": "b1afa6b", "d": "2026-06-29", "t": "23:26", "s": "Make layout fully responsive for mobile and tablet"}, {"h": "d72fc86", "d": "2026-06-29", "t": "23:08", "s": "Fix visual design: card depth, blue header, active tab, sr-only"}, {"h": "e451348", "d": "2026-06-29", "t": "23:04", "s": "Add CSS variable definitions and form element styling"}, {"h": "8730024", "d": "2026-06-29", "t": "21:19", "s": "Add Fee Calculator tab to UCC budget simulator"}];
+function fmtLogDate(iso){
+  const d=new Date(iso);
+  if(isNaN(d))return iso||"";
+  const mo=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()];
+  return `${String(d.getDate()).padStart(2,"0")} ${mo} ${d.getFullYear()}`;
+}
+function fmtLogTime(iso){
+  const d=new Date(iso);
+  if(isNaN(d))return "";
+  return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+}
+function esc(x){return String(x==null?"":x).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function renderLogModule(st){
+  const tab=st.logTab||"edits";
+  const q=(st.logSearch||"").toLowerCase();
+  const tabs=[["edits",`My edits (${(st.audit||[]).length})`],["updates",`App updates (${APP_CHANGELOG.length})`]];
+  const hdr=`
+  <div class="hdr" style="background:linear-gradient(135deg,#0f766e 0%,#14b8a6 100%)">
+    <div class="hdr-brand"><div class="hdr-label" style="color:#ccfbf1">United Ceres College</div><div class="hdr-title">Change Log</div></div>
+    <div style="margin-left:auto;font-size:11px;color:#ccfbf1">What changed, when — dates show as DD MMM YYYY</div>
+  </div>`;
+  const tabbar=`<div class="view-toggle" style="margin:12px 0">${tabs.map(([k,l])=>`<button data-logtab="${k}" class="${tab===k?"on":""}">${l}</button>`).join("")}</div>`;
+  const search=`<div style="margin-bottom:12px"><input id="logSearch" placeholder="Search…" value="${esc(st.logSearch||"")}" style="width:100%;max-width:420px"></div>`;
+  // group helper: array of {date, items:[html]}
+  function groupBy(entries,dateOf){
+    const map=new Map();
+    entries.forEach(e=>{const d=dateOf(e);if(!map.has(d))map.set(d,[]);map.get(d).push(e);});
+    return [...map.entries()];
+  }
+  let body="";
+  if(tab==="edits"){
+    let list=(st.audit||[]);
+    if(q)list=list.filter(e=>(`${e.area} ${e.what} ${e.from} ${e.to}`).toLowerCase().includes(q));
+    if(!list.length){
+      body=`<div style="padding:40px;text-align:center;color:var(--text-muted)">${(st.audit||[]).length?"No edits match your search.":"No edits recorded yet. As you change fees, expenses, intakes and scenarios, each change will be logged here with a date and time."}</div>`;
+    }else{
+      const groups=groupBy(list,e=>fmtLogDate(e.t));
+      body=groups.map(([date,items])=>`
+        <div style="margin-bottom:18px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:6px;color:var(--text-primary)">📌 ${date} <span style="font-weight:400;color:var(--text-muted)">· ${items.length}</span></div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            ${items.map(e=>`
+              <div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:var(--surface-1);border-radius:8px;border-left:3px solid #14b8a6">
+                <span style="font-size:11px;color:var(--text-muted);white-space:nowrap;min-width:38px">${fmtLogTime(e.t)}</span>
+                <span style="font-size:10px;font-weight:600;color:#0f766e;background:#ccfbf1;border-radius:4px;padding:1px 6px;white-space:nowrap">${esc(e.area)}</span>
+                <span style="font-size:12px;color:var(--text-primary);min-width:0">
+                  <strong>${esc(e.what)}</strong>${(e.from!==""||e.to!=="")?`<br><span style="color:var(--text-muted)">${esc(e.from)||"—"} → </span><span style="color:var(--text-primary);font-weight:600">${esc(e.to)||"—"}</span>`:""}
+                </span>
+              </div>`).join("")}
+          </div>
+        </div>`).join("");
+    }
+    const clearBtn=`<div style="margin-top:8px"><button id="logClear" class="hdr-btn" style="border:1px solid var(--border);background:transparent">Clear my edit history</button></div>`;
+    body=body+clearBtn;
+  }else{
+    let list=APP_CHANGELOG.slice();
+    if(q)list=list.filter(e=>e.s.toLowerCase().includes(q));
+    const groups=groupBy(list,e=>fmtLogDate(e.d+"T00:00:00"));
+    body=groups.map(([date,items])=>`
+      <div style="margin-bottom:18px">
+        <div style="font-weight:700;font-size:13px;margin-bottom:6px;color:var(--text-primary)">🚀 ${date} <span style="font-weight:400;color:var(--text-muted)">· ${items.length}</span></div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${items.map(e=>`
+            <div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:var(--surface-1);border-radius:8px;border-left:3px solid #6366f1">
+              <span style="font-size:11px;color:var(--text-muted);white-space:nowrap;min-width:38px">${e.t}</span>
+              <span style="font-size:12px;color:var(--text-primary);min-width:0">${esc(e.s)}</span>
+              <span style="margin-left:auto;font-size:10px;color:var(--text-muted);font-family:monospace">${esc(e.h)}</span>
+            </div>`).join("")}
+        </div>
+      </div>`).join("");
+  }
+  return `<div class="wrap">${hdr}${tabbar}${search}<div class="g1" style="min-width:0">${body}</div></div>`;
+}
+function bindLogEvents(){
+  document.querySelectorAll("[data-logtab]").forEach(b=>b.addEventListener("click",e=>{ST.logTab=e.currentTarget.dataset.logtab;render();}));
+  const srch=document.getElementById("logSearch");
+  if(srch)srch.addEventListener("input",e=>{ST.logSearch=e.target.value;const pos=e.target.selectionStart;render();const el=document.getElementById("logSearch");if(el){el.focus();try{el.setSelectionRange(pos,pos);}catch(_){}}});
+  const clr=document.getElementById("logClear");
+  if(clr)clr.addEventListener("click",()=>{if(confirm("Clear your edit history? App version history is not affected.")){ST.audit=[];saveToStorage();render();}});
+}
+
 function renderForecastModule(st){
   const fx=st.fx;
   const tabs=[["pnl","Income Statement"],["revenue","Revenue"],["expenses","Expenses (yearly)"],["monthly","Expenses (monthly)"],["assumptions","Assumptions"],["dashboard","Dashboard"]];
@@ -2448,7 +2571,7 @@ function renderForecastModule(st){
   const p=fcPnl(st);
   const hdr=`
   <div class="hdr" style="background:linear-gradient(135deg,#3730a3 0%,#6366f1 100%)">
-    <div class="hdr-brand"><div class="hdr-label" style="color:#c7d2fe">United Ceres College</div><div class="hdr-title">Forecast & P&amp;L — ${FC_YEARS[0]}–${FC_YEARS[5]}</div></div>
+    <div class="hdr-brand"><div class="hdr-label" style="color:#c7d2fe">United Ceres College</div><div class="hdr-title">Forecast & P&amp;L — ${FC_YEARS[0]}–${FC_YEARS[FC_LAST]}</div></div>
     <div class="hdr-actions" style="align-items:center">
       <span style="font-size:11px;color:#e0e7ff">Scenario</span>
       ${["Base","Best","Worst"].map(s=>`<button class="hdr-btn${fx.scenario===s?" primary":""}" data-fcscen="${s}">${s}</button>`).join("")}
@@ -2457,7 +2580,7 @@ function renderForecastModule(st){
   <div class="subhdr" style="gap:16px">
     <div style="font-size:11px;color:var(--text-muted)">Fee growth/yr <strong style="color:var(--text-primary)">${fp(scen.fee)}</strong></div>
     <div style="font-size:11px;color:var(--text-muted)">Volume vs plan/yr <strong style="color:var(--text-primary)">${fp(scen.vol)}</strong></div>
-    <div style="margin-left:auto;font-size:11px;color:var(--text-muted)">${FC_YEARS[0]} net ${sgd(p.net[0])} · ${FC_YEARS[5]} net ${sgd(p.net[5])}</div>
+    <div style="margin-left:auto;font-size:11px;color:var(--text-muted)">${FC_YEARS[0]} net ${sgd(p.net[0])} · ${FC_YEARS[FC_LAST]} net ${sgd(p.net[FC_LAST])}</div>
   </div>`;
   const body=`<div class="module-body">
     <div class="tabs-wrap"><div class="tabs">${tabs.map(([k,l])=>`<button class="tab${fx.tab===k?" on":""}" data-fctab="${k}">${l}</button>`).join("")}</div></div>
@@ -2553,8 +2676,8 @@ function fcRenderExpenses(st,p){
     <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:10px;padding:10px 12px;background:var(--surface-1);border-radius:8px">
       <div style="display:flex;align-items:center;gap:6px">
         <span style="font-size:11px;color:var(--text-muted)">Budget period</span>
-        <select id="fcStartYear">${Array.from({length:11},(_,i)=>2024+i).map(y=>`<option value="${y}"${y===FC_YEARS[0]?" selected":""}>${y}</option>`).join("")}</select>
-        <span style="font-size:11px;color:var(--text-muted)">to <strong style="color:var(--text-primary)">${FC_YEARS[5]}</strong> (6 years)</span>
+        <strong style="color:var(--text-primary)">${FC_YEARS[0]} – ${FC_YEARS[FC_LAST]}</strong>
+        <span style="font-size:11px;color:var(--text-muted)">(${FC_YEARS.length} years)</span>
       </div>
       <div style="display:flex;align-items:center;gap:6px">
         <span style="font-size:11px;color:var(--text-muted)">Future years</span>
@@ -2683,16 +2806,16 @@ function fcRenderAssumptions(st){
 
 function fcRenderDashboard(st,p){
   const kpi=(lbl,val,col,sub)=>`<div class="kpi-card"><div class="kpi-card-lbl">${lbl}</div><div class="kpi-card-val" style="color:${col}">${val}</div><div class="kpi-card-sub">${sub||"&nbsp;"}</div></div>`;
-  const net26=p.net[0],net31=p.net[5];
-  const netAt=(scn)=>fcPnl({...st,fx:{...st.fx,scenario:scn}}).net[5];
+  const net26=p.net[0],net31=p.net[FC_LAST];
+  const netAt=(scn)=>fcPnl({...st,fx:{...st.fx,scenario:scn}}).net[FC_LAST];
   const swing={base:netAt("Base"),best:netAt("Best"),worst:netAt("Worst")};
   const sd=(k)=>{const s=fcScen({...st,fx:{...st.fx,scenario:k}});return `${fp(s.fee)} fee, ${fp(s.vol)} volume/yr`;};
   return `
   <div class="kpi-grid">
-    ${kpi("Revenue 2026",sgd(p.rev[0]),"var(--text-accent)",`grows to ${sgd(p.rev[5])} by 2031`)}
-    ${kpi("Net profit 2026",sgd(net26),net26>=0?"var(--text-success)":"var(--text-danger)",fp(p.mgn[0])+" margin")}
-    ${kpi("Net profit 2031",sgd(net31),net31>=0?"var(--text-success)":"var(--text-danger)",fp(p.mgn[5])+" margin")}
-    ${kpi("Breakeven year",(()=>{const i=p.net.findIndex(v=>v>=0);return i<0?"beyond 2031":String(FC_YEARS[i]);})(),"var(--text-primary)","first profitable year")}
+    ${kpi(`Revenue ${FC_YEARS[0]}`,sgd(p.rev[0]),"var(--text-accent)",`grows to ${sgd(p.rev[FC_LAST])} by ${FC_YEARS[FC_LAST]}`)}
+    ${kpi(`Net profit ${FC_YEARS[0]}`,sgd(net26),net26>=0?"var(--text-success)":"var(--text-danger)",fp(p.mgn[0])+" margin")}
+    ${kpi(`Net profit ${FC_YEARS[FC_LAST]}`,sgd(net31),net31>=0?"var(--text-success)":"var(--text-danger)",fp(p.mgn[FC_LAST])+" margin")}
+    ${kpi("Breakeven year",(()=>{const i=p.net.findIndex(v=>v>=0);return i<0?`beyond ${FC_YEARS[FC_LAST]}`:String(FC_YEARS[i]);})(),"var(--text-primary)","first profitable year")}
   </div>
   <div class="g2">
     <div class="card">
@@ -2706,7 +2829,7 @@ function fcRenderDashboard(st,p){
     </div>
   </div>
   <div class="card">
-    <div class="card-hdr"><div class="card-title">Scenario swing — 2031 net profit</div></div>
+    <div class="card-hdr"><div class="card-title">Scenario swing — ${FC_YEARS[FC_LAST]} net profit</div></div>
     <div class="g3">
       ${kpi("Worst case",sgd(swing.worst),swing.worst>=0?"var(--text-success)":"var(--text-danger)",sd("Worst"))}
       ${kpi("Base case",sgd(swing.base),swing.base>=0?"var(--text-success)":"var(--text-danger)",sd("Base"))}
@@ -2940,7 +3063,7 @@ function valDcf(st){
   const df=FC_YEARS.map((y,i)=>1/Math.pow(1+v.wacc,i+1));
   const pv=fcff.map((f,i)=>f*df[i]);
   const sumPV=pv.reduce((a,b)=>a+b,0);
-  const tv=(v.wacc>v.g)?((fcff[5]*(1+v.g))/(v.wacc-v.g))*df[5]:0;
+  const tv=(v.wacc>v.g)?((fcff[FC_LAST]*(1+v.g))/(v.wacc-v.g))*df[FC_LAST]:0;
   return {p,net,fcff,df,pv,sumPV,tv,ev:sumPV+tv};
 }
 function renderFinancialsModule(st){
@@ -2959,9 +3082,9 @@ function valRenderDcf(st){
   return `
   <div class="kpi-grid">
     <div class="kpi-card"><div class="kpi-card-lbl">Implied Enterprise Value</div><div class="kpi-card-val" style="color:var(--amber-800)">${sgd(d.ev)}</div><div class="kpi-card-sub">DCF, WACC ${fp(v.wacc)} · g ${fp(v.g)}</div></div>
-    <div class="kpi-card"><div class="kpi-card-lbl">PV of cash flows</div><div class="kpi-card-val">${sgd(d.sumPV)}</div><div class="kpi-card-sub">2026–2031 discounted</div></div>
+    <div class="kpi-card"><div class="kpi-card-lbl">PV of cash flows</div><div class="kpi-card-val">${sgd(d.sumPV)}</div><div class="kpi-card-sub">${FC_YEARS[0]}–${FC_YEARS[FC_LAST]} discounted</div></div>
     <div class="kpi-card"><div class="kpi-card-lbl">Terminal value (PV)</div><div class="kpi-card-val">${sgd(d.tv)}</div><div class="kpi-card-sub">Gordon growth</div></div>
-    <div class="kpi-card"><div class="kpi-card-lbl">2031 free cash flow</div><div class="kpi-card-val" style="color:${d.fcff[5]>=0?"var(--text-success)":"var(--text-danger)"}">${sgd(d.fcff[5])}</div><div class="kpi-card-sub">FCFF</div></div>
+    <div class="kpi-card"><div class="kpi-card-lbl">${FC_YEARS[FC_LAST]} free cash flow</div><div class="kpi-card-val" style="color:${d.fcff[FC_LAST]>=0?"var(--text-success)":"var(--text-danger)"}">${sgd(d.fcff[FC_LAST])}</div><div class="kpi-card-sub">FCFF</div></div>
   </div>
   <div class="card">
     <div class="card-hdr"><div class="card-title">Discounted cash flow</div></div>
@@ -3094,9 +3217,9 @@ function stratRenderGrowth(st){
       </div>
       <div class="kpi-grid">
         <div class="kpi-card"><div class="kpi-card-lbl">NPV @ ${fp(disc)}</div><div class="kpi-card-val" style="color:${r.npv>=0?"var(--text-success)":"var(--text-danger)"}">${sgd(r.npv)}</div></div>
-        <div class="kpi-card"><div class="kpi-card-lbl">Payback</div><div class="kpi-card-val">${r.payback||"—"}</div><div class="kpi-card-sub">${r.payback?"cumulative FCF ≥ 0":"beyond 2031"}</div></div>
-        <div class="kpi-card"><div class="kpi-card-lbl">2031 EBITDA</div><div class="kpi-card-val">${sgd(r.ebitda[5])}</div></div>
-        <div class="kpi-card"><div class="kpi-card-lbl">Cumulative FCF</div><div class="kpi-card-val" style="color:${r.cumArr[5]>=0?"var(--text-success)":"var(--text-danger)"}">${sgd(r.cumArr[5])}</div></div>
+        <div class="kpi-card"><div class="kpi-card-lbl">Payback</div><div class="kpi-card-val">${r.payback||"—"}</div><div class="kpi-card-sub">${r.payback?"cumulative FCF ≥ 0":`beyond ${FC_YEARS[FC_LAST]}`}</div></div>
+        <div class="kpi-card"><div class="kpi-card-lbl">${FC_YEARS[FC_LAST]} EBITDA</div><div class="kpi-card-val">${sgd(r.ebitda[FC_LAST])}</div></div>
+        <div class="kpi-card"><div class="kpi-card-lbl">Cumulative FCF</div><div class="kpi-card-val" style="color:${r.cumArr[FC_LAST]>=0?"var(--text-success)":"var(--text-danger)"}">${sgd(r.cumArr[FC_LAST])}</div></div>
       </div>
       <div class="tbl-scroll" style="margin-top:10px"><table class="cptbl" style="min-width:600px">
         <thead><tr><th>Line</th>${fcYearCols()}</tr></thead>
@@ -3188,7 +3311,7 @@ function bindFinancialsEvents(){
 function bindForecastEvents(){
   const save_render=()=>{saveToStorage();render();};
   document.querySelectorAll("[data-fctab]").forEach(b=>b.addEventListener("click",e=>{ST.fx.tab=e.currentTarget.dataset.fctab;save_render();}));
-  document.querySelectorAll("[data-fcscen]").forEach(b=>b.addEventListener("click",e=>{ST.fx.scenario=e.currentTarget.dataset.fcscen;save_render();}));
+  document.querySelectorAll("[data-fcscen]").forEach(b=>b.addEventListener("click",e=>{const nv=e.currentTarget.dataset.fcscen;logAudit("Forecast","Scenario",ST.fx.scenario,nv);ST.fx.scenario=nv;save_render();}));
   document.querySelectorAll("[data-fcgoto]").forEach(b=>b.addEventListener("click",e=>{
     const dest=e.currentTarget.dataset.fcgoto;
     if(dest==="pricelist"){ST.module="simulator";ST.tab="pricelist";}
@@ -3199,6 +3322,7 @@ function bindForecastEvents(){
     const kb=e.currentTarget.dataset.fcexp,gi=+e.currentTarget.dataset.gi,li=+e.currentTarget.dataset.li,yi=+e.currentTarget.dataset.yi;
     const l=ST.fx.exp[kb][gi].items[li];
     const raw=(e.currentTarget.value||"").trim();
+    const oldVal=Math.round(Number(l.v[yi])||0);
     if(ST.fx.expMode==="auto"&&yi>0){
       /* future-year cell in auto mode = an override; a blank cell reverts to auto-grow */
       l.ov=l.ov||{};
@@ -3206,19 +3330,14 @@ function bindForecastEvents(){
     }else{
       l.v[yi]=parseFloat(raw)||0;
     }
+    logAudit("Expenses",`${l.label} ${FC_YEARS[yi]}`,oldVal,raw===""?"(auto)":Math.round(parseFloat(raw)||0));
     /* editing a year's total resets that year's monthly split (re-splits evenly) */
     if(ST.fx.monthly)delete ST.fx.monthly[fcMonthKey(kb,gi,li,FC_YEARS[yi])];
     save_render();
   }));
-  const startSel=document.getElementById("fcStartYear");
-  if(startSel)startSel.addEventListener("change",e=>{
-    fcSetPeriod(e.target.value);ST.fx.startYear=FC_YEARS[0];
-    if(!FC_YEARS.includes(ST.fx.baseYear))ST.fx.baseYear=FC_YEARS[0];
-    save_render();
-  });
-  document.querySelectorAll("[data-fcexpmode]").forEach(b=>b.addEventListener("click",e=>{ST.fx.expMode=e.currentTarget.dataset.fcexpmode;save_render();}));
+  document.querySelectorAll("[data-fcexpmode]").forEach(b=>b.addEventListener("click",e=>{const nv=e.currentTarget.dataset.fcexpmode;logAudit("Expenses","Future-years mode",ST.fx.expMode,nv);ST.fx.expMode=nv;save_render();}));
   const multInp=document.getElementById("fcExpMult");
-  if(multInp)multInp.addEventListener("change",e=>{ST.fx.expMult=parseFloat(e.target.value)||1;save_render();});
+  if(multInp)multInp.addEventListener("change",e=>{const nv=parseFloat(e.target.value)||1;logAudit("Expenses","Yearly increase ×",ST.fx.expMult,nv);ST.fx.expMult=nv;save_render();});
   const clearOv=document.getElementById("fcClearOv");
   if(clearOv)clearOv.addEventListener("click",()=>{
     if(!confirm("Clear all manual overrides so every future year auto-grows from "+FC_YEARS[0]+"?"))return;
@@ -3236,6 +3355,8 @@ function bindForecastEvents(){
     ST.fx.monthly[fcMonthKey(kb,gi,li,year)]=arr;
     const sum=arr.reduce((a,b)=>a+b,0);
     const l=ST.fx.exp[kb][gi].items[li];
+    const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    logAudit("Expenses (monthly)",`${l.label} ${MON[mi]} ${year}`,"",Math.round(arr[mi]));
     l.v[yi]=sum;
     /* in auto mode a month-planned future year must pin as an override or growth would overwrite it */
     if(ST.fx.expMode==="auto"&&yi>0){l.ov=l.ov||{};l.ov[yi]=sum;}
@@ -3280,6 +3401,12 @@ function render(){
     document.getElementById("app").innerHTML=buildModuleNav()+renderStrategyModule(ST);
     bindModuleNavEvents();
     bindStrategyEvents();
+    return;
+  }
+  if(ST.module==="log"){
+    document.getElementById("app").innerHTML=buildModuleNav()+renderLogModule(ST);
+    bindModuleNavEvents();
+    bindLogEvents();
     return;
   }
   const s=calc(ST);
@@ -3430,15 +3557,18 @@ function bindYearlyBudgetEvents(){
     ST.ybForm.students=students;
     const nextId=Math.max(0,...ST.intakes.map(i=>i.id))+1;
     ST.intakes.push({id:nextId,kind:ST.ybForm.kind,ci,month:m,year:ST.ybYear,students});
+    logAudit("Yearly Budget",`Add ${ST.ybForm.kind} intake — ${(COURSES[ci]||{}).name||"course"} ${ST.ybYear}`,"",students+" students");
     save_render();
   }));
   /* Inline student edit */
   document.querySelectorAll("[data-ikstu]").forEach(inp=>inp.addEventListener("change",e=>{
     const ik=ST.intakes.find(i=>i.id===parseInt(e.currentTarget.dataset.ikstu));
-    if(ik){ik.students=Math.max(0,parseInt(e.currentTarget.value)||0);save_render();}
+    if(ik){const old=ik.students;ik.students=Math.max(0,parseInt(e.currentTarget.value)||0);logAudit("Yearly Budget",`${(COURSES[ik.ci]||{}).name||"course"} ${ik.kind} ${ik.year}`,old,ik.students);save_render();}
   }));
   /* Remove an intake */
   document.querySelectorAll("[data-delintake]").forEach(b=>b.addEventListener("click",e=>{
+    const ik=ST.intakes.find(i=>i.id===parseInt(e.currentTarget.dataset.delintake));
+    if(ik)logAudit("Yearly Budget",`Remove ${ik.kind} intake — ${(COURSES[ik.ci]||{}).name||"course"} ${ik.year}`,ik.students+" students","removed");
     ST.intakes=ST.intakes.filter(i=>i.id!==parseInt(e.currentTarget.dataset.delintake));
     save_render();
   }));
@@ -3521,17 +3651,22 @@ function bindEvents(s){
   document.querySelectorAll("input[name='fcSchol']").forEach(r=>r.addEventListener("change",e=>{ST.fcSchol=parseInt(e.target.value);save_render();}));
   document.querySelectorAll("[data-pci]").forEach(inp=>inp.addEventListener("change",e=>{
     const i=parseInt(e.target.dataset.pci),field=e.target.dataset.pf;
+    const cname=(COURSES[i]||{}).name||"course",oldV=COURSES[i]?COURSES[i][field]:"";
     if(field==="name"||field==="cat"){
       const v=e.target.value.trim();
-      if(v)COURSES[i][field]=v;
+      if(v){logAudit("Price List",`${cname} · ${field}`,oldV,v);COURSES[i][field]=v;}
     }else{
-      COURSES[i][field]=parseFloat(e.target.value)||0;
+      const nv=parseFloat(e.target.value)||0;
+      logAudit("Price List",`${cname} · ${field}`,oldV,nv);
+      COURSES[i][field]=nv;
     }
     save_render();
   }));
   const addC=document.getElementById("addCourse");if(addC)addC.addEventListener("click",()=>{
     const lastCat=COURSES.length?COURSES[COURSES.length-1].cat:"New Category";
-    COURSES.push({cat:lastCat,name:"New Course "+(COURSES.length+1),abbr:"NEW",hrs:0,mo:1,app:400,fee:0,mat:0,exam:0,admin:0});
+    const nm="New Course "+(COURSES.length+1);
+    COURSES.push({cat:lastCat,name:nm,abbr:"NEW",hrs:0,mo:1,app:400,fee:0,mat:0,exam:0,admin:0});
+    logAudit("Price List",`Add course`,"",nm);
     save_render();
   });
   document.querySelectorAll("[data-delcourse]").forEach(btn=>btn.addEventListener("click",e=>{
@@ -3539,6 +3674,7 @@ function bindEvents(s){
     const c=COURSES[i];if(!c)return;
     const nIntakes=ST.intakes.filter(k=>k.ci===i).length;
     if(!confirm(`Delete "${c.name}"?${nIntakes?`\n\nThis also removes its ${nIntakes} Yearly Budget intake(s).`:""}`))return;
+    logAudit("Price List",`Delete course`,c.name,"removed");
     COURSES.splice(i,1);
     /* keep intake links pointing at the right courses after the index shift */
     ST.intakes=ST.intakes.filter(k=>k.ci!==i).map(k=>k.ci>i?{...k,ci:k.ci-1}:k);
