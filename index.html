@@ -571,6 +571,22 @@ async function sbSaveScenario(name){
     ST.sbLoading=false;render();
   }
 }
+async function sbOverwriteScenario(id){
+  if(!sbConfigured())return;
+  ST.sbLoading=true;render();
+  try{
+    const res=await fetch(`${ST.sbUrl.replace(/\/$/,"")}/rest/v1/ucc_saves?id=eq.${id}`,{
+      method:"PATCH",
+      headers:{...sbHeaders(),Prefer:"return=minimal"},
+      body:JSON.stringify({data:buildFullSnapshot(),updated_at:new Date().toISOString()})
+    });
+    if(!res.ok)throw new Error("HTTP "+res.status);
+    await sbFetchSaves();
+  }catch(e){
+    ST.sbStatus="Overwrite failed — "+(e.message||"network error");ST.sbStatusOk=false;
+    ST.sbLoading=false;render();
+  }
+}
 async function sbLoadScenario(id){
   if(!sbConfigured())return;
   ST.sbLoading=true;render();
@@ -2193,6 +2209,7 @@ function buildCloudModal(){
               <div class="cloud-item-name" title="${s.name}">${s.name}</div>
               <div class="cloud-item-date">${new Date(s.updated_at).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}</div>
               <button data-sbload="${s.id}">Load</button>
+              <button data-sbover="${s.id}" data-sbovername="${s.name.replace(/"/g,"&quot;")}" title="Replace this scenario with the current app state">Save over</button>
               <button data-sbdel="${s.id}" style="color:var(--text-danger)">Delete</button>
             </div>`).join("")
           }
@@ -2323,6 +2340,10 @@ function bindModuleNavEvents(){
   });
   document.querySelectorAll("[data-sbload]").forEach(b=>b.addEventListener("click",e=>{
     sbLoadScenario(e.currentTarget.dataset.sbload);
+  }));
+  document.querySelectorAll("[data-sbover]").forEach(b=>b.addEventListener("click",e=>{
+    const name=e.currentTarget.dataset.sbovername||"this scenario";
+    if(confirm(`Overwrite "${name}" with the current app state?\n\nThis replaces the saved version and cannot be undone.`))sbOverwriteScenario(e.currentTarget.dataset.sbover);
   }));
   document.querySelectorAll("[data-sbdel]").forEach(b=>b.addEventListener("click",e=>{
     if(confirm("Delete this saved scenario? This cannot be undone."))sbDeleteScenario(e.currentTarget.dataset.sbdel);
