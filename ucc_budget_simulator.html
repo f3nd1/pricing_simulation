@@ -71,6 +71,9 @@ button:hover{background:var(--surface-0)}
 .module-body{max-width:1200px;margin:0 auto;padding:16px 20px}
 .module-body select{max-width:100%;min-width:0}
 .yb-form-course{flex:1 1 100%;min-width:0;max-width:100%}
+.ik-btn{border:1px solid var(--border);background:var(--surface-1);border-radius:5px;width:24px;height:24px;padding:0;font-size:11px;cursor:pointer;color:var(--text-secondary);margin-left:2px;vertical-align:middle}
+.ik-btn:hover:not(:disabled){background:var(--surface-0);color:var(--text-primary)}
+.ik-btn:disabled{opacity:.3;cursor:not-allowed}
 @media(max-width:640px){.module-body{padding:12px}}
 
 /* Cloud save (Supabase) */
@@ -1768,7 +1771,12 @@ function renderYearlyBudgetModule(st){
         <td style="padding:5px 8px"><span class="card-badge" style="background:var(--blue-100);color:var(--blue-700);font-size:9px">${c.cat}</span></td>
         <td style="padding:5px 8px">${MONTH_NAMES[ik.month]} ${ik.year}</td>
         <td style="padding:5px 8px;text-align:right">${ik.students}</td>
-        <td style="padding:5px 8px;text-align:center"><button data-delintake="${ik.id}" class="del-btn">×</button></td>
+        <td style="padding:4px 6px;text-align:right;white-space:nowrap">
+          <button data-ik-mo-up="${ik.id}" class="ik-btn" title="Move to earlier month"${ik.month<=0?" disabled":""}>▲</button>
+          <button data-ik-mo-dn="${ik.id}" class="ik-btn" title="Move to later month"${ik.month>=11?" disabled":""}>▼</button>
+          <button data-ik-dup="${ik.id}" class="ik-btn" title="Duplicate this intake">⧉</button>
+          <button data-delintake="${ik.id}" class="del-btn" title="Delete">×</button>
+        </td>
       </tr>`;
     }).join("");
     return trs||`<tr><td colspan="5" style="padding:16px;text-align:center;color:var(--text-muted)">No ${kind} intakes for ${st.ybYear} yet.</td></tr>`;
@@ -2383,6 +2391,22 @@ function bindYearlyBudgetEvents(){
   document.querySelectorAll("[data-delintake]").forEach(b=>b.addEventListener("click",e=>{
     ST.intakes=ST.intakes.filter(i=>i.id!==parseInt(e.currentTarget.dataset.delintake));
     save_render();
+  }));
+  const findIk=id=>ST.intakes.find(i=>i.id===parseInt(id));
+  document.querySelectorAll("[data-ik-dup]").forEach(b=>b.addEventListener("click",e=>{
+    const src=findIk(e.currentTarget.dataset.ikDup);
+    if(!src)return;
+    const nextId=Math.max(0,...ST.intakes.map(i=>i.id))+1;
+    ST.intakes.push({...src,id:nextId});
+    save_render();
+  }));
+  document.querySelectorAll("[data-ik-mo-up]").forEach(b=>b.addEventListener("click",e=>{
+    const ik=findIk(e.currentTarget.dataset.ikMoUp);
+    if(ik&&ik.month>0){ik.month--;save_render();}
+  }));
+  document.querySelectorAll("[data-ik-mo-dn]").forEach(b=>b.addEventListener("click",e=>{
+    const ik=findIk(e.currentTarget.dataset.ikMoDn);
+    if(ik&&ik.month<11){ik.month++;save_render();}
   }));
 }
 
