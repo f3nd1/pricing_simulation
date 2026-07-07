@@ -182,6 +182,30 @@ button:hover{background:var(--surface-0)}
 .whatif-chart-tip{position:absolute;pointer-events:none;background:var(--surface-2);border:1px solid var(--border);border-radius:7px;padding:7px 10px;font-size:11px;box-shadow:var(--shadow-md);opacity:0;transition:opacity .1s;z-index:5;white-space:nowrap}
 .chart-fallback{display:flex;align-items:center;justify-content:center;height:280px;color:var(--text-muted);font-size:12px;text-align:center;padding:20px;background:var(--surface-1);border-radius:10px}
 
+/* Yearly Budget module — "goal tracker" design */
+.yb-hero{background:linear-gradient(135deg,#065f46 0%,#0d9488 55%,#10b981 100%);border-radius:16px;padding:22px 26px;color:#fff;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:26px;align-items:center;box-shadow:0 6px 20px rgba(6,95,70,.25)}
+.yb-hero-metric{flex:1;min-width:140px}
+.yb-hero-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.09em;opacity:.85;margin-bottom:5px;font-weight:600}
+.yb-hero-val{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.yb-hero-sub{font-size:11px;opacity:.85;margin-top:5px}
+.yb-hero-divider{width:1px;align-self:stretch;background:rgba(255,255,255,.25)}
+.yb-strip{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.yb-pill{flex:1;min-width:56px;text-align:center;padding:10px 4px;border-radius:10px;color:#fff}
+.yb-pill-name{font-size:9px;opacity:.9;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px;font-weight:600}
+.yb-pill-val{font-size:13px;font-weight:800}
+.yb-course-row{display:flex;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid var(--border)}
+.yb-course-row:last-child{border-bottom:none}
+.yb-course-name{width:100px;flex-shrink:0;font-size:12px;font-weight:700;color:var(--text-primary)}
+.yb-track{flex:1;height:11px;background:var(--surface-1);border-radius:7px;overflow:hidden;position:relative;min-width:80px}
+.yb-track-budget{position:absolute;top:0;bottom:0;width:100%;background:repeating-linear-gradient(135deg,var(--surface-0),var(--surface-0) 4px,var(--surface-1) 4px,var(--surface-1) 8px)}
+.yb-track-fill{position:absolute;top:0;bottom:0;left:0;border-radius:7px;transition:width .3s}
+.yb-course-nums{width:190px;flex-shrink:0;text-align:right;font-size:11px;color:var(--text-muted);white-space:nowrap}
+.yb-kindtoggle{display:inline-flex;gap:2px;background:var(--surface-1);border-radius:9px;padding:2px;margin-bottom:12px}
+.yb-kindtoggle button{border:none;background:transparent;padding:7px 16px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;color:var(--text-muted)}
+.yb-kindtoggle button.on.budget{background:#2563eb;color:#fff}
+.yb-kindtoggle button.on.actual{background:#16a34a;color:#fff}
+@media(max-width:640px){.yb-hero{flex-direction:column;align-items:stretch;gap:14px}.yb-hero-divider{display:none}.yb-course-row{flex-wrap:wrap}.yb-course-nums{width:100%;text-align:left}}
+
 /* Scenario name input in header */
 #sName{font-size:12px;width:130px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.4);border-radius:6px;color:#fff;padding:5px 10px}
 #sName::placeholder{color:rgba(255,255,255,.6)}
@@ -1496,7 +1520,7 @@ function renderYearlyBudgetModule(st){
   const aPeriods=portfolioPeriods(aLedger,st.ybView,st.ybYear);
   const bTot=bPeriods.reduce((a,p)=>({revenue:a.revenue+p.revenue,cost:a.cost+p.cost,profit:a.profit+p.profit,newStudents:a.newStudents+p.newStudents}),{revenue:0,cost:0,profit:0,newStudents:0});
   const aTot=aPeriods.reduce((a,p)=>({revenue:a.revenue+p.revenue,cost:a.cost+p.cost,profit:a.profit+p.profit,newStudents:a.newStudents+p.newStudents}),{revenue:0,cost:0,profit:0,newStudents:0});
-  const variance=aTot.profit-bTot.profit;
+  const attainment=bTot.profit>0?aTot.profit/bTot.profit:(aTot.profit>0?1:0);
 
   const years=[...new Set(st.intakes.map(i=>i.year))];
   let yearRange=years.length?[Math.min(...years),Math.max(...years)]:[st.ybYear,st.ybYear];
@@ -1507,15 +1531,20 @@ function renderYearlyBudgetModule(st){
 
   const pviews=[{val:"monthly",label:"Monthly"},{val:"quarterly",label:"Quarterly"},{val:"yearly",label:"Yearly"},{val:"total",label:"Total"}];
 
-  const rows=bPeriods.map((bp,i)=>{
-    const ap=aPeriods[i]||{revenue:0,cost:0,profit:0};
-    const v=ap.profit-bp.profit;
-    return`<tr>
-      <td style="padding:5px 8px;font-weight:600">${bp.label}</td>
-      <td style="padding:5px 8px;text-align:right">${sgd(bp.profit)}</td>
-      <td style="padding:5px 8px;text-align:right">${sgd(ap.profit)}</td>
-      <td style="padding:5px 8px;text-align:right;font-weight:700;color:${v>=0?"var(--text-success)":"var(--text-danger)"}">${v>=0?"+":""}${sgd(v)}</td>
-    </tr>`;
+  /* Attainment strip — one pill per period in the current view, color-coded by actual/budget ratio */
+  const stripPills=bPeriods.map((bp,i)=>{
+    const ap=aPeriods[i]||{profit:0};
+    let color,label;
+    if(bp.profit===0&&ap.profit===0){color="#94a3b8";label="—";}
+    else{
+      const ratio=bp.profit!==0?ap.profit/bp.profit:(ap.profit>0?1:0);
+      color=ratio>=1?"#16a34a":ratio>=0.7?"#f59e0b":"#dc2626";
+      label=Math.round(ratio*100)+"%";
+    }
+    return`<div class="yb-pill" style="background:${color}" title="${bp.label}: budget ${sgd(bp.profit)} · actual ${sgd(ap.profit)}">
+      <span class="yb-pill-name">${bp.label}</span>
+      <span class="yb-pill-val">${label}</span>
+    </div>`;
   }).join("");
 
   /* Per-course annual rollup: budget vs actual, aggregated across the whole year regardless of period view */
@@ -1532,21 +1561,22 @@ function renderYearlyBudgetModule(st){
     if((ik.kind||"budget")==="budget"){row.bStu+=ik.students;row.bProfit+=profit;}
     else{row.aStu+=ik.students;row.aProfit+=profit;}
   });
-  const courseRows=Object.values(byCourse).sort((a,b)=>b.bProfit-a.bProfit).map(r=>{
+  const courseCards=Object.values(byCourse).sort((a,b)=>b.bProfit-a.bProfit).map(r=>{
     const c=COURSES[r.ci];
-    const v=r.aProfit-r.bProfit;
-    return`<tr>
-      <td style="padding:5px 8px">${c.abbr}</td>
-      <td style="padding:5px 8px;text-align:right">${r.bStu}</td>
-      <td style="padding:5px 8px;text-align:right">${r.aStu}</td>
-      <td style="padding:5px 8px;text-align:right">${sgd(r.bProfit)}</td>
-      <td style="padding:5px 8px;text-align:right">${sgd(r.aProfit)}</td>
-      <td style="padding:5px 8px;text-align:right;font-weight:700;color:${v>=0?"var(--text-success)":"var(--text-danger)"}">${v>=0?"+":""}${sgd(v)}</td>
-    </tr>`;
+    const pctStu=r.bStu>0?Math.min(r.aStu/r.bStu,1.4):(r.aStu>0?1:0);
+    const barColor=pctStu>=1?"#16a34a":pctStu>=0.7?"#f59e0b":"#dc2626";
+    return`<div class="yb-course-row">
+      <div class="yb-course-name">${c.abbr}</div>
+      <div class="yb-track">
+        <div class="yb-track-budget"></div>
+        <div class="yb-track-fill" style="width:${Math.min(pctStu,1)*100}%;background:${barColor}"></div>
+      </div>
+      <div class="yb-course-nums">${r.aStu}/${r.bStu} stu · ${sgd(r.aProfit)} vs ${sgd(r.bProfit)}</div>
+    </div>`;
   }).join("");
 
   const intakeFormOptions=cats.map(cat=>`<optgroup label="${cat}">${COURSES.map((c,i)=>c.cat===cat?`<option value="${i}"${i===st.ybForm.ci?" selected":""}>${c.name}</option>`:"").join("")}</optgroup>`).join("");
-  const intakeTable=kind=>{
+  const intakeList=kind=>{
     const list=st.intakes.filter(ik=>(ik.kind||"budget")===kind&&ik.year===st.ybYear).sort((a,b)=>a.month-b.month);
     const trs=list.map(ik=>{
       const c=COURSES[ik.ci];
@@ -1563,17 +1593,38 @@ function renderYearlyBudgetModule(st){
   };
 
   return`<div class="body">
-  <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;padding:8px 12px;background:var(--blue-50);border-radius:8px;border:1px solid var(--blue-100)">
-    💡 <strong>Budget</strong> = the plan you set for the year (target intakes/students per course). <strong>Actual</strong> = what really happened, logged as it comes in. Each intake's revenue/cost is recognised straight-line across its course's duration. Uses the same global inputs (teacher rate, discount, commissions, overhead) as the Course Simulator.
+  <div class="yb-hero">
+    <div class="yb-hero-metric">
+      <div class="yb-hero-lbl">Budgeted profit</div>
+      <div class="yb-hero-val">${sgd(bTot.profit)}</div>
+      <div class="yb-hero-sub">${st.ybView} view · ${bTot.newStudents} budgeted students</div>
+    </div>
+    <div class="yb-hero-divider"></div>
+    <div class="yb-hero-metric">
+      <div class="yb-hero-lbl">Actual profit</div>
+      <div class="yb-hero-val">${sgd(aTot.profit)}</div>
+      <div class="yb-hero-sub">${aTot.newStudents} actual students</div>
+    </div>
+    <div class="yb-hero-divider"></div>
+    <div class="yb-hero-metric">
+      <div class="yb-hero-lbl">Attainment</div>
+      <div class="yb-hero-val">${Math.round(attainment*100)}%</div>
+      <div class="yb-hero-sub">of budgeted profit achieved</div>
+    </div>
+    <div class="yb-hero-divider"></div>
+    <div class="yb-hero-metric">
+      <div class="yb-hero-lbl">Budgeted revenue</div>
+      <div class="yb-hero-val" style="font-size:22px">${sgd(bTot.revenue)}</div>
+      <div class="yb-hero-sub">vs actual ${sgd(aTot.revenue)}</div>
+    </div>
   </div>
-  <div class="kpi-grid">
-    <div class="kpi-card"><div class="kpi-card-lbl">Budgeted profit</div><div class="kpi-card-val" style="color:var(--text-accent)">${sgd(bTot.profit)}</div><div class="kpi-card-sub">${st.ybView} view · ${bTot.newStudents} budgeted students</div></div>
-    <div class="kpi-card"><div class="kpi-card-lbl">Actual profit</div><div class="kpi-card-val" style="color:${aTot.profit>=0?"var(--text-success)":"var(--text-danger)"}">${sgd(aTot.profit)}</div><div class="kpi-card-sub">${aTot.newStudents} actual students</div></div>
-    <div class="kpi-card"><div class="kpi-card-lbl">Variance</div><div class="kpi-card-val" style="color:${variance>=0?"var(--text-success)":"var(--text-danger)"}">${variance>=0?"+":""}${sgd(variance)}</div><div class="kpi-card-sub">${variance>=0?"ahead of":"behind"} budget</div></div>
-    <div class="kpi-card"><div class="kpi-card-lbl">Budgeted revenue</div><div class="kpi-card-val">${sgd(bTot.revenue)}</div><div class="kpi-card-sub">vs actual ${sgd(aTot.revenue)}</div></div>
+
+  <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;padding:8px 12px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
+    💡 <strong>Budget</strong> = the plan you set for the year. <strong>Actual</strong> = what really happened, logged as it comes in. Each pill/bar below shows attainment = actual ÷ budget. Uses the same global inputs (teacher rate, discount, commissions, overhead) as the Course Simulator.
   </div>
+
   <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px">
       <div class="view-toggle">
         ${pviews.map(v=>`<button data-ybview="${v.val}" class="${st.ybView===v.val?"on":""}">${v.label}</button>`).join("")}
       </div>
@@ -1585,47 +1636,46 @@ function renderYearlyBudgetModule(st){
         </select>
       </div>
     </div>
-    ${chartLegend([{color:"#2563eb",label:"Budget"},{color:"#16a34a",label:"Actual (ahead)"},{color:"#dc2626",label:"Actual (behind)"}])}
-    <div id="ybChart" style="position:relative;width:100%;height:300px"></div>
-    <div class="tbl-scroll" style="margin-top:10px"><table class="cptbl" style="min-width:440px">
-      <thead><tr><th>Period</th><th style="text-align:right">Budget profit</th><th style="text-align:right">Actual profit</th><th style="text-align:right">Variance</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table></div>
+    <div class="card-title" style="margin-bottom:8px">Attainment by period</div>
+    <div class="yb-strip">${stripPills}</div>
+    ${chartLegend([{color:"#16a34a",label:"≥100% — on/above budget"},{color:"#f59e0b",label:"70–99% — slightly behind"},{color:"#dc2626",label:"<70% — well behind"},{color:"#94a3b8",label:"No data"}])}
+    <div class="card-title" style="margin:14px 0 4px">Cumulative profit — budget vs actual</div>
+    <div id="ybChart" style="position:relative;width:100%;height:280px"></div>
   </div>
+
   <div class="card">
     <div class="card-hdr"><div class="card-title">Annual plan per course — ${st.ybYear}</div></div>
-    <div class="tbl-scroll"><table class="cptbl" style="min-width:480px">
-      <thead><tr>
-        <th>Course</th><th style="text-align:right">Budget stu.</th><th style="text-align:right">Actual stu.</th>
-        <th style="text-align:right">Budget profit</th><th style="text-align:right">Actual profit</th><th style="text-align:right">Variance</th>
-      </tr></thead>
-      <tbody>${courseRows||`<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--text-muted)">No intakes for ${st.ybYear} yet.</td></tr>`}</tbody>
-    </table></div>
+    ${courseCards||`<div class="empty-state" style="padding:16px;text-align:center;color:var(--text-muted)">No intakes for ${st.ybYear} yet.</div>`}
   </div>
-  <div class="g2">
-    <div class="card">
-      <div class="card-hdr"><div class="card-title">Budgeted intakes (the plan)</div></div>
-      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
-        <select id="ybFormCi" style="font-size:12px">${intakeFormOptions}</select>
-        <select id="ybFormMonth" style="font-size:12px">${MONTH_NAMES.map((m,i)=>`<option value="${i}"${i===st.ybForm.month?" selected":""}>${m}</option>`).join("")}</select>
-        <input id="ybFormYear" type="number" value="${st.ybForm.year}" style="width:64px;font-size:12px">
-        <input id="ybFormStudents" type="number" value="${st.ybForm.students}" min="1" style="width:64px;font-size:12px">
-        <button data-addkind="budget" class="hdr-btn primary" style="background:var(--blue-600);color:#fff;border-color:var(--blue-600)">+ Add budget</button>
-      </div>
-      <div class="tbl-scroll"><table class="cptbl">
-        <thead><tr><th>Course</th><th>Category</th><th>Start</th><th style="text-align:right">Stu.</th><th></th></tr></thead>
-        <tbody>${intakeTable("budget")}</tbody>
-      </table></div>
+
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">Add an intake</div></div>
+    <div class="yb-kindtoggle">
+      <button data-ybkind="budget" class="${st.ybForm.kind==="budget"?"on budget":""}">Budget</button>
+      <button data-ybkind="actual" class="${st.ybForm.kind==="actual"?"on actual":""}">Actual</button>
     </div>
-    <div class="card">
-      <div class="card-hdr"><div class="card-title">Actual intakes (recorded)</div></div>
-      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
-        <button data-addkind="actual" class="hdr-btn primary" style="background:var(--green-800);color:#fff;border-color:var(--green-800)">+ Add actual (uses fields at left)</button>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+      <select id="ybFormCi" style="font-size:12px">${intakeFormOptions}</select>
+      <select id="ybFormMonth" style="font-size:12px">${MONTH_NAMES.map((m,i)=>`<option value="${i}"${i===st.ybForm.month?" selected":""}>${m}</option>`).join("")}</select>
+      <input id="ybFormYear" type="number" value="${st.ybForm.year}" style="width:64px;font-size:12px">
+      <input id="ybFormStudents" type="number" value="${st.ybForm.students}" min="1" style="width:64px;font-size:12px">
+      <button id="ybAddIntake" class="hdr-btn primary" style="background:${st.ybForm.kind==="budget"?"#2563eb":"#16a34a"};color:#fff;border-color:${st.ybForm.kind==="budget"?"#2563eb":"#16a34a"}">+ Add ${st.ybForm.kind}</button>
+    </div>
+    <div class="g2">
+      <div>
+        <div class="card-title" style="margin-bottom:6px">Budgeted intakes (${st.ybYear})</div>
+        <div class="tbl-scroll"><table class="cptbl">
+          <thead><tr><th>Course</th><th>Category</th><th>Start</th><th style="text-align:right">Stu.</th><th></th></tr></thead>
+          <tbody>${intakeList("budget")}</tbody>
+        </table></div>
       </div>
-      <div class="tbl-scroll"><table class="cptbl">
-        <thead><tr><th>Course</th><th>Category</th><th>Start</th><th style="text-align:right">Stu.</th><th></th></tr></thead>
-        <tbody>${intakeTable("actual")}</tbody>
-      </table></div>
+      <div>
+        <div class="card-title" style="margin-bottom:6px">Actual intakes (${st.ybYear})</div>
+        <div class="tbl-scroll"><table class="cptbl">
+          <thead><tr><th>Course</th><th>Category</th><th>Start</th><th style="text-align:right">Stu.</th><th></th></tr></thead>
+          <tbody>${intakeList("actual")}</tbody>
+        </table></div>
+      </div>
     </div>
   </div>
   </div>`;
@@ -1636,40 +1686,63 @@ function drawYearlyBudgetChart(bPeriods,aPeriods){
   if(!el)return;
   el.innerHTML="";
   if(typeof d3==="undefined")return chartFallback(el);
-  const width=el.clientWidth||600,height=300;
-  const margin={top:16,right:16,bottom:34,left:70};
+  const width=el.clientWidth||600,height=280;
+  const margin={top:16,right:16,bottom:34,left:74};
   const innerW=Math.max(width-margin.left-margin.right,100),innerH=height-margin.top-margin.bottom;
-  const maxAbs=Math.max(1,...bPeriods.map(p=>Math.abs(p.profit)),...aPeriods.map(p=>Math.abs(p.profit)));
+
+  /* cumulative sums across periods */
+  let bRun=0,aRun=0;
+  const bCum=bPeriods.map(p=>({label:p.label,v:(bRun+=p.profit)}));
+  const aCum=aPeriods.map(p=>({label:p.label,v:(aRun+=p.profit)}));
+
+  const allVals=[0,...bCum.map(d=>d.v),...aCum.map(d=>d.v)];
+  const x=d3.scalePoint().domain(bCum.map((_,i)=>i)).range([0,innerW]).padding(0.5);
+  const y=d3.scaleLinear().domain([Math.min(...allVals),Math.max(...allVals)]).nice().range([innerH,0]);
+
   const svg=d3.select(el).append("svg").attr("width",width).attr("height",height);
   const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
-  const x0=d3.scaleBand().domain(bPeriods.map((_,i)=>i)).range([0,innerW]).padding(0.28);
-  const x1=d3.scaleBand().domain(["budget","actual"]).range([0,x0.bandwidth()]).padding(0.15);
-  const y=d3.scaleLinear().domain([-maxAbs,maxAbs]).nice().range([innerH,0]);
-  const zeroY=y(0);
+
   g.append("g").call(d3.axisLeft(y).ticks(5).tickSize(-innerW).tickFormat("")).call(sel=>sel.select(".domain").remove())
     .selectAll("line").attr("stroke","var(--border)").attr("stroke-dasharray","2,3");
+  g.append("line").attr("x1",0).attr("x2",innerW).attr("y1",y(0)).attr("y2",y(0)).attr("stroke","var(--border-strong)");
+
+  const lineB=d3.line().x((d,i)=>x(i)).y(d=>y(d.v));
+  const lineA=d3.line().x((d,i)=>x(i)).y(d=>y(d.v));
+
+  /* shaded gap between the two lines, green where actual leads, red where it lags */
+  const areaAbove=d3.area().x((d,i)=>x(i)).y0(d=>y(d.b)).y1(d=>y(Math.max(d.a,d.b)));
+  const areaBelow=d3.area().x((d,i)=>x(i)).y0(d=>y(Math.min(d.a,d.b))).y1(d=>y(d.b));
+  const merged=bCum.map((d,i)=>({b:d.v,a:(aCum[i]||{v:0}).v}));
+  g.append("path").datum(merged).attr("fill","#16a34a").attr("opacity",0.15).attr("d",areaAbove);
+  g.append("path").datum(merged).attr("fill","#dc2626").attr("opacity",0.15).attr("d",areaBelow);
+
+  g.append("path").datum(bCum).attr("fill","none").attr("stroke","#2563eb").attr("stroke-width",2.5).attr("stroke-dasharray","5,3").attr("d",lineB);
+  g.append("path").datum(aCum).attr("fill","none").attr("stroke","#0d9488").attr("stroke-width",2.5).attr("d",lineA);
+
   const tip=d3.select(el).append("div").attr("class","whatif-chart-tip");
-  bPeriods.forEach((bp,i)=>{
-    const ap=aPeriods[i]||{profit:0};
-    [{key:"budget",v:bp.profit,color:"#2563eb"},{key:"actual",v:ap.profit,color:ap.profit>=bp.profit?"#16a34a":"#dc2626"}].forEach(s=>{
-      g.append("rect")
-        .attr("x",x0(i)+x1(s.key)).attr("width",x1.bandwidth())
-        .attr("y",s.v>=0?y(s.v):zeroY).attr("height",Math.max(Math.abs(y(0)-y(s.v)),1))
-        .attr("fill",s.color).attr("rx",2)
-        .on("mousemove",function(event){
-          tip.style("opacity",1).style("left",(event.offsetX+10)+"px").style("top",(event.offsetY-24)+"px")
-            .html(`<strong>${bp.label}</strong><br>${s.key[0].toUpperCase()+s.key.slice(1)} profit: ${sgd(s.v)}`);
-        })
-        .on("mouseleave",()=>tip.style("opacity",0));
-    });
+  bCum.forEach((d,i)=>{
+    const a=(aCum[i]||{v:0}).v;
+    g.append("circle").attr("cx",x(i)).attr("cy",y(d.v)).attr("r",3.5).attr("fill","#2563eb");
+    g.append("circle").attr("cx",x(i)).attr("cy",y(a)).attr("r",3.5).attr("fill","#0d9488");
+    g.append("rect").attr("x",x(i)-14).attr("y",0).attr("width",28).attr("height",innerH).attr("fill","transparent")
+      .on("mousemove",function(event){
+        tip.style("opacity",1).style("left",(event.offsetX+14)+"px").style("top",(event.offsetY-10)+"px")
+          .html(`<strong>${d.label}</strong><br>Cumulative budget: ${sgd(d.v)}<br>Cumulative actual: ${sgd(a)}`);
+      })
+      .on("mouseleave",()=>tip.style("opacity",0));
   });
-  g.append("line").attr("x1",0).attr("x2",innerW).attr("y1",zeroY).attr("y2",zeroY).attr("stroke","var(--border-strong)");
+
   g.append("g").attr("transform",`translate(0,${innerH})`)
-    .call(d3.axisBottom(x0).tickFormat(i=>bPeriods[i].label).tickSize(0))
+    .call(d3.axisBottom(x).tickFormat(i=>bCum[i].label))
     .selectAll("text").attr("font-size",10).attr("fill","var(--text-muted)");
   g.append("g").call(d3.axisLeft(y).ticks(5).tickFormat(d=>"$"+d3.format(",.0f")(d)))
     .selectAll("text").attr("font-size",9).attr("fill","var(--text-muted)");
   g.selectAll(".domain,.tick line").attr("stroke","var(--border-strong)");
+
+  const legend=d3.select(el).append("div").style("display","flex").style("gap","14px").style("font-size","10px")
+    .style("color","var(--text-muted)").style("margin-top","4px");
+  legend.append("div").html(`<span style="display:inline-block;width:14px;height:2px;background:#2563eb;vertical-align:middle;margin-right:4px;border-top:2px dashed #2563eb"></span>Cumulative budget`);
+  legend.append("div").html(`<span style="display:inline-block;width:14px;height:2px;background:#0d9488;vertical-align:middle;margin-right:4px"></span>Cumulative actual`);
 }
 
 function buildCourseSelector(ci){
@@ -1970,12 +2043,16 @@ function bindYearlyBudgetEvents(){
   const ybFormStudents=document.getElementById("ybFormStudents");
   if(ybFormStudents)ybFormStudents.addEventListener("change",e=>{ST.ybForm.students=parseInt(e.target.value)||1;saveToStorage();});
 
-  document.querySelectorAll("[data-addkind]").forEach(btn=>btn.addEventListener("click",e=>{
-    const kind=e.currentTarget.dataset.addkind;
-    const nextId=Math.max(0,...ST.intakes.map(i=>i.id))+1;
-    ST.intakes.push({id:nextId,kind,ci:ST.ybForm.ci,month:ST.ybForm.month,year:ST.ybForm.year,students:ST.ybForm.students});
+  document.querySelectorAll("[data-ybkind]").forEach(btn=>btn.addEventListener("click",e=>{
+    ST.ybForm.kind=e.currentTarget.dataset.ybkind;
     save_render();
   }));
+  const ybAddBtn=document.getElementById("ybAddIntake");
+  if(ybAddBtn)ybAddBtn.addEventListener("click",()=>{
+    const nextId=Math.max(0,...ST.intakes.map(i=>i.id))+1;
+    ST.intakes.push({id:nextId,kind:ST.ybForm.kind,ci:ST.ybForm.ci,month:ST.ybForm.month,year:ST.ybForm.year,students:ST.ybForm.students});
+    save_render();
+  });
   document.querySelectorAll("[data-delintake]").forEach(b=>b.addEventListener("click",e=>{
     ST.intakes=ST.intakes.filter(i=>i.id!==parseInt(e.currentTarget.dataset.delintake));
     save_render();
