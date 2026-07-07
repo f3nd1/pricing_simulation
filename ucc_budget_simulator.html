@@ -469,6 +469,9 @@ const FC_EXP={cogs:[
   {label:"Staff",v:[961440,1205347,1350229,1601182,1797769,2188044]}]};
 /* Scenario presets: fee = annual fee growth; vol = extra volume growth vs plan (Base=0 reconciles Excel) */
 const FC_SCENARIOS={Base:{fee:0.05,vol:0},Best:{fee:0.07,vol:0.12},Worst:{fee:0.03,vol:-0.18}};
+/* [teaching hours, duration months] aligned to FC_SEED order (from UCC Price List) */
+const FC_HD=[[120,3],[120,3],[120,3],[120,3],[120,3],[120,3],[240,6],[396,6],[792,6],[792,6],[792,6],[792,6],[792,6],[792,6],[792,6],[1440,24],[2880,24],[160,6],[96,6],[160,6],[96,6],[320,8],[192,8],[320,8],[192,8],[216,8],[240,4],[240,4],[480,8],[480,8],[144,8],[144,8],[144,6],[144,6],[144,6],[144,6],[144,12],[1080,12],[1080,12],[1080,12],[120,12],[1080,12],[1080,12],[30,6],[20,6],[20,6],[10,6],[15,6],[5,6]];
+const FC_MP={cls:14,tmo:120,adms:0.5,amo:160}; /* manpower: class size, teacher hrs/mo, admin hrs/student, admin hrs/mo */
 
 const ST={
   ci:7,disc:0,agent:40,uni:0,tf:70,cp:100,plan:9,
@@ -486,7 +489,8 @@ const ST={
   cloudOpen:false,sbUrl:"",sbKey:"",sbStatus:"",sbStatusOk:null,sbSaves:[],sbLoading:false,sbSaveName:"",
   fx:{tab:"pnl",scenario:"Base",scen:JSON.parse(JSON.stringify(FC_SCENARIOS)),
       courses:FC_SEED.map(c=>({...c,s:c.s.slice()})),
-      exp:JSON.parse(JSON.stringify(FC_EXP))}
+      exp:JSON.parse(JSON.stringify(FC_EXP))},
+  op:{tab:"manpower",mp:{...FC_MP},teacherRate:70,contactPct:100,disc:0,comp:{}}
 };
 const sgd=n=>{const a=Math.abs(Math.round(n));const s="$"+a.toLocaleString();return n<0?"("+s+")":s;};
 const fp=n=>(n*100).toFixed(1)+"%";
@@ -495,8 +499,8 @@ const LS_KEY="ucc_sim_v4";
 function saveToStorage(){
   try{
     const prices=COURSES.map(c=>({fee:c.fee,mat:c.mat,exam:c.exam,admin:c.admin,hrs:c.hrs,mo:c.mo}));
-    const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx}=ST;
-    localStorage.setItem(LS_KEY,JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx}));
+    const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx,op}=ST;
+    localStorage.setItem(LS_KEY,JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx,op}));
   }catch(e){}
 }
 function loadFromStorage(){
@@ -534,6 +538,7 @@ function loadFromStorage(){
       if(!ST.fx.scen)ST.fx.scen=JSON.parse(JSON.stringify(FC_SCENARIOS));
       if(!ST.fx.exp)ST.fx.exp=JSON.parse(JSON.stringify(FC_EXP));
     }
+    if(d.op)ST.op={...ST.op,...d.op,mp:{...FC_MP,...(d.op.mp||{})},comp:d.op.comp||{}};
   }catch(e){}
 }
 function exportData(){
@@ -2208,7 +2213,8 @@ const MODULES=[
   {key:"simulator",icon:"📘",label:"Course Simulator",desc:"Single-course pricing & breakeven"},
   {key:"yearlybudget",icon:"📅",label:"Yearly Budget",desc:"Budget vs actual, all courses"},
   {key:"forecast",icon:"📈",label:"Forecast & P&L",desc:"5-year revenue, expenses, income statement"},
-  {key:"reports",icon:"📊",label:"Board Reports",desc:"Coming soon",soon:true},
+  {key:"operating",icon:"🛠️",label:"Operating Detail",desc:"Manpower FTE, breakeven, competitor pricing"},
+  {key:"financials",icon:"🏦",label:"Valuation & Statements",desc:"Coming soon",soon:true},
 ];
 
 function buildModuleNav(){
@@ -2532,6 +2538,172 @@ function drawMarginChart(p){
   g.selectAll(".domain,.tick line").attr("stroke","var(--border-strong)");
 }
 
+/* ═══════════════ OPERATING DETAIL MODULE (Phase B) ═══════════════ */
+function opManpower(st){
+  const mp=st.op.mp;
+  const rows=st.fx.courses.map((c,i)=>{
+    const stu=c.s[0]||0; const hrs=(FC_HD[i]||[0,0])[0];
+    const cohorts=stu>0?Math.ceil(stu/mp.cls):0;
+    const teachHrs=hrs*cohorts;
+    const teachFTE=(teachHrs/12)/mp.tmo;
+    const adminHrs=stu*mp.adms;
+    const adminFTE=(adminHrs/12)/mp.amo;
+    return {name:c.n,group:c.g,stu,hrs,cohorts,teachHrs,teachFTE,adminHrs,adminFTE};
+  }).filter(r=>r.stu>0);
+  const T=rows.reduce((a,r)=>({stu:a.stu+r.stu,teachHrs:a.teachHrs+r.teachHrs,teachFTE:a.teachFTE+r.teachFTE,adminHrs:a.adminHrs+r.adminHrs,adminFTE:a.adminFTE+r.adminFTE}),{stu:0,teachHrs:0,teachFTE:0,adminHrs:0,adminFTE:0});
+  return {rows,T};
+}
+function opBreakeven(st){
+  const ohMonthly=st.oh.reduce((s,o)=>s+(Number(o.cost)||0),0);
+  const disc=st.op.disc/100, tf=st.op.teacherRate, cp=st.op.contactPct/100;
+  return st.fx.courses.map((c,i)=>{
+    const hrs=(FC_HD[i]||[0,0])[0], dur=(FC_HD[i]||[0,0])[1]||1;
+    const teachCost=tf*hrs*cp, fixedCost=ohMonthly*dur, totalCost=teachCost+fixedCost;
+    const netPer=c.f*(1-disc);
+    const be=netPer>0?Math.ceil(totalCost/netPer):null;
+    const plan=c.s[0]||0;
+    return {name:c.n,group:c.g,fee:c.f,hrs,dur,totalCost,netPer,be,plan};
+  });
+}
+function renderOperatingModule(st){
+  const tabs=[["manpower","Manpower (FTE)"],["breakeven","Breakeven — all courses"],["competitor","Competitor pricing"]];
+  const hdr=`
+  <div class="hdr" style="background:linear-gradient(135deg,#155e75 0%,#0891b2 100%)">
+    <div class="hdr-brand"><div class="hdr-label" style="color:#a5f3fc">United Ceres College</div><div class="hdr-title">Operating Detail</div></div>
+  </div>`;
+  const body=`<div class="module-body">
+    <div class="tabs-wrap"><div class="tabs">${tabs.map(([k,l])=>`<button class="tab${st.op.tab===k?" on":""}" data-optab="${k}">${l}</button>`).join("")}</div></div>
+    <div id="opcontent">${
+      st.op.tab==="manpower"?opRenderManpower(st):
+      st.op.tab==="breakeven"?opRenderBreakeven(st):
+      opRenderCompetitor(st)
+    }</div>
+  </div>`;
+  return hdr+body;
+}
+function opRenderManpower(st){
+  const {rows,T}=opManpower(st);const mp=st.op.mp;
+  const kpi=(l,v,c,s)=>`<div class="kpi-card"><div class="kpi-card-lbl">${l}</div><div class="kpi-card-val" style="color:${c}">${v}</div><div class="kpi-card-sub">${s||"&nbsp;"}</div></div>`;
+  return `
+  <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;padding:8px 12px;background:var(--blue-50);border-radius:8px;border:1px solid var(--blue-100)">
+    Teacher & admin FTE from the Forecast 2026 enrolment plan. Cohorts = ⌈students ÷ class size⌉; teacher hrs = course hours × cohorts; teacher FTE = (hrs ÷ 12) ÷ hrs-per-month.
+  </div>
+  <div class="kpi-grid">
+    ${kpi("Total students",Math.round(T.stu),"var(--text-accent)","2026 plan")}
+    ${kpi("Teaching FTE",T.teachFTE.toFixed(1),"var(--text-primary)",Math.round(T.teachHrs).toLocaleString()+" annual hrs")}
+    ${kpi("Admin FTE",T.adminFTE.toFixed(2),"var(--text-primary)",Math.round(T.adminHrs)+" annual hrs")}
+    ${kpi("Total FTE",(T.teachFTE+T.adminFTE).toFixed(1),"var(--text-success)","teaching + admin")}
+  </div>
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">Assumptions</div></div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap">
+      ${[["cls","Class size"],["tmo","Teacher hrs/month"],["adms","Admin hrs/student"],["amo","Admin hrs/month"]].map(([k,l])=>`<div><div style="font-size:11px;color:var(--text-muted)">${l}</div><input type="number" data-opmp="${k}" value="${mp[k]}" step="${k==='adms'?0.1:1}" style="width:80px"></div>`).join("")}
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">FTE by category</div></div>
+    <div id="fteChart" style="position:relative;width:100%;height:220px"></div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">Per-course manpower</div></div>
+    <div class="tbl-scroll"><table class="cptbl" style="min-width:620px">
+      <thead><tr><th>Course</th><th style="text-align:right">Students</th><th style="text-align:right">Cohorts</th><th style="text-align:right">Teach hrs/yr</th><th style="text-align:right">Teacher FTE</th><th style="text-align:right">Admin FTE</th></tr></thead>
+      <tbody>
+        ${rows.map(r=>`<tr>
+          <td style="padding:4px 8px;max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.name}">${r.name}</td>
+          <td style="padding:4px 8px;text-align:right">${r.stu}</td>
+          <td style="padding:4px 8px;text-align:right">${r.cohorts}</td>
+          <td style="padding:4px 8px;text-align:right">${Math.round(r.teachHrs).toLocaleString()}</td>
+          <td style="padding:4px 8px;text-align:right;font-weight:600">${r.teachFTE.toFixed(2)}</td>
+          <td style="padding:4px 8px;text-align:right;color:var(--text-muted)">${r.adminFTE.toFixed(3)}</td>
+        </tr>`).join("")}
+        <tr style="border-top:1.5px solid var(--border-strong)"><td style="padding:5px 8px;font-weight:700">TOTAL</td><td style="padding:5px 8px;text-align:right;font-weight:700">${Math.round(T.stu)}</td><td></td><td style="padding:5px 8px;text-align:right;font-weight:700">${Math.round(T.teachHrs).toLocaleString()}</td><td style="padding:5px 8px;text-align:right;font-weight:700">${T.teachFTE.toFixed(1)}</td><td style="padding:5px 8px;text-align:right;font-weight:700">${T.adminFTE.toFixed(2)}</td></tr>
+      </tbody>
+    </table></div>
+  </div>`;
+}
+function opRenderBreakeven(st){
+  const rows=opBreakeven(st).filter(r=>r.fee>0);
+  return `
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">Breakeven students — all courses</div></div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px">
+      ${[["teacherRate","Teacher $/hr"],["contactPct","Contact hrs %"],["disc","Discount %"]].map(([k,l])=>`<div><div style="font-size:11px;color:var(--text-muted)">${l}</div><input type="number" data-opbe="${k}" value="${st.op[k]}" style="width:80px"></div>`).join("")}
+      <div style="font-size:11px;color:var(--text-muted);align-self:flex-end">Fixed overhead: ${sgd(st.oh.reduce((s,o)=>s+(Number(o.cost)||0),0))}/mo (from Course Simulator)</div>
+    </div>
+    <div class="tbl-scroll"><table class="cptbl" style="min-width:620px">
+      <thead><tr><th>Course</th><th style="text-align:right">Fee/stu</th><th style="text-align:right">Cost/run</th><th style="text-align:right">Net/stu</th><th style="text-align:right">Breakeven</th><th style="text-align:right">Planned</th><th>Status</th></tr></thead>
+      <tbody>${rows.map(r=>{
+        const ok=r.be!=null&&r.plan>=r.be;
+        return `<tr>
+          <td style="padding:4px 8px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.name}">${r.name}</td>
+          <td style="padding:4px 8px;text-align:right">${sgd(r.fee)}</td>
+          <td style="padding:4px 8px;text-align:right;color:var(--text-muted)">${sgd(r.totalCost)}</td>
+          <td style="padding:4px 8px;text-align:right">${sgd(r.netPer)}</td>
+          <td style="padding:4px 8px;text-align:right;font-weight:700;color:var(--text-accent)">${r.be==null?"—":r.be}</td>
+          <td style="padding:4px 8px;text-align:right">${r.plan||"—"}</td>
+          <td style="padding:4px 8px">${r.plan>0?(ok?`<span style="color:var(--text-success);font-size:11px">✓ above BE</span>`:`<span style="color:var(--text-danger);font-size:11px">✗ below BE</span>`):`<span style="color:var(--text-muted);font-size:11px">no plan</span>`}</td>
+        </tr>`;}).join("")}</tbody>
+    </table></div>
+  </div>`;
+}
+function opRenderCompetitor(st){
+  const rows=st.fx.courses.filter(c=>c.f>0).map((c)=>{
+    const idx=st.fx.courses.indexOf(c);
+    const comp=st.op.comp[idx]||[null,null,null];
+    const nums=comp.filter(v=>typeof v==="number"&&v>0);
+    const avg=nums.length?nums.reduce((a,b)=>a+b,0)/nums.length:null;
+    const gap=avg!=null?c.f-avg:null;
+    const gapPct=avg?gap/avg:null;
+    return {idx,name:c.n,fee:c.f,comp,avg,gap,gapPct};
+  });
+  return `<div class="card">
+    <div class="card-hdr"><div class="card-title">Competitor benchmarking</div></div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Enter competitor prices (leave blank if unknown). UCC gap vs the competitor average is colour-coded: green = UCC cheaper, red = UCC pricier.</div>
+    <div class="tbl-scroll"><table class="cptbl" style="min-width:680px">
+      <thead><tr><th>Course</th><th style="text-align:right">UCC</th><th style="text-align:right">Comp 1</th><th style="text-align:right">Comp 2</th><th style="text-align:right">Comp 3</th><th style="text-align:right">Avg</th><th style="text-align:right">UCC vs avg</th></tr></thead>
+      <tbody>${rows.map(r=>`<tr>
+        <td style="padding:4px 8px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.name}">${r.name}</td>
+        <td style="padding:4px 8px;text-align:right;font-weight:600">${sgd(r.fee)}</td>
+        ${[0,1,2].map(ci=>`<td style="padding:2px 4px;text-align:right"><input type="number" class="plinp" data-opcomp="${r.idx}" data-ci="${ci}" value="${(r.comp[ci]!=null?r.comp[ci]:"")}" step="50" style="width:74px;text-align:right"></td>`).join("")}
+        <td style="padding:4px 8px;text-align:right;color:var(--text-muted)">${r.avg!=null?sgd(r.avg):"—"}</td>
+        <td style="padding:4px 8px;text-align:right;font-weight:600;color:${r.gap==null?"var(--text-muted)":r.gap<=0?"var(--text-success)":"var(--text-danger)"}">${r.gap==null?"—":(r.gap>0?"+":"")+sgd(r.gap)+(r.gapPct!=null?` (${(r.gapPct*100).toFixed(0)}%)`:"")}</td>
+      </tr>`).join("")}</tbody>
+    </table></div>
+  </div>`;
+}
+function drawFteChart(){
+  const el=document.getElementById("fteChart");if(!el)return;el.innerHTML="";
+  if(typeof d3==="undefined")return chartFallback(el);
+  const {rows}=opManpower(ST);
+  const cats={};
+  rows.forEach(r=>{const c=(FC_SEED.find(s=>s.n===r.name)||{}).g||"Other";cats[c]=(cats[c]||0)+r.teachFTE;});
+  const data=Object.entries(cats).map(([k,v])=>({k,v}));
+  if(!data.length){el.innerHTML='<div class="chart-fallback">Add students in the Forecast plan to see FTE.</div>';return;}
+  const width=el.clientWidth||600,height=220,margin={top:10,right:16,bottom:24,left:130};
+  const innerW=Math.max(width-margin.left-margin.right,100),innerH=height-margin.top-margin.bottom;
+  const svg=d3.select(el).append("svg").attr("width",width).attr("height",height);
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
+  const y=d3.scaleBand().domain(data.map(d=>d.k)).range([0,innerH]).padding(0.25);
+  const x=d3.scaleLinear().domain([0,d3.max(data,d=>d.v)*1.1||1]).range([0,innerW]);
+  g.selectAll("rect").data(data).enter().append("rect").attr("y",d=>y(d.k)).attr("height",y.bandwidth()).attr("x",0).attr("width",d=>x(d.v)).attr("fill","#0891b2").attr("rx",3);
+  g.selectAll(".lbl").data(data).enter().append("text").attr("x",d=>x(d.v)+5).attr("y",d=>y(d.k)+y.bandwidth()/2).attr("dy",".35em").attr("font-size",10).attr("fill","var(--text-muted)").text(d=>d.v.toFixed(1)+" FTE");
+  g.append("g").call(d3.axisLeft(y)).selectAll("text").attr("font-size",10).attr("fill","var(--text-secondary)");
+  g.selectAll(".domain,.tick line").attr("stroke","var(--border-strong)");
+}
+function bindOperatingEvents(){
+  const save_render=()=>{saveToStorage();render();};
+  document.querySelectorAll("[data-optab]").forEach(b=>b.addEventListener("click",e=>{ST.op.tab=e.currentTarget.dataset.optab;save_render();}));
+  document.querySelectorAll("[data-opmp]").forEach(inp=>inp.addEventListener("change",e=>{ST.op.mp[e.currentTarget.dataset.opmp]=parseFloat(e.currentTarget.value)||0;save_render();}));
+  document.querySelectorAll("[data-opbe]").forEach(inp=>inp.addEventListener("change",e=>{ST.op[e.currentTarget.dataset.opbe]=parseFloat(e.currentTarget.value)||0;save_render();}));
+  document.querySelectorAll("[data-opcomp]").forEach(inp=>inp.addEventListener("change",e=>{
+    const idx=+e.currentTarget.dataset.opcomp,ci=+e.currentTarget.dataset.ci;
+    if(!ST.op.comp[idx])ST.op.comp[idx]=[null,null,null];
+    const v=e.currentTarget.value===""?null:(parseFloat(e.currentTarget.value)||0);
+    ST.op.comp[idx][ci]=v;save_render();
+  }));
+}
+
 function bindForecastEvents(){
   const save_render=()=>{saveToStorage();render();};
   document.querySelectorAll("[data-fctab]").forEach(b=>b.addEventListener("click",e=>{ST.fx.tab=e.currentTarget.dataset.fctab;save_render();}));
@@ -2566,6 +2738,13 @@ function render(){
     const p=fcPnl(ST);
     if(ST.fx.tab==="pnl")drawPnlChart(p);
     if(ST.fx.tab==="dashboard"){drawPnlChart(p);drawMarginChart(p);}
+    return;
+  }
+  if(ST.module==="operating"){
+    document.getElementById("app").innerHTML=buildModuleNav()+renderOperatingModule(ST);
+    bindModuleNavEvents();
+    bindOperatingEvents();
+    if(ST.op.tab==="manpower")drawFteChart();
     return;
   }
   const s=calc(ST);
