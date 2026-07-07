@@ -523,6 +523,11 @@ function priceOfCourse(c){return (Number(c.fee)||0)+(Number(c.mat)||0)+(Number(c
 function fcExpGroupTotal(g){return FC_YEARS.map((y,i)=>g.items.reduce((a,l)=>a+(Number(l.v[i])||0),0));}
 const FC_MP={cls:14,tmo:120,adms:0.5,amo:160}; /* manpower: class size, teacher hrs/mo, admin hrs/student, admin hrs/mo */
 
+/* Fixed Supabase project — set these two values once and the Cloud Save fields lock to them.
+   The anon/publishable key is safe to ship client-side (Supabase's Row Level Security is what
+   actually protects the data, not secrecy of this key). Leave both "" to let users enter their own. */
+const SUPABASE_URL="";
+const SUPABASE_ANON_KEY="";
 const ST={
   ci:7,disc:0,agent:40,uni:0,tf:70,cp:100,plan:9,
   act:40,aDisc:0,aAgent:40,aUni:0,
@@ -536,7 +541,7 @@ const ST={
   module:"simulator",navOpen:false,
   intakes:[],ybView:"monthly",ybYear:new Date().getFullYear(),ybCat:"All",
   ybForm:{kind:"budget",ci:0,month:0,year:new Date().getFullYear(),students:15},
-  cloudOpen:false,sbUrl:"",sbKey:"",sbStatus:"",sbStatusOk:null,sbSaves:[],sbLoading:false,sbSaveName:"",
+  cloudOpen:false,sbUrl:SUPABASE_URL,sbKey:SUPABASE_ANON_KEY,sbStatus:"",sbStatusOk:null,sbSaves:[],sbLoading:false,sbSaveName:"",
   fx:{tab:"pnl",scenario:"Base",scen:JSON.parse(JSON.stringify(FC_SCENARIOS)),
       exp:JSON.parse(JSON.stringify(FC_EXP))},
   op:{tab:"manpower",mp:{...FC_MP},teacherRate:70,contactPct:100,disc:0,comp:{}},
@@ -614,8 +619,9 @@ function loadFromStorage(){
     if(d.ybView)ST.ybView=d.ybView;
     if(d.ybYear)ST.ybYear=d.ybYear;
     if(d.ybCat)ST.ybCat=d.ybCat;
-    if(d.sbUrl)ST.sbUrl=d.sbUrl;
-    if(d.sbKey)ST.sbKey=d.sbKey;
+    /* fixed connection wins over anything a user saved locally before it was locked */
+    if(!SUPABASE_URL&&d.sbUrl)ST.sbUrl=d.sbUrl;
+    if(!SUPABASE_ANON_KEY&&d.sbKey)ST.sbKey=d.sbKey;
     applyFx(d.fx);
     if(d.op)ST.op={...ST.op,...d.op,mp:{...FC_MP,...(d.op.mp||{})},comp:d.op.comp||{}};
     if(d.val)ST.val={...ST.val,...d.val};
@@ -2336,20 +2342,21 @@ function buildCloudModal(){
       </div>
       <div class="cloud-body">
         <div class="cloud-section-title">Connection settings</div>
+        ${SUPABASE_URL?`<div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">🔒 This app is wired to a fixed Supabase project — the fields below are locked.</div>`:""}
         <div class="cloud-field">
           <label>Project URL</label>
-          <input type="text" id="sbUrlInput" placeholder="https://xxxx.supabase.co" value="${ST.sbUrl||""}">
+          <input type="text" id="sbUrlInput" placeholder="https://xxxx.supabase.co" value="${ST.sbUrl||""}"${SUPABASE_URL?" disabled":""}>
         </div>
         <div class="cloud-field">
           <label>Anon / publishable key</label>
-          <input type="password" id="sbKeyInput" placeholder="eyJhbGciOi..." value="${ST.sbKey||""}">
+          <input type="password" id="sbKeyInput" placeholder="eyJhbGciOi..." value="${ST.sbKey||""}"${SUPABASE_ANON_KEY?" disabled":""}>
         </div>
         <div class="cloud-status ${statusClass}">${ST.sbLoading?"⏳ Working…":(statusClass==="ok"?"✓ ":statusClass==="bad"?"✗ ":"— ")+statusText}</div>
         <div class="cloud-btnrow">
-          <button id="sbSaveReloadBtn" class="primary" style="background:var(--blue-600);color:#fff;border-color:var(--blue-600)">Save &amp; reload</button>
+          ${SUPABASE_URL?"":`<button id="sbSaveReloadBtn" class="primary" style="background:var(--blue-600);color:#fff;border-color:var(--blue-600)">Save &amp; reload</button>`}
           <button id="sbTestBtn">Test connection</button>
           <button id="sbReloadBtn"${configured?"":" disabled"}>Reload from Supabase</button>
-          <button id="sbClearBtn" style="color:var(--text-danger)">Clear (use local storage only)</button>
+          ${SUPABASE_URL?"":`<button id="sbClearBtn" style="color:var(--text-danger)">Clear (use local storage only)</button>`}
         </div>
         <div class="cloud-divider"></div>
         <div class="cloud-section-title">Save current state as a scenario</div>
