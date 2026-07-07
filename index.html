@@ -272,6 +272,7 @@ button:hover{background:var(--surface-0)}
 /* Grid layouts */
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
 .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
+.g2>*,.g3>*{min-width:0}
 .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 
 /* View toggle (table/chart) */
@@ -493,7 +494,21 @@ const ST={
   op:{tab:"manpower",mp:{...FC_MP},teacherRate:70,contactPct:100,disc:0,comp:{}},
   val:{tab:"dcf",wacc:0.10,g:0.03,
        da:FC_EXP.opex[3].v.slice(),capex:[0,0,0,0,0,0],nwc:[0,0,0,0,0,0],
-       gstRate:0.09,taxableRevPct:0,corpTax:0.17}
+       gstRate:0.09,taxableRevPct:0,corpTax:0.17},
+  strat:{tab:"growth",disc:0.10,
+    inits:[{name:"New Initiative 1",start:2027,rev:500000,gm:0.5,opex:120000,capex:150000,r1:0.5,r2:1}],
+    compliance:[
+      {req:"Operating reserve ≥ 2.0 months",status:"Review"},
+      {req:"Current ratio ≥ 1.0x",status:"Review"},
+      {req:"AR aging reviewed monthly",status:"No"},
+      {req:"AP reconciliation completed",status:"No"},
+      {req:"GST filings submitted on time",status:"Yes"},
+      {req:"Annual external audit completed",status:"No"},
+      {req:"EduTrust rating Band 3 / CA4+",status:"Yes"},
+      {req:"Budget variance review completed",status:"No"},
+      {req:"Asset register updated",status:"No"},
+      {req:"Segregation of duties confirmed",status:"Yes"}],
+    funding:{equity:[0,0,0,0,0,0],loan:[0,0,0,0,0,0],donations:[0,0,0,0,0,0]}}
 };
 const sgd=n=>{const a=Math.abs(Math.round(n));const s="$"+a.toLocaleString();return n<0?"("+s+")":s;};
 const fp=n=>(n*100).toFixed(1)+"%";
@@ -502,8 +517,8 @@ const LS_KEY="ucc_sim_v4";
 function saveToStorage(){
   try{
     const prices=COURSES.map(c=>({fee:c.fee,mat:c.mat,exam:c.exam,admin:c.admin,hrs:c.hrs,mo:c.mo}));
-    const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx,op,val}=ST;
-    localStorage.setItem(LS_KEY,JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx,op,val}));
+    const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx,op,val,strat}=ST;
+    localStorage.setItem(LS_KEY,JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx,op,val,strat}));
   }catch(e){}
 }
 function loadFromStorage(){
@@ -543,6 +558,7 @@ function loadFromStorage(){
     }
     if(d.op)ST.op={...ST.op,...d.op,mp:{...FC_MP,...(d.op.mp||{})},comp:d.op.comp||{}};
     if(d.val)ST.val={...ST.val,...d.val};
+    if(d.strat)ST.strat={...ST.strat,...d.strat};
   }catch(e){}
 }
 function exportData(){
@@ -2219,6 +2235,7 @@ const MODULES=[
   {key:"forecast",icon:"📈",label:"Forecast & P&L",desc:"5-year revenue, expenses, income statement"},
   {key:"operating",icon:"🛠️",label:"Operating Detail",desc:"Manpower FTE, breakeven, competitor pricing"},
   {key:"financials",icon:"🏦",label:"Valuation & Statements",desc:"DCF value, ratios, GST & tax"},
+  {key:"strategy",icon:"🎯",label:"Strategy & Governance",desc:"Growth business cases, compliance"},
 ];
 
 function buildModuleNav(){
@@ -2828,6 +2845,125 @@ function drawFcffChart(d){
   g.append("g").call(d3.axisLeft(y).ticks(5).tickFormat(v=>"$"+d3.format(",.0f")(v))).selectAll("text").attr("font-size",9).attr("fill","var(--text-muted)");
   g.selectAll(".domain,.tick line").attr("stroke","var(--border-strong)");
 }
+/* ═══════════════ STRATEGY & GOVERNANCE MODULE (Phase D) ═══════════════ */
+function stratInit(it,disc){
+  const rev=FC_YEARS.map(y=>{ if(y<it.start)return 0; if(y===it.start)return it.rev*it.r1; return it.rev*it.r2; });
+  const cogs=rev.map(r=>r*(1-it.gm));
+  const gp=rev.map((r,i)=>r-cogs[i]);
+  const opex=rev.map(r=>r>0?it.opex:0);
+  const ebitda=gp.map((g,i)=>g-opex[i]);
+  const capex=FC_YEARS.map(y=>y===it.start?it.capex:0);
+  const fcf=ebitda.map((e,i)=>e-capex[i]);
+  let cum=0; const cumArr=fcf.map(f=>cum+=f);
+  const npv=fcf.reduce((a,f,i)=>a+f/Math.pow(1+disc,i+1),0);
+  // payback = first year cumulative FCF turns non-negative, only counting years the initiative is active
+  const payIdx=cumArr.findIndex((v,i)=>v>=0&&rev[i]>0);
+  return {rev,cogs,gp,opex,ebitda,capex,fcf,cumArr,npv,payback:payIdx<0?null:FC_YEARS[payIdx]};
+}
+function renderStrategyModule(st){
+  const tabs=[["growth","Growth Initiatives"],["compliance","Compliance Tracker"]];
+  const hdr=`<div class="hdr" style="background:linear-gradient(135deg,#0f766e 0%,#059669 100%)">
+    <div class="hdr-brand"><div class="hdr-label" style="color:#a7f3d0">United Ceres College</div><div class="hdr-title">Strategy & Governance</div></div>
+  </div>`;
+  return hdr+`<div class="module-body">
+    <div class="tabs-wrap"><div class="tabs">${tabs.map(([k,l])=>`<button class="tab${st.strat.tab===k?" on":""}" data-strattab="${k}">${l}</button>`).join("")}</div></div>
+    <div id="stratcontent">${st.strat.tab==="growth"?stratRenderGrowth(st):stratRenderCompliance(st)}</div>
+  </div>`;
+}
+function stratRenderGrowth(st){
+  const disc=st.strat.disc;
+  const cards=st.strat.inits.map((it,idx)=>{
+    const r=stratInit(it,disc);
+    const fld=(lbl,key,step,pct)=>`<div><div style="font-size:10px;color:var(--text-muted)">${lbl}</div><input type="number" data-stratinit="${idx}" data-k="${key}" value="${pct?it[key]*100:it[key]}" step="${step}" style="width:92px"></div>`;
+    return `<div class="card">
+      <div class="card-hdr" style="justify-content:space-between;flex-wrap:wrap;gap:6px">
+        <input type="text" data-stratinit="${idx}" data-k="name" value="${it.name}" style="font-weight:700;font-size:13px;border:none;background:transparent;flex:1;min-width:120px;max-width:100%">
+        <button data-stratdel="${idx}" class="del-btn" title="Remove initiative">×</button>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+        ${fld("Start year","start",1)}${fld("Revenue @ maturity","rev",10000)}${fld("Gross margin %","gm",5,true)}
+        ${fld("Annual OPEX","opex",5000)}${fld("Upfront capex","capex",10000)}${fld("Yr-1 ramp %","r1",10,true)}${fld("Yr-2+ ramp %","r2",10,true)}
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-card-lbl">NPV @ ${fp(disc)}</div><div class="kpi-card-val" style="color:${r.npv>=0?"var(--text-success)":"var(--text-danger)"}">${sgd(r.npv)}</div></div>
+        <div class="kpi-card"><div class="kpi-card-lbl">Payback</div><div class="kpi-card-val">${r.payback||"—"}</div><div class="kpi-card-sub">${r.payback?"cumulative FCF ≥ 0":"beyond 2031"}</div></div>
+        <div class="kpi-card"><div class="kpi-card-lbl">2031 EBITDA</div><div class="kpi-card-val">${sgd(r.ebitda[5])}</div></div>
+        <div class="kpi-card"><div class="kpi-card-lbl">Cumulative FCF</div><div class="kpi-card-val" style="color:${r.cumArr[5]>=0?"var(--text-success)":"var(--text-danger)"}">${sgd(r.cumArr[5])}</div></div>
+      </div>
+      <div class="tbl-scroll" style="margin-top:10px"><table class="cptbl" style="min-width:600px">
+        <thead><tr><th>Line</th>${fcYearCols()}</tr></thead>
+        <tbody>
+          ${fcMoneyRow("Revenue",r.rev,"")}
+          ${fcMoneyRow("EBITDA",r.ebitda,"net")}
+          ${fcMoneyRow("Capex",r.capex.map(v=>-v),"muted")}
+          ${fcMoneyRow("Free cash flow",r.fcf,"net",true)}
+          ${fcMoneyRow("Cumulative FCF",r.cumArr,"net")}
+        </tbody>
+      </table></div>
+    </div>`;
+  }).join("");
+  return `
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div style="font-size:11px;color:var(--text-muted)">Business-case template per initiative: revenue ramps from the start year, EBITDA = gross profit − OPEX, FCF = EBITDA − capex. NPV discounts FCF at the rate below.</div>
+      <div style="display:flex;gap:10px;align-items:flex-end">
+        <div><div style="font-size:10px;color:var(--text-muted)">Discount rate %</div><input type="number" data-stratdisc value="${disc*100}" step="0.5" style="width:80px"></div>
+        <button id="stratAdd" class="hdr-btn primary" style="background:var(--green-800);color:#fff;border-color:var(--green-800)">+ Add initiative</button>
+      </div>
+    </div>
+  </div>
+  ${cards||`<div class="card"><div class="empty-state" style="padding:30px;text-align:center;color:var(--text-muted)">No initiatives yet — add one above.</div></div>`}`;
+}
+function stratRenderCompliance(st){
+  const opts=["Yes","No","Review","N/A"];
+  const rows=st.strat.compliance.map((c,i)=>{
+    const col=c.status==="Yes"?"var(--text-success)":c.status==="No"?"var(--text-danger)":"var(--text-warning)";
+    return `<tr>
+      <td style="padding:5px 8px">${c.req}</td>
+      <td style="padding:5px 8px;text-align:center"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col};margin-right:6px"></span>
+        <select data-stratcomp="${i}" style="font-size:12px">${opts.map(o=>`<option${c.status===o?" selected":""}>${o}</option>`).join("")}</select></td>
+    </tr>`;
+  }).join("");
+  const yesN=st.strat.compliance.filter(c=>c.status==="Yes").length;
+  const fund=st.strat.funding;
+  const fRow=(lbl,key)=>`<tr><td style="padding:4px 8px">${lbl}</td>${fund[key].map((v,i)=>`<td style="padding:2px 4px;text-align:right"><input type="number" class="plinp" data-stratfund="${key}" data-yi="${i}" value="${v}" step="10000" style="width:80px;text-align:right"></td>`).join("")}</tr>`;
+  const netFund=FC_YEARS.map((y,i)=>(fund.equity[i]||0)+(fund.loan[i]||0)+(fund.donations[i]||0));
+  return `
+  <div class="g2">
+    <div class="card">
+      <div class="card-hdr" style="justify-content:space-between"><div class="card-title">Financial compliance scorecard</div><span class="card-badge" style="background:var(--green-100);color:var(--green-800)">${yesN}/${st.strat.compliance.length} met</span></div>
+      <div class="tbl-scroll"><table class="cptbl"><thead><tr><th>Requirement</th><th style="text-align:center">Status</th></tr></thead><tbody>${rows}</tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">Funding & special items register</div></div>
+      <div class="tbl-scroll"><table class="cptbl" style="min-width:520px">
+        <thead><tr><th>Item</th>${fcYearCols()}</tr></thead>
+        <tbody>
+          ${fRow("Equity capital injections","equity")}
+          ${fRow("Loan capital injections","loan")}
+          ${fRow("Donations received","donations")}
+          ${fcMoneyRow("Net funding inflow",netFund,"net",true)}
+        </tbody>
+      </table></div>
+    </div>
+  </div>`;
+}
+function bindStrategyEvents(){
+  const save_render=()=>{saveToStorage();render();};
+  document.querySelectorAll("[data-strattab]").forEach(b=>b.addEventListener("click",e=>{ST.strat.tab=e.currentTarget.dataset.strattab;save_render();}));
+  const dd=document.querySelector("[data-stratdisc]");if(dd)dd.addEventListener("change",e=>{ST.strat.disc=(parseFloat(e.target.value)||0)/100;save_render();});
+  const add=document.getElementById("stratAdd");if(add)add.addEventListener("click",()=>{ST.strat.inits.push({name:"New Initiative "+(ST.strat.inits.length+1),start:2027,rev:300000,gm:0.5,opex:80000,capex:100000,r1:0.5,r2:1});save_render();});
+  document.querySelectorAll("[data-stratdel]").forEach(b=>b.addEventListener("click",e=>{ST.strat.inits.splice(+e.currentTarget.dataset.stratdel,1);save_render();}));
+  document.querySelectorAll("[data-stratinit]").forEach(inp=>inp.addEventListener("change",e=>{
+    const idx=+e.currentTarget.dataset.stratinit,k=e.currentTarget.dataset.k;
+    if(k==="name")ST.strat.inits[idx][k]=e.currentTarget.value;
+    else{let v=parseFloat(e.currentTarget.value)||0;if(["gm","r1","r2"].includes(k))v=v/100;ST.strat.inits[idx][k]=v;}
+    save_render();
+  }));
+  document.querySelectorAll("[data-stratcomp]").forEach(sel=>sel.addEventListener("change",e=>{ST.strat.compliance[+e.currentTarget.dataset.stratcomp].status=e.currentTarget.value;save_render();}));
+  document.querySelectorAll("[data-stratfund]").forEach(inp=>inp.addEventListener("change",e=>{ST.strat.funding[e.currentTarget.dataset.stratfund][+e.currentTarget.dataset.yi]=parseFloat(e.currentTarget.value)||0;save_render();}));
+}
+
 function bindFinancialsEvents(){
   const save_render=()=>{saveToStorage();render();};
   document.querySelectorAll("[data-valtab]").forEach(b=>b.addEventListener("click",e=>{ST.val.tab=e.currentTarget.dataset.valtab;save_render();}));
@@ -2889,6 +3025,12 @@ function render(){
     bindModuleNavEvents();
     bindFinancialsEvents();
     if(ST.val.tab==="dcf")drawFcffChart(valDcf(ST));
+    return;
+  }
+  if(ST.module==="strategy"){
+    document.getElementById("app").innerHTML=buildModuleNav()+renderStrategyModule(ST);
+    bindModuleNavEvents();
+    bindStrategyEvents();
     return;
   }
   const s=calc(ST);
