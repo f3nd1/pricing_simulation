@@ -455,23 +455,72 @@ const INIT_OH=[
   {label:"Student welfare / events",cost:500},
   {label:"Others",cost:0},
 ];
-/* ── Forecast module seed (from UCC Master Budget Model, Base scenario) ── */
+/* ── Forecast module (from UCC Master Budget Model, Base scenario) ──
+   Revenue is NOT seeded here: it is derived live from the Price List (fee/student)
+   × the Yearly Budget intakes (students per course per year). Only the company
+   expense schedule below is seeded (editable), mirroring the Excel line items. */
 const FC_YEARS=[2026,2027,2028,2029,2030,2031];
-const FC_SEED=[{"n":"Certificate in English Level 1 (FT)","g":"Full Qualification","m":"Manual","f":2830,"s":[5,0,0,0,0,0]},{"n":"Certificate in English Level 2 (FT)","g":"Full Qualification","m":"Flat","f":2830,"s":[0,0,0,0,0,0]},{"n":"Certificate in English Level 3 (FT)","g":"Full Qualification","m":"Growth","f":2830,"s":[0,0,0,0,0,0]},{"n":"Certificate in English Level 1 (PT)","g":"Full Qualification","m":"Growth","f":1838,"s":[0,0,0,0,0,0]},{"n":"Certificate in English Level 2 (PT)","g":"Full Qualification","m":"Growth","f":1838,"s":[0,0,0,0,0,0]},{"n":"Certificate in English Level 3 (PT)","g":"Full Qualification","m":"Growth","f":1838,"s":[0,0,0,0,0,0]},{"n":"Certificate in English Language (FT)","g":"Full Qualification","m":"Manual","f":5610,"s":[0,5,5,5,5,5]},{"n":"IELTS Preparatory Course","g":"Full Qualification","m":"Flat","f":7690,"s":[30,30,30,30,30,30]},{"n":"AEIS Primary 2","g":"Full Qualification","m":"Growth","f":10250,"s":[0,0,0,0,0,0]},{"n":"AEIS Primary 3","g":"Full Qualification","m":"Growth","f":10250,"s":[0,0,0,0,0,0]},{"n":"AEIS Primary 4","g":"Full Qualification","m":"Growth","f":10250,"s":[0,0,0,0,0,0]},{"n":"AEIS Primary 5","g":"Full Qualification","m":"Growth","f":10250,"s":[0,0,0,0,0,0]},{"n":"AEIS Secondary 1","g":"Full Qualification","m":"Growth","f":10250,"s":[0,0,0,0,0,0]},{"n":"AEIS Secondary 2","g":"Full Qualification","m":"Growth","f":10250,"s":[0,0,0,0,0,0]},{"n":"AEIS Secondary 3","g":"Full Qualification","m":"Growth","f":10250,"s":[0,0,0,0,0,0]},{"n":"GCE O-Level Preparatory","g":"Full Qualification","m":"Manual","f":42350,"s":[0,0,0,0,0,0]},{"n":"GCE A-Level Preparatory","g":"Full Qualification","m":"Manual","f":47850,"s":[10,5,10,15,15,15]},{"n":"Certificate in General Management","g":"Full Qualification","m":"Manual","f":8670,"s":[5,10,10,10,10,10]},{"n":"Cert. General Management (E-Learning)","g":"Full Qualification","m":"Growth","f":8670,"s":[0,0,0,0,0,0]},{"n":"Cert. General Management (Mandarin)","g":"Full Qualification","m":"Growth","f":8670,"s":[0,0,0,0,0,0]},{"n":"Cert. General Management (Mandarin E-Learn)","g":"Full Qualification","m":"Growth","f":8670,"s":[0,0,0,0,0,0]},{"n":"Diploma in Business Management","g":"Full Qualification","m":"Manual","f":9150,"s":[20,20,30,30,30,30]},{"n":"Diploma in Business Management (E-Learning)","g":"Full Qualification","m":"Growth","f":9150,"s":[0,0,0,0,0,0]},{"n":"Diploma in Business Management (Mandarin)","g":"Full Qualification","m":"Growth","f":9150,"s":[0,0,0,0,0,0]},{"n":"Dip. Business Mgmt (Mandarin E-Learning)","g":"Full Qualification","m":"Growth","f":9150,"s":[0,0,0,0,0,0]},{"n":"Advanced Diploma in Business Management","g":"Full Qualification","m":"Manual","f":9690,"s":[10,10,15,15,15,15]},{"n":"Postgraduate Certificate in Business Admin","g":"Full Qualification","m":"Growth","f":7550,"s":[0,0,0,0,0,0]},{"n":"Postgraduate Cert. Business Admin (Mandarin)","g":"Full Qualification","m":"Growth","f":7550,"s":[0,0,0,0,0,0]},{"n":"Postgraduate Diploma in Business Admin","g":"Full Qualification","m":"Manual","f":14550,"s":[0,10,10,15,15,20]},{"n":"Postgraduate Dip. Business Admin (Mandarin)","g":"Full Qualification","m":"Growth","f":14550,"s":[0,0,0,0,0,0]},{"n":"Diploma in Applied Artificial Intelligence","g":"Full Qualification","m":"Manual","f":12900,"s":[5,5,10,10,15,15]},{"n":"Advanced Diploma in Applied AI","g":"Full Qualification","m":"Manual","f":13700,"s":[0,8,8,8,10,10]},{"n":"Diploma in Tourism and Hospitality Management","g":"Full Qualification","m":"Manual","f":7050,"s":[0,0,0,0,0,0]},{"n":"Dip. Tourism & Hospitality (E-Learning)","g":"Full Qualification","m":"Growth","f":7050,"s":[0,0,0,0,0,0]},{"n":"Dip. Tourism & Hospitality (Mandarin)","g":"Full Qualification","m":"Growth","f":7050,"s":[0,0,0,0,0,0]},{"n":"Dip. Tourism & Hospitality (Mandarin E-Learn)","g":"Full Qualification","m":"Growth","f":7050,"s":[0,0,0,0,0,0]},{"n":"Higher Diploma (Tourism)","g":"Full Qualification","m":"Manual","f":7050,"s":[0,0,0,0,0,0]},{"n":"Bachelor’s Degree (Artificial Intelligence)","g":"Full Qualification","m":"Manual","f":18250,"s":[0,0,10,10,10,10]},{"n":"Bachelor’s Degree (Business)","g":"Full Qualification","m":"Manual","f":15750,"s":[0,0,10,10,15,15]},{"n":"Bachelor’s Degree (Hospitality)","g":"Full Qualification","m":"Manual","f":15750,"s":[0,0,0,0,0,0]},{"n":"Master’s Degree (MBA)","g":"Full Qualification","m":"Manual","f":24750,"s":[0,40,50,50,50,50]},{"n":"Master’s Degree (MSc) AI","g":"Full Qualification","m":"Manual","f":25750,"s":[0,0,0,0,0,0]},{"n":"Master’s Degree (MSc) Cybersecurity","g":"Full Qualification","m":"Manual","f":25750,"s":[0,0,0,0,0,0]},{"n":"Certificate in English Level 1 (PT) — Short","g":"Short Course","m":"Flat","f":1950,"s":[15,15,15,15,15,15]},{"n":"Certificate in English Level 2 (PT) — Short","g":"Short Course","m":"Flat","f":2550,"s":[15,15,15,15,15,15]},{"n":"Certificate in English Level 3 (PT) — Short","g":"Short Course","m":"Flat","f":1350,"s":[15,15,15,15,15,15]},{"n":"Package Price 1+2 (-15%)","g":"Short Course","m":"Flat","f":1950,"s":[10,10,10,10,10,10]},{"n":"Package Price 2+3 (-15%)","g":"Short Course","m":"Flat","f":1950,"s":[10,10,10,10,10,10]},{"n":"Japanese Tour Group","g":"Short Course","m":"Flat","f":1074,"s":[3,3,3,3,3,3]}];
+/* Expense schedule — categories → sub-line-items exactly as per the Excel 'Expense Forecast' sheet */
 const FC_EXP={cogs:[
- {label:"Agent commission",v:[486872,525745,843025,948325,1012225,1032625]},
- {label:"Institutional fee",v:[18000,0,0,0,0,0]},
- {label:"Temp academic salary",v:[396720,466680,664680,664680,664680,664680]}],
+ {label:"Commission",items:[
+   {label:"Agent Fee",v:[486872,525745,843025,948325,1012225,1032625]}]},
+ {label:"Institutional Fee",items:[
+   {label:"Institutional Fee",v:[18000,0,0,0,0,0]}]},
+ {label:"Salary (Temporary)",items:[
+   {label:"Salary-Temporary Staff (Academic)",v:[396720,466680,664680,664680,664680,664680]}]}],
  opex:[
-  {label:"Administrative",v:[74580,91773,94526,97362,100283,103291]},
-  {label:"Marketing",v:[84000,108768,141821,185965,244955,323821]},
-  {label:"Operating",v:[235440,335203,402548,491334,506074,521256]},
-  {label:"Other / Depreciation",v:[16800,17304,17823,18358,18909,19476]},
-  {label:"Staff",v:[961440,1205347,1350229,1601182,1797769,2188044]}]};
+  {label:"Expenses-Administrative",items:[
+    {label:"Accounting Fees",v:[4000,4120,4244,4371,4502,4637]},
+    {label:"Audit Fees",v:[5000,5150,5305,5464,5628,5796]},
+    {label:"Bank Charges and Interest",v:[600,618,637,656,675,696]},
+    {label:"Certification and Accreditation Fees",v:[12000,12360,12731,13113,13506,13911]},
+    {label:"Consultation",v:[24000,24720,25462,26225,27012,27823]},
+    {label:"Insurance — FPS",v:[6000,6180,6365,6556,6753,6956]},
+    {label:"Insurance — Staff Insurance",v:[7200,7416,7638,7868,8104,8347]},
+    {label:"Insurance — Student Insurance",v:[2520,2596,2673,2754,2836,2921]},
+    {label:"Legal Expenses",v:[2400,2472,2546,2623,2701,2782]},
+    {label:"Office Expenses",v:[4800,4944,5092,5245,5402,5565]},
+    {label:"Postal and Courier Charges",v:[60,62,64,66,68,70]},
+    {label:"Printing and Stationery",v:[4800,4944,5092,5245,5402,5565]},
+    {label:"Secretarial Fee",v:[1200,1236,1273,1311,1351,1391]}]},
+  {label:"Expenses-Marketing",items:[
+    {label:"Advertising and Promotion",v:[72000,96408,129090,172852,231449,309910]},
+    {label:"Entertainment Expenses",v:[12000,12360,12731,13113,13506,13911]}]},
+  {label:"Expenses-Operating",items:[
+    {label:"Communication Costs",v:[14400,14832,15277,15735,16207,16694]},
+    {label:"General Expenses",v:[3600,3708,3819,3934,4052,4173]},
+    {label:"Licence — Admission Licence (e.g. Student Pass)",v:[36000,37080,38192,39338,40518,41734]},
+    {label:"Licence — Educational Licence",v:[0,0,0,0,0,0]},
+    {label:"Rental — Premise",v:[90000,185400,248251,332408,342380,352651]},
+    {label:"Rental — Parking",v:[2640,2719,2801,2885,2971,3060]},
+    {label:"R&M — Building",v:[21600,22248,22915,23603,24311,25040]},
+    {label:"R&M — Office",v:[1200,1236,1273,1311,1351,1391]},
+    {label:"Student Support",v:[18000,18540,19096,19669,20259,20867]},
+    {label:"Subscription Fees",v:[24000,24720,25462,26225,27012,27823]},
+    {label:"Travel Expenses",v:[24000,24720,25462,26225,27012,27823]}]},
+  {label:"Expenses-Other",items:[
+    {label:"Dep-ICT Equipment-UCC",v:[2400,2472,2546,2623,2701,2782]},
+    {label:"Dep-Rental Premises-UCC",v:[14400,14832,15277,15735,16207,16694]}]},
+  {label:"Expenses-Staff",items:[
+    {label:"CDAC/MBMF",v:[240,247,255,262,270,278]},
+    {label:"CPF Contribution",v:[65280,67238,69256,71333,73473,75677]},
+    {label:"CPF — Director Contribution",v:[20400,21012,21642,22292,22960,23649]},
+    {label:"CPF — Late Payment Interest",v:[0,0,0,0,0,0]},
+    {label:"CPF — Staff Contribution",v:[44880,46226,47613,49042,50513,52028]},
+    {label:"Medical Expenses",v:[1200,1236,1273,1311,1351,1391]},
+    {label:"Salaries — Directors' Salary",v:[120000,135960,154043,261796,296614,504096]},
+    {label:"Salaries — IT Support Expenses",v:[60000,67980,77021,87265,98871,112021]},
+    {label:"Salaries — Permanent Staff (Academic and Non-Academic)",v:[540000,723060,819227,928184,1051633,1191500]},
+    {label:"Salaries — Professional Fees (Non Academic)",v:[96000,128544,145640,165011,186957,211822]},
+    {label:"Skills Development Levy",v:[240,247,255,262,270,278]},
+    {label:"Staff Training",v:[4800,4944,5092,5245,5402,5565]},
+    {label:"Staff Transport",v:[1200,1236,1273,1311,1351,1391]},
+    {label:"Staff Welfare",v:[7200,7416,7638,7868,8104,8347]}]}]};
 /* Scenario presets: fee = annual fee growth; vol = extra volume growth vs plan (Base=0 reconciles Excel) */
 const FC_SCENARIOS={Base:{fee:0.05,vol:0},Best:{fee:0.07,vol:0.12},Worst:{fee:0.03,vol:-0.18}};
-/* [teaching hours, duration months] aligned to FC_SEED order (from UCC Price List) */
-const FC_HD=[[120,3],[120,3],[120,3],[120,3],[120,3],[120,3],[240,6],[396,6],[792,6],[792,6],[792,6],[792,6],[792,6],[792,6],[792,6],[1440,24],[2880,24],[160,6],[96,6],[160,6],[96,6],[320,8],[192,8],[320,8],[192,8],[216,8],[240,4],[240,4],[480,8],[480,8],[144,8],[144,8],[144,6],[144,6],[144,6],[144,6],[144,12],[1080,12],[1080,12],[1080,12],[120,12],[1080,12],[1080,12],[30,6],[20,6],[20,6],[10,6],[15,6],[5,6]];
+function courseCats(){return [...new Set(COURSES.map(c=>c.cat))];}
+function priceOfCourse(c){return (Number(c.fee)||0)+(Number(c.mat)||0)+(Number(c.exam)||0)+(Number(c.admin)||0);}
+function fcExpGroupTotal(g){return FC_YEARS.map((y,i)=>g.items.reduce((a,l)=>a+(Number(l.v[i])||0),0));}
 const FC_MP={cls:14,tmo:120,adms:0.5,amo:160}; /* manpower: class size, teacher hrs/mo, admin hrs/student, admin hrs/mo */
 
 const ST={
@@ -489,11 +538,10 @@ const ST={
   ybForm:{kind:"budget",ci:0,month:0,year:new Date().getFullYear(),students:15},
   cloudOpen:false,sbUrl:"",sbKey:"",sbStatus:"",sbStatusOk:null,sbSaves:[],sbLoading:false,sbSaveName:"",
   fx:{tab:"pnl",scenario:"Base",scen:JSON.parse(JSON.stringify(FC_SCENARIOS)),
-      courses:FC_SEED.map(c=>({...c,s:c.s.slice()})),
       exp:JSON.parse(JSON.stringify(FC_EXP))},
   op:{tab:"manpower",mp:{...FC_MP},teacherRate:70,contactPct:100,disc:0,comp:{}},
   val:{tab:"dcf",wacc:0.10,g:0.03,
-       da:FC_EXP.opex[3].v.slice(),capex:[0,0,0,0,0,0],nwc:[0,0,0,0,0,0],
+       da:fcExpGroupTotal(FC_EXP.opex[3]),capex:[0,0,0,0,0,0],nwc:[0,0,0,0,0,0],
        gstRate:0.09,taxableRevPct:0,corpTax:0.17},
   strat:{tab:"growth",disc:0.10,
     inits:[{name:"New Initiative 1",start:2027,rev:500000,gm:0.5,opex:120000,capex:150000,r1:0.5,r2:1}],
@@ -514,9 +562,32 @@ const sgd=n=>{const a=Math.abs(Math.round(n));const s="$"+a.toLocaleString();ret
 const fp=n=>(n*100).toFixed(1)+"%";
 const LS_KEY="ucc_sim_v4";
 
+/* Restore the course catalog. New format = full course rows (dynamic add/delete);
+   legacy format = per-index price patches (only valid when the catalog length matches). */
+function applyPrices(prices){
+  if(!Array.isArray(prices)||!prices.length)return;
+  if(prices[0].name!==undefined){
+    COURSES.length=0;
+    prices.forEach(p=>COURSES.push({...p}));
+  }else if(prices.length===COURSES.length){
+    prices.forEach((p,i)=>{
+      COURSES[i].fee=p.fee;COURSES[i].mat=p.mat;COURSES[i].exam=p.exam;COURSES[i].admin=p.admin;
+      if(p.hrs!==undefined)COURSES[i].hrs=p.hrs;
+      if(p.mo!==undefined)COURSES[i].mo=p.mo;
+    });
+  }
+}
+function applyFx(dfx){
+  if(!dfx)return;
+  if(dfx.tab)ST.fx.tab=dfx.tab;
+  if(dfx.scenario)ST.fx.scenario=dfx.scenario;
+  if(dfx.scen)ST.fx.scen=dfx.scen;
+  /* only accept the new grouped expense shape (categories with sub-items); older flat saves fall back to the seed */
+  if(dfx.exp&&Array.isArray(dfx.exp.cogs)&&dfx.exp.cogs[0]&&Array.isArray(dfx.exp.cogs[0].items))ST.fx.exp=dfx.exp;
+}
 function saveToStorage(){
   try{
-    const prices=COURSES.map(c=>({fee:c.fee,mat:c.mat,exam:c.exam,admin:c.admin,hrs:c.hrs,mo:c.mo}));
+    const prices=COURSES.map(c=>({...c}));
     const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx,op,val,strat}=ST;
     localStorage.setItem(LS_KEY,JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx,op,val,strat}));
   }catch(e){}
@@ -526,13 +597,7 @@ function loadFromStorage(){
     const raw=localStorage.getItem(LS_KEY);
     if(!raw)return;
     const d=JSON.parse(raw);
-    if(d.prices&&d.prices.length===COURSES.length){
-      d.prices.forEach((p,i)=>{
-        COURSES[i].fee=p.fee;COURSES[i].mat=p.mat;COURSES[i].exam=p.exam;COURSES[i].admin=p.admin;
-        if(p.hrs!==undefined)COURSES[i].hrs=p.hrs;
-        if(p.mo!==undefined)COURSES[i].mo=p.mo;
-      });
-    }
+    applyPrices(d.prices);
     const nums=["ci","disc","agent","uni","tf","cp","plan","act","aDisc","aAgent","aUni","ulecMgmt","fcCi","fcSchol"];
     nums.forEach(k=>{if(d[k]!==undefined)ST[k]=d[k];});
     if(Array.isArray(d.saved))ST.saved=d.saved;
@@ -551,18 +616,14 @@ function loadFromStorage(){
     if(d.ybCat)ST.ybCat=d.ybCat;
     if(d.sbUrl)ST.sbUrl=d.sbUrl;
     if(d.sbKey)ST.sbKey=d.sbKey;
-    if(d.fx&&d.fx.courses&&Array.isArray(d.fx.courses)){
-      ST.fx={...ST.fx,...d.fx};
-      if(!ST.fx.scen)ST.fx.scen=JSON.parse(JSON.stringify(FC_SCENARIOS));
-      if(!ST.fx.exp)ST.fx.exp=JSON.parse(JSON.stringify(FC_EXP));
-    }
+    applyFx(d.fx);
     if(d.op)ST.op={...ST.op,...d.op,mp:{...FC_MP,...(d.op.mp||{})},comp:d.op.comp||{}};
     if(d.val)ST.val={...ST.val,...d.val};
     if(d.strat)ST.strat={...ST.strat,...d.strat};
   }catch(e){}
 }
 function exportData(){
-  const prices=COURSES.map(c=>({fee:c.fee,mat:c.mat,exam:c.exam,admin:c.admin,hrs:c.hrs,mo:c.mo}));
+  const prices=COURSES.map(c=>({...c}));
   const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,saved,fcCi,fcSchol}=ST;
   const blob=new Blob([JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,saved,fcCi,fcSchol},null,2)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="ucc_simulator_data.json";a.click();
@@ -572,13 +633,7 @@ function importData(file){
   reader.onload=e=>{
     try{
       const d=JSON.parse(e.target.result);
-      if(d.prices&&d.prices.length===COURSES.length){
-        d.prices.forEach((p,i)=>{
-          COURSES[i].fee=p.fee;COURSES[i].mat=p.mat;COURSES[i].exam=p.exam;COURSES[i].admin=p.admin;
-          if(p.hrs!==undefined)COURSES[i].hrs=p.hrs;
-          if(p.mo!==undefined)COURSES[i].mo=p.mo;
-        });
-      }
+      applyPrices(d.prices);
       const nums=["ci","disc","agent","uni","tf","cp","plan","act","aDisc","aAgent","aUni","ulecMgmt","fcCi","fcSchol"];
       nums.forEach(k=>{if(d[k]!==undefined)ST[k]=d[k];});
       if(Array.isArray(d.saved))ST.saved=d.saved;
@@ -592,18 +647,12 @@ function importData(file){
 /* ── Cloud save (Supabase) ──────────────────────────────────────────── */
 
 function buildFullSnapshot(){
-  const prices=COURSES.map(c=>({fee:c.fee,mat:c.mat,exam:c.exam,admin:c.admin,hrs:c.hrs,mo:c.mo}));
+  const prices=COURSES.map(c=>({...c}));
   const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,saved,fcCi,fcSchol,intakes,ybYear,ybCat,ybView,fx}=ST;
   return{prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,saved,fcCi,fcSchol,intakes,ybYear,ybCat,ybView,fx};
 }
 function applyFullSnapshot(d){
-  if(d.prices&&d.prices.length===COURSES.length){
-    d.prices.forEach((p,i)=>{
-      COURSES[i].fee=p.fee;COURSES[i].mat=p.mat;COURSES[i].exam=p.exam;COURSES[i].admin=p.admin;
-      if(p.hrs!==undefined)COURSES[i].hrs=p.hrs;
-      if(p.mo!==undefined)COURSES[i].mo=p.mo;
-    });
-  }
+  applyPrices(d.prices);
   const nums=["ci","disc","agent","uni","tf","cp","plan","act","aDisc","aAgent","aUni","ulecMgmt","fcCi","fcSchol","ybYear"];
   nums.forEach(k=>{if(d[k]!==undefined)ST[k]=d[k];});
   if(Array.isArray(d.saved))ST.saved=d.saved;
@@ -611,7 +660,7 @@ function applyFullSnapshot(d){
   if(Array.isArray(d.intakes))ST.intakes=d.intakes.map(ik=>({kind:"budget",...ik}));
   if(d.ybCat)ST.ybCat=d.ybCat;
   if(d.ybView)ST.ybView=d.ybView;
-  if(d.fx&&Array.isArray(d.fx.courses))ST.fx={...ST.fx,...d.fx};
+  applyFx(d.fx);
 }
 
 function sbHeaders(){
@@ -1584,15 +1633,15 @@ function drawCompareChart(saved){
 }
 
 function renderPriceList(){
-  const cats=["English","Preparatory","Business","Technology","Tourism & Hospitality"];
+  const cats=courseCats();
   const rows=cats.flatMap(cat=>{
     const catRows=COURSES.map((cr,i)=>{
       if(cr.cat!==cat)return"";
       const hrRate=cr.hrs>0?(cr.fee/cr.hrs).toFixed(2):"—";
       return`<tr>
-        <td class="cat">${cr.cat}</td>
-        <td style="font-size:12px;color:var(--text-primary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${cr.name}">${cr.name}</td>
-        <td style="text-align:right"><input class="plinp sm" type="number" data-pci="${i}" data-pf="hrs" value="${cr.hrs}" min="1" step="8" title="Contact hours — affects teaching cost"></td>
+        <td><input class="plinp" type="text" data-pci="${i}" data-pf="cat" value="${cr.cat}" style="width:92px;font-size:11px" title="Category — group courses by editing this"></td>
+        <td><input class="plinp" type="text" data-pci="${i}" data-pf="name" value="${String(cr.name).replace(/"/g,"&quot;")}" style="width:190px;font-size:12px" title="Course name"></td>
+        <td style="text-align:right"><input class="plinp sm" type="number" data-pci="${i}" data-pf="hrs" value="${cr.hrs}" min="0" step="8" title="Contact hours — affects teaching cost"></td>
         <td style="text-align:right"><input class="plinp sm" type="number" data-pci="${i}" data-pf="mo" value="${cr.mo}" min="1" step="1" title="Duration in months — affects overhead total"></td>
         <td style="text-align:right;font-size:11px;color:var(--text-muted);white-space:nowrap">$${hrRate}</td>
         <td style="text-align:right"><input class="plinp" type="number" data-pci="${i}" data-pf="fee" value="${cr.fee}" min="0" step="10"></td>
@@ -1600,6 +1649,7 @@ function renderPriceList(){
         <td style="text-align:right"><input class="plinp" type="number" data-pci="${i}" data-pf="exam" value="${cr.exam}" min="0" step="10"></td>
         <td style="text-align:right"><input class="plinp" type="number" data-pci="${i}" data-pf="admin" value="${cr.admin}" min="0" step="10"></td>
         <td class="tot">${sgd(cr.fee+cr.mat+cr.exam+cr.admin)}</td>
+        <td><button data-delcourse="${i}" title="Delete course (also removes its Yearly Budget intakes)" style="border:none;background:none;color:var(--text-danger);cursor:pointer;font-size:13px;padding:2px 6px">✕</button></td>
       </tr>`;
     }).join("");
     return catRows;
@@ -1607,12 +1657,13 @@ function renderPriceList(){
   return`<div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px">
       <div class="card-hdr" style="margin-bottom:0"><div class="card-title">Editable price list — all courses</div></div>
-      <div style="display:flex;gap:8px;align-items:center">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         ${viewToggle("pricelist",[{val:"table",label:"▤ Table"},{val:"chart",label:"📊 $/hr Chart"}])}
+        <button id="addCourse" style="font-size:11px;padding:4px 10px;color:var(--text-success);border:1px solid var(--border);border-radius:6px;cursor:pointer;background:none;font-weight:600">＋ Add course</button>
         <button id="resetPrices" style="font-size:11px;padding:4px 10px;color:var(--text-danger);border:1px solid var(--border);border-radius:6px;cursor:pointer;background:none">Reset to defaults</button>
       </div>
     </div>
-    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Edit hours, months, or any fee — all tabs recalculate immediately. Hours affect teaching cost; months affect overhead total. <strong>$/hr</strong> = course fee ÷ contact hours.</div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">This is the <strong>master catalog</strong> — the Course Simulator, Yearly Budget, Forecast &amp; P&amp;L, Manpower and Breakeven modules all read from it. Add, rename, re-categorise or delete courses here; edit hours, months or any fee and every module recalculates immediately. <strong>$/hr</strong> = course fee ÷ contact hours.</div>
     <div style="${ST.views.pricelist==="table"?"":"display:none"}">
       <div style="overflow-x:auto;max-height:480px;overflow-y:auto">
         <table class="pltbl">
@@ -1627,6 +1678,7 @@ function renderPriceList(){
             <th style="text-align:right">Exam/Assign.</th>
             <th style="text-align:right">Admin</th>
             <th style="text-align:right">Total/student</th>
+            <th></th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>
@@ -1686,7 +1738,7 @@ function renderFeeCalc(st){
   const gst=Math.round(subtotal*0.09);
   const totalInclGST=subtotal+gst;
   const instAmt=discFee/c.mo;
-  const cats=["English","Preparatory","Business","Technology","Tourism & Hospitality"];
+  const cats=courseCats();
   const fcOptions=cats.map(cat=>`<optgroup label="${cat}">${COURSES.map((cr,i)=>cr.cat===cat?`<option value="${i}"${i===st.fcCi?" selected":""}>${cr.name}</option>`:"").join("")}</optgroup>`).join("");
   return`
   <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;padding:8px 12px;background:var(--blue-50);border-radius:8px;border:1px solid var(--blue-100)">
@@ -1791,7 +1843,7 @@ function drawFeeTimelineChart(st){
 }
 
 function renderYearlyBudgetModule(st){
-  const cats=["English","Preparatory","Business","Technology","Tourism & Hospitality"];
+  const cats=courseCats();
   const bLedger=buildPortfolioLedger(st.intakes,st,st.ybCat,"budget");
   const aLedger=buildPortfolioLedger(st.intakes,st,st.ybCat,"actual");
   const bPeriods=portfolioPeriods(bLedger,st.ybView,st.ybYear);
@@ -1800,12 +1852,11 @@ function renderYearlyBudgetModule(st){
   const aTot=aPeriods.reduce((a,p)=>({revenue:a.revenue+p.revenue,cost:a.cost+p.cost,profit:a.profit+p.profit,newStudents:a.newStudents+p.newStudents}),{revenue:0,cost:0,profit:0,newStudents:0});
   const attainment=bTot.profit>0?aTot.profit/bTot.profit:(aTot.profit>0?1:0);
 
-  const years=[...new Set(st.intakes.map(i=>i.year))];
-  let yearRange=years.length?[Math.min(...years),Math.max(...years)]:[st.ybYear,st.ybYear];
+  /* offer every forecast year (2026–2031) plus any year that already has intakes — the Forecast module reads these plans per year */
+  const years=[...new Set([...st.intakes.map(i=>i.year),...FC_YEARS,st.ybYear])];
+  const yearRange=[Math.min(...years),Math.max(...years)];
   const availYears=[];
   for(let y=yearRange[0];y<=yearRange[1];y++)availYears.push(y);
-  if(!availYears.includes(st.ybYear))availYears.push(st.ybYear);
-  availYears.sort((a,b)=>a-b);
 
   const pviews=[{val:"monthly",label:"Monthly"},{val:"quarterly",label:"Quarterly"},{val:"yearly",label:"Yearly"},{val:"total",label:"Total"}];
 
@@ -2032,7 +2083,7 @@ function drawYearlyBudgetChart(bPeriods,aPeriods){
 }
 
 function buildCourseSelector(ci){
-  const cats=["English","Preparatory","Business","Technology","Tourism & Hospitality"];
+  const cats=courseCats();
   return cats.map(cat=>`<optgroup label="${cat}">${COURSES.map((c,i)=>c.cat===cat?`<option value="${i}"${i===ci?" selected":""}>${c.name}</option>`:"").join("")}</optgroup>`).join("");
 }
 
@@ -2327,23 +2378,30 @@ function buildCloudModal(){
 
 /* ═══════════════ FORECAST & P&L MODULE (Phase A) ═══════════════ */
 function fcScen(st){return (st.fx.scen&&st.fx.scen[st.fx.scenario])||FC_SCENARIOS[st.fx.scenario]||FC_SCENARIOS.Base;}
+/* Planned students per course per year, straight from the Yearly Budget intakes (kind=budget). */
+function fcStudents(st,ci,year){
+  return st.intakes.reduce((a,k)=>a+(((k.kind||"budget")==="budget"&&k.ci===ci&&k.year===year)?(Number(k.students)||0):0),0);
+}
 function fcRevenue(st){
   const sc=fcScen(st);
-  const rows=st.fx.courses.map(c=>({name:c.n,group:c.g,fee2026:c.f,stu:c.s,
-    rev:FC_YEARS.map((y,i)=>(c.f*Math.pow(1+sc.fee,i))*((c.s[i]||0)*Math.pow(1+sc.vol,i)))}));
+  const rows=COURSES.map((c,ci)=>{
+    const fee=priceOfCourse(c);
+    const stu=FC_YEARS.map(y=>fcStudents(st,ci,y));
+    return {ci,name:c.name,group:c.cat,fee2026:fee,stu,
+      rev:FC_YEARS.map((y,i)=>(fee*Math.pow(1+sc.fee,i))*(stu[i]*Math.pow(1+sc.vol,i)))};
+  });
   const sumG=(g)=>FC_YEARS.map((y,i)=>rows.filter(r=>!g||r.group===g).reduce((a,r)=>a+r.rev[i],0));
-  return {rows,total:sumG(null),fullq:sumG("Full Qualification"),short:sumG("Short Course")};
+  return {rows,total:sumG(null),byCat:courseCats().map(cat=>({cat,v:sumG(cat)}))};
 }
 function fcExpenses(st){
   const cogs=st.fx.exp.cogs,opex=st.fx.exp.opex;
-  return {cogs,opex,
-    cogsTot:FC_YEARS.map((y,i)=>cogs.reduce((a,l)=>a+(Number(l.v[i])||0),0)),
-    opexTot:FC_YEARS.map((y,i)=>opex.reduce((a,l)=>a+(Number(l.v[i])||0),0))};
+  const groupSum=(gs)=>FC_YEARS.map((y,i)=>gs.reduce((a,g)=>a+g.items.reduce((b,l)=>b+(Number(l.v[i])||0),0),0));
+  return {cogs,opex,cogsTot:groupSum(cogs),opexTot:groupSum(opex)};
 }
 function fcPnl(st){
   const r=fcRevenue(st),e=fcExpenses(st);
   const rev=r.total,cogs=e.cogsTot,opex=e.opexTot;
-  return {years:FC_YEARS,rev,cogs,opex,fullq:r.fullq,short:r.short,rrows:r.rows,e,
+  return {years:FC_YEARS,rev,cogs,opex,byCat:r.byCat,rrows:r.rows,e,
     gp:rev.map((v,i)=>v-cogs[i]),
     net:rev.map((v,i)=>v-cogs[i]-opex[i]),
     mgn:rev.map((v,i)=>v>0?(v-cogs[i]-opex[i])/v:0)};
@@ -2390,13 +2448,12 @@ function fcRenderPnl(st,p){
   return `
   <div class="card">
     <div class="card-hdr"><div class="card-title">Forecasted Income Statement</div><span class="card-badge" style="background:var(--blue-100);color:var(--blue-700)">${st.fx.scenario} scenario</span></div>
-    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Revenue is driven live by the Assumptions grid × scenario. Expenses are an editable 6-year schedule (seeded from the master budget). Seeded values reconcile to the Excel's Base case.</div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Revenue is derived live from the <strong>Price List</strong> (fee/student) × the <strong>Yearly Budget</strong> intake plan (students per course per year) × scenario. Expenses follow the master budget's line items and are editable on the Expenses tab.</div>
     <div class="tbl-scroll"><table class="cptbl" style="min-width:640px">
       <thead><tr><th>Line</th>${fcYearCols()}</tr></thead>
       <tbody>
         ${fcMoneyRow("Revenue",p.rev,"",true)}
-        ${fcMoneyRow("&nbsp;&nbsp;Full Qualification",p.fullq,"muted")}
-        ${fcMoneyRow("&nbsp;&nbsp;Short Courses",p.short,"muted")}
+        ${p.byCat.filter(b=>b.v.some(v=>v>0)).map(b=>fcMoneyRow("&nbsp;&nbsp;"+b.cat,b.v,"muted")).join("")}
         ${fcMoneyRow("Less: COGS",p.cogs.map(v=>-v),"muted")}
         ${fcMoneyRow("Gross Profit",p.gp,"",true)}
         ${fcMoneyRow("Less: OPEX",p.opex.map(v=>-v),"muted")}
@@ -2409,24 +2466,25 @@ function fcRenderPnl(st,p){
 }
 
 function fcRenderRevenue(st,p){
-  const cats=["Full Qualification","Short Course"];
-  const rowsHtml=cats.map(cat=>{
-    const rs=p.rrows.map((r,i)=>({r,i})).filter(x=>x.r.group===cat&&x.r.stu.some(v=>v>0));
+  const active=p.rrows.filter(r=>r.stu.some(v=>v>0));
+  const rowsHtml=courseCats().map(cat=>{
+    const rs=active.filter(r=>r.group===cat);
     if(!rs.length)return "";
+    const sub=p.byCat.find(b=>b.cat===cat);
     return `<tr><td colspan="7" style="padding:7px 8px;font-weight:700;background:var(--surface-1);font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)">${cat}</td></tr>`+
-      rs.map(({r})=>`<tr>
+      rs.map(r=>`<tr>
         <td style="padding:4px 8px;max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.name}">${r.name}</td>
         ${r.rev.map(v=>`<td style="padding:4px 8px;text-align:right;color:${v>0?"var(--text-secondary)":"var(--gray-300)"}">${v>0?sgd(v):"—"}</td>`).join("")}
-      </tr>`).join("");
+      </tr>`).join("")+
+      (sub?fcMoneyRow("&nbsp;&nbsp;Sub-total "+cat,sub.v,"muted",true):"");
   }).join("");
   return `<div class="card">
     <div class="card-hdr"><div class="card-title">Revenue Forecast by course</div><span class="card-badge" style="background:var(--blue-100);color:var(--blue-700)">${sgd(p.rev[0])} in 2026</span></div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Each cell = Price-List total/student × planned students from the Yearly Budget for that year, adjusted by the active scenario. ${active.length?"":"No budget intakes yet — add them in the Yearly Budget module."}</div>
     <div class="tbl-scroll"><table class="cptbl" style="min-width:640px">
       <thead><tr><th>Course</th>${fcYearCols()}</tr></thead>
       <tbody>
         ${rowsHtml}
-        ${fcMoneyRow("Full Qualification subtotal",p.fullq,"muted",true)}
-        ${fcMoneyRow("Short Course subtotal",p.short,"muted",true)}
         ${fcMoneyRow("TOTAL REVENUE",p.rev,"",true)}
       </tbody>
     </table></div>
@@ -2434,21 +2492,28 @@ function fcRenderRevenue(st,p){
 }
 
 function fcRenderExpenses(st,p){
-  const grp=(title,lines,keybase)=>`
-    <tr><td colspan="7" style="padding:7px 8px;font-weight:700;background:var(--surface-1);font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)">${title}</td></tr>
-    ${lines.map((l,li)=>`<tr>
-      <td style="padding:3px 8px">${l.label}</td>
-      ${l.v.map((v,yi)=>`<td style="padding:2px 4px;text-align:right"><input type="number" class="plinp" data-fcexp="${keybase}" data-li="${li}" data-yi="${yi}" value="${Math.round(v)}" step="1000" style="width:78px;text-align:right"></td>`).join("")}
-    </tr>`).join("")}`;
+  const section=(title,groups,keybase)=>`
+    <tr><td colspan="7" style="padding:7px 8px;font-weight:800;background:var(--surface-1);font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)">${title}</td></tr>
+    ${groups.map((g,gi)=>{
+      const tot=fcExpGroupTotal(g);
+      return `<tr>
+        <td style="padding:5px 8px;font-weight:700">${g.label}</td>
+        ${tot.map(v=>`<td style="padding:5px 8px;text-align:right;font-weight:700;color:var(--text-secondary)">${sgd(v)}</td>`).join("")}
+      </tr>`+
+      g.items.map((l,li)=>`<tr>
+        <td style="padding:2px 8px 2px 22px;color:var(--text-secondary)">${l.label}</td>
+        ${l.v.map((v,yi)=>`<td style="padding:2px 4px;text-align:right"><input type="number" class="plinp" data-fcexp="${keybase}" data-gi="${gi}" data-li="${li}" data-yi="${yi}" value="${Math.round(v)}" step="100" style="width:78px;text-align:right"></td>`).join("")}
+      </tr>`).join("");
+    }).join("")}`;
   return `<div class="card">
     <div class="card-hdr"><div class="card-title">Expense Forecast (editable)</div><span class="card-badge" style="background:var(--red-100);color:var(--red-700)">${sgd(p.cogs[0]+p.opex[0])} in 2026</span></div>
-    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">COGS + OPEX by year, seeded from the master budget. Edit any cell — the Income Statement updates live.</div>
-    <div class="tbl-scroll"><table class="cptbl" style="min-width:660px">
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Full chart of accounts as per the master budget — category totals are computed from the editable sub-line-items. Edit any cell and the Income Statement, DCF and Dashboard update live.</div>
+    <div class="tbl-scroll" style="max-height:560px;overflow-y:auto"><table class="cptbl" style="min-width:660px">
       <thead><tr><th>Account</th>${fcYearCols()}</tr></thead>
       <tbody>
-        ${grp("Cost of Goods Sold",st.fx.exp.cogs,"cogs")}
+        ${section("Cost of Goods Sold",st.fx.exp.cogs,"cogs")}
         ${fcMoneyRow("Total COGS",p.cogs,"muted",true)}
-        ${grp("Operating Expenses",st.fx.exp.opex,"opex")}
+        ${section("Operating Expenses",st.fx.exp.opex,"opex")}
         ${fcMoneyRow("Total OPEX",p.opex,"muted",true)}
         ${fcMoneyRow("TOTAL EXPENSES",p.cogs.map((v,i)=>v+p.opex[i]),"",true)}
       </tbody>
@@ -2457,17 +2522,25 @@ function fcRenderExpenses(st,p){
 }
 
 function fcRenderAssumptions(st){
-  const cats=["Full Qualification","Short Course"];
-  const rows=cats.map(cat=>`
+  const rows=courseCats().map(cat=>`
     <tr><td colspan="8" style="padding:7px 8px;font-weight:700;background:var(--surface-1);font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)">${cat}</td></tr>
-    ${st.fx.courses.map((c,ci)=>c.g!==cat?"":`<tr>
-      <td style="padding:3px 8px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${c.n}">${c.n}</td>
-      <td style="padding:2px 4px;text-align:right"><input type="number" class="plinp sm" data-fcfee="${ci}" value="${c.f}" step="10" style="width:64px;text-align:right" title="Total fee / student (2026)"></td>
-      ${c.s.map((v,yi)=>`<td style="padding:2px 4px;text-align:right"><input type="number" class="plinp sm" data-fcstu="${ci}" data-yi="${yi}" value="${v}" min="0" style="width:44px;text-align:right"></td>`).join("")}
-    </tr>`).join("")}`).join("");
+    ${COURSES.map((c,ci)=>{
+      if(c.cat!==cat)return"";
+      const stu=FC_YEARS.map(y=>fcStudents(st,ci,y));
+      return `<tr>
+      <td style="padding:3px 8px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${c.name}">${c.name}</td>
+      <td style="padding:3px 8px;text-align:right;font-weight:600" title="Total/student from Price List (course+material+exam+admin)">${sgd(priceOfCourse(c))}</td>
+      ${stu.map(v=>`<td style="padding:3px 8px;text-align:right;color:${v>0?"var(--text-primary)":"var(--gray-300)"}">${v>0?v:"—"}</td>`).join("")}
+    </tr>`;}).join("")}`).join("");
   return `<div class="card">
-    <div class="card-hdr"><div class="card-title">Enrolment & fee assumptions</div></div>
-    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Planned students per course per year + 2026 fee/student (all-in: course+material+exam+admin). Fees grow by the scenario's fee-growth rate; volume by the scenario's volume adjustment.</div>
+    <div class="card-hdr"><div class="card-title">Linked assumptions (read-only)</div></div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">
+      Nothing here is hardcoded: <strong>Fee/student</strong> comes from the Price List and <strong>students per year</strong> from the Yearly Budget's budget intakes. To change a number, edit its source:
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <button class="hdr-btn primary" data-fcgoto="pricelist" style="border:1px solid var(--border)">✏️ Edit fees → Price List</button>
+      <button class="hdr-btn primary" data-fcgoto="yearlybudget" style="border:1px solid var(--border)">✏️ Edit students → Yearly Budget</button>
+    </div>
     <div class="tbl-scroll" style="max-height:520px;overflow-y:auto"><table class="cptbl" style="min-width:560px">
       <thead><tr><th>Course</th><th style="text-align:right">Fee/stu</th>${FC_YEARS.map(y=>`<th style="text-align:right">${y}</th>`).join("")}</tr></thead>
       <tbody>${rows}</tbody>
@@ -2562,14 +2635,15 @@ function drawMarginChart(p){
 /* ═══════════════ OPERATING DETAIL MODULE (Phase B) ═══════════════ */
 function opManpower(st){
   const mp=st.op.mp;
-  const rows=st.fx.courses.map((c,i)=>{
-    const stu=c.s[0]||0; const hrs=(FC_HD[i]||[0,0])[0];
+  const yr=FC_YEARS.includes(st.ybYear)?st.ybYear:FC_YEARS[0];
+  const rows=COURSES.map((c,i)=>{
+    const stu=fcStudents(st,i,yr); const hrs=c.hrs||0;
     const cohorts=stu>0?Math.ceil(stu/mp.cls):0;
     const teachHrs=hrs*cohorts;
     const teachFTE=(teachHrs/12)/mp.tmo;
     const adminHrs=stu*mp.adms;
     const adminFTE=(adminHrs/12)/mp.amo;
-    return {name:c.n,group:c.g,stu,hrs,cohorts,teachHrs,teachFTE,adminHrs,adminFTE};
+    return {name:c.name,group:c.cat,stu,hrs,cohorts,teachHrs,teachFTE,adminHrs,adminFTE};
   }).filter(r=>r.stu>0);
   const T=rows.reduce((a,r)=>({stu:a.stu+r.stu,teachHrs:a.teachHrs+r.teachHrs,teachFTE:a.teachFTE+r.teachFTE,adminHrs:a.adminHrs+r.adminHrs,adminFTE:a.adminFTE+r.adminFTE}),{stu:0,teachHrs:0,teachFTE:0,adminHrs:0,adminFTE:0});
   return {rows,T};
@@ -2577,13 +2651,14 @@ function opManpower(st){
 function opBreakeven(st){
   const ohMonthly=st.oh.reduce((s,o)=>s+(Number(o.cost)||0),0);
   const disc=st.op.disc/100, tf=st.op.teacherRate, cp=st.op.contactPct/100;
-  return st.fx.courses.map((c,i)=>{
-    const hrs=(FC_HD[i]||[0,0])[0], dur=(FC_HD[i]||[0,0])[1]||1;
+  const yr=FC_YEARS.includes(st.ybYear)?st.ybYear:FC_YEARS[0];
+  return COURSES.map((c,i)=>{
+    const hrs=c.hrs||0, dur=c.mo||1, fee=priceOfCourse(c);
     const teachCost=tf*hrs*cp, fixedCost=ohMonthly*dur, totalCost=teachCost+fixedCost;
-    const netPer=c.f*(1-disc);
+    const netPer=fee*(1-disc);
     const be=netPer>0?Math.ceil(totalCost/netPer):null;
-    const plan=c.s[0]||0;
-    return {name:c.n,group:c.g,fee:c.f,hrs,dur,totalCost,netPer,be,plan};
+    const plan=fcStudents(st,i,yr);
+    return {name:c.name,group:c.cat,fee,hrs,dur,totalCost,netPer,be,plan};
   });
 }
 function renderOperatingModule(st){
@@ -2607,10 +2682,10 @@ function opRenderManpower(st){
   const kpi=(l,v,c,s)=>`<div class="kpi-card"><div class="kpi-card-lbl">${l}</div><div class="kpi-card-val" style="color:${c}">${v}</div><div class="kpi-card-sub">${s||"&nbsp;"}</div></div>`;
   return `
   <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;padding:8px 12px;background:var(--blue-50);border-radius:8px;border:1px solid var(--blue-100)">
-    Teacher & admin FTE from the Forecast 2026 enrolment plan. Cohorts = ⌈students ÷ class size⌉; teacher hrs = course hours × cohorts; teacher FTE = (hrs ÷ 12) ÷ hrs-per-month.
+    Teacher & admin FTE from the Yearly Budget intake plan for ${FC_YEARS.includes(st.ybYear)?st.ybYear:FC_YEARS[0]}. Cohorts = ⌈students ÷ class size⌉; teacher hrs = course hours × cohorts; teacher FTE = (hrs ÷ 12) ÷ hrs-per-month.
   </div>
   <div class="kpi-grid">
-    ${kpi("Total students",Math.round(T.stu),"var(--text-accent)","2026 plan")}
+    ${kpi("Total students",Math.round(T.stu),"var(--text-accent)",(FC_YEARS.includes(st.ybYear)?st.ybYear:FC_YEARS[0])+" plan")}
     ${kpi("Teaching FTE",T.teachFTE.toFixed(1),"var(--text-primary)",Math.round(T.teachHrs).toLocaleString()+" annual hrs")}
     ${kpi("Admin FTE",T.adminFTE.toFixed(2),"var(--text-primary)",Math.round(T.adminHrs)+" annual hrs")}
     ${kpi("Total FTE",(T.teachFTE+T.adminFTE).toFixed(1),"var(--text-success)","teaching + admin")}
@@ -2669,14 +2744,14 @@ function opRenderBreakeven(st){
   </div>`;
 }
 function opRenderCompetitor(st){
-  const rows=st.fx.courses.filter(c=>c.f>0).map((c)=>{
-    const idx=st.fx.courses.indexOf(c);
-    const comp=st.op.comp[idx]||[null,null,null];
+  const rows=COURSES.filter(c=>priceOfCourse(c)>0).map((c)=>{
+    const fee=priceOfCourse(c);
+    const comp=st.op.comp[c.name]||[null,null,null];
     const nums=comp.filter(v=>typeof v==="number"&&v>0);
     const avg=nums.length?nums.reduce((a,b)=>a+b,0)/nums.length:null;
-    const gap=avg!=null?c.f-avg:null;
+    const gap=avg!=null?fee-avg:null;
     const gapPct=avg?gap/avg:null;
-    return {idx,name:c.n,fee:c.f,comp,avg,gap,gapPct};
+    return {idx:c.name,name:c.name,fee,comp,avg,gap,gapPct};
   });
   return `<div class="card">
     <div class="card-hdr"><div class="card-title">Competitor benchmarking</div></div>
@@ -2698,9 +2773,9 @@ function drawFteChart(){
   if(typeof d3==="undefined")return chartFallback(el);
   const {rows}=opManpower(ST);
   const cats={};
-  rows.forEach(r=>{const c=(FC_SEED.find(s=>s.n===r.name)||{}).g||"Other";cats[c]=(cats[c]||0)+r.teachFTE;});
+  rows.forEach(r=>{const c=r.group||"Other";cats[c]=(cats[c]||0)+r.teachFTE;});
   const data=Object.entries(cats).map(([k,v])=>({k,v}));
-  if(!data.length){el.innerHTML='<div class="chart-fallback">Add students in the Forecast plan to see FTE.</div>';return;}
+  if(!data.length){el.innerHTML='<div class="chart-fallback">Add budget intakes in the Yearly Budget to see FTE.</div>';return;}
   const width=el.clientWidth||600,height=220,margin={top:10,right:16,bottom:24,left:130};
   const innerW=Math.max(width-margin.left-margin.right,100),innerH=height-margin.top-margin.bottom;
   const svg=d3.select(el).append("svg").attr("width",width).attr("height",height);
@@ -2718,7 +2793,7 @@ function bindOperatingEvents(){
   document.querySelectorAll("[data-opmp]").forEach(inp=>inp.addEventListener("change",e=>{ST.op.mp[e.currentTarget.dataset.opmp]=parseFloat(e.currentTarget.value)||0;save_render();}));
   document.querySelectorAll("[data-opbe]").forEach(inp=>inp.addEventListener("change",e=>{ST.op[e.currentTarget.dataset.opbe]=parseFloat(e.currentTarget.value)||0;save_render();}));
   document.querySelectorAll("[data-opcomp]").forEach(inp=>inp.addEventListener("change",e=>{
-    const idx=+e.currentTarget.dataset.opcomp,ci=+e.currentTarget.dataset.ci;
+    const idx=e.currentTarget.dataset.opcomp,ci=+e.currentTarget.dataset.ci;
     if(!ST.op.comp[idx])ST.op.comp[idx]=[null,null,null];
     const v=e.currentTarget.value===""?null:(parseFloat(e.currentTarget.value)||0);
     ST.op.comp[idx][ci]=v;save_render();
@@ -2981,16 +3056,15 @@ function bindForecastEvents(){
   const save_render=()=>{saveToStorage();render();};
   document.querySelectorAll("[data-fctab]").forEach(b=>b.addEventListener("click",e=>{ST.fx.tab=e.currentTarget.dataset.fctab;save_render();}));
   document.querySelectorAll("[data-fcscen]").forEach(b=>b.addEventListener("click",e=>{ST.fx.scenario=e.currentTarget.dataset.fcscen;save_render();}));
-  document.querySelectorAll("[data-fcstu]").forEach(inp=>inp.addEventListener("change",e=>{
-    const ci=+e.currentTarget.dataset.fcstu,yi=+e.currentTarget.dataset.yi;
-    ST.fx.courses[ci].s[yi]=Math.max(0,parseFloat(e.currentTarget.value)||0);save_render();
-  }));
-  document.querySelectorAll("[data-fcfee]").forEach(inp=>inp.addEventListener("change",e=>{
-    const ci=+e.currentTarget.dataset.fcfee;ST.fx.courses[ci].f=Math.max(0,parseFloat(e.currentTarget.value)||0);save_render();
+  document.querySelectorAll("[data-fcgoto]").forEach(b=>b.addEventListener("click",e=>{
+    const dest=e.currentTarget.dataset.fcgoto;
+    if(dest==="pricelist"){ST.module="simulator";ST.tab="pricelist";}
+    else ST.module=dest;
+    save_render();
   }));
   document.querySelectorAll("[data-fcexp]").forEach(inp=>inp.addEventListener("change",e=>{
-    const kb=e.currentTarget.dataset.fcexp,li=+e.currentTarget.dataset.li,yi=+e.currentTarget.dataset.yi;
-    ST.fx.exp[kb][li].v[yi]=parseFloat(e.currentTarget.value)||0;save_render();
+    const kb=e.currentTarget.dataset.fcexp,gi=+e.currentTarget.dataset.gi,li=+e.currentTarget.dataset.li,yi=+e.currentTarget.dataset.yi;
+    ST.fx.exp[kb][gi].items[li].v[yi]=parseFloat(e.currentTarget.value)||0;save_render();
   }));
 }
 
@@ -3272,9 +3346,41 @@ function bindEvents(s){
   document.querySelectorAll("input[name='fcSchol']").forEach(r=>r.addEventListener("change",e=>{ST.fcSchol=parseInt(e.target.value);save_render();}));
   document.querySelectorAll("[data-pci]").forEach(inp=>inp.addEventListener("change",e=>{
     const i=parseInt(e.target.dataset.pci),field=e.target.dataset.pf;
-    COURSES[i][field]=parseFloat(e.target.value)||0;save_render();
+    if(field==="name"||field==="cat"){
+      const v=e.target.value.trim();
+      if(v)COURSES[i][field]=v;
+    }else{
+      COURSES[i][field]=parseFloat(e.target.value)||0;
+    }
+    save_render();
   }));
-  const rp=document.getElementById("resetPrices");if(rp)rp.addEventListener("click",()=>{DEFAULTS.forEach((d,i)=>{COURSES[i].fee=d.fee;COURSES[i].mat=d.mat;COURSES[i].exam=d.exam;COURSES[i].admin=d.admin;COURSES[i].hrs=d.hrs;COURSES[i].mo=d.mo;});save_render();});
+  const addC=document.getElementById("addCourse");if(addC)addC.addEventListener("click",()=>{
+    const lastCat=COURSES.length?COURSES[COURSES.length-1].cat:"New Category";
+    COURSES.push({cat:lastCat,name:"New Course "+(COURSES.length+1),abbr:"NEW",hrs:0,mo:1,app:400,fee:0,mat:0,exam:0,admin:0});
+    save_render();
+  });
+  document.querySelectorAll("[data-delcourse]").forEach(btn=>btn.addEventListener("click",e=>{
+    const i=parseInt(e.currentTarget.dataset.delcourse);
+    const c=COURSES[i];if(!c)return;
+    const nIntakes=ST.intakes.filter(k=>k.ci===i).length;
+    if(!confirm(`Delete "${c.name}"?${nIntakes?`\n\nThis also removes its ${nIntakes} Yearly Budget intake(s).`:""}`))return;
+    COURSES.splice(i,1);
+    /* keep intake links pointing at the right courses after the index shift */
+    ST.intakes=ST.intakes.filter(k=>k.ci!==i).map(k=>k.ci>i?{...k,ci:k.ci-1}:k);
+    if(ST.ci>=COURSES.length)ST.ci=0;
+    if(ST.fcCi>=COURSES.length)ST.fcCi=0;
+    if(ST.ybForm.ci>=COURSES.length)ST.ybForm.ci=0;
+    save_render();
+  }));
+  const rp=document.getElementById("resetPrices");if(rp)rp.addEventListener("click",()=>{
+    if(!confirm("Reset the entire course catalog to the built-in defaults?\n\nAdded courses will be removed and renamed/edited courses restored. Yearly Budget intakes are kept but may point at different courses if you added/deleted rows."))return;
+    COURSES.length=0;DEFAULTS.forEach(d=>COURSES.push({...d}));
+    ST.intakes=ST.intakes.filter(k=>k.ci<COURSES.length);
+    if(ST.ci>=COURSES.length)ST.ci=0;
+    if(ST.fcCi>=COURSES.length)ST.fcCi=0;
+    if(ST.ybForm.ci>=COURSES.length)ST.ybForm.ci=0;
+    save_render();
+  });
   document.getElementById("exportBtn").addEventListener("click",exportData);
   document.getElementById("importFile").addEventListener("change",e=>{if(e.target.files[0])importData(e.target.files[0]);});
 
