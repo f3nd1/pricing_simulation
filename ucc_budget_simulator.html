@@ -454,6 +454,22 @@ const INIT_OH=[
   {label:"Student welfare / events",cost:500},
   {label:"Others",cost:0},
 ];
+/* ── Forecast module seed (from UCC Master Budget Model, Base scenario) ── */
+const FC_YEARS=[2026,2027,2028,2029,2030,2031];
+const FC_SEED=[{"n":"Certificate in English Level 1 (FT)","g":"Full Qualification","m":"Manual","f":2830,"s":[5,0,0,0,0,0]},{"n":"Certificate in English Level 2 (FT)","g":"Full Qualification","m":"Flat","f":2830,"s":[0,0,0,0,0,0]},{"n":"Certificate in English Level 3 (FT)","g":"Full Qualification","m":"Growth","f":2830,"s":[0,0,0,0,0,0]},{"n":"Certificate in English Level 1 (PT)","g":"Full Qualification","m":"Growth","f":1838,"s":[0,0,0,0,0,0]},{"n":"Certificate in English Level 2 (PT)","g":"Full Qualification","m":"Growth","f":1838,"s":[0,0,0,0,0,0]},{"n":"Certificate in English Level 3 (PT)","g":"Full Qualification","m":"Growth","f":1838,"s":[0,0,0,0,0,0]},{"n":"Certificate in English Language (FT)","g":"Full Qualification","m":"Manual","f":5610,"s":[0,5,5,5,5,5]},{"n":"IELTS Preparatory Course","g":"Full Qualification","m":"Flat","f":7690,"s":[30,30,30,30,30,30]},{"n":"AEIS Primary 2","g":"Full Qualification","m":"Growth","f":10250,"s":[0,0,0,0,0,0]},{"n":"AEIS Primary 3","g":"Full Qualification","m":"Growth","f":10250,"s":[0,0,0,0,0,0]},{"n":"AEIS Primary 4","g":"Full Qualification","m":"Growth","f":10250,"s":[0,0,0,0,0,0]},{"n":"AEIS Primary 5","g":"Full Qualification","m":"Growth","f":10250,"s":[0,0,0,0,0,0]},{"n":"AEIS Secondary 1","g":"Full Qualification","m":"Growth","f":10250,"s":[0,0,0,0,0,0]},{"n":"AEIS Secondary 2","g":"Full Qualification","m":"Growth","f":10250,"s":[0,0,0,0,0,0]},{"n":"AEIS Secondary 3","g":"Full Qualification","m":"Growth","f":10250,"s":[0,0,0,0,0,0]},{"n":"GCE O-Level Preparatory","g":"Full Qualification","m":"Manual","f":42350,"s":[0,0,0,0,0,0]},{"n":"GCE A-Level Preparatory","g":"Full Qualification","m":"Manual","f":47850,"s":[10,5,10,15,15,15]},{"n":"Certificate in General Management","g":"Full Qualification","m":"Manual","f":8670,"s":[5,10,10,10,10,10]},{"n":"Cert. General Management (E-Learning)","g":"Full Qualification","m":"Growth","f":8670,"s":[0,0,0,0,0,0]},{"n":"Cert. General Management (Mandarin)","g":"Full Qualification","m":"Growth","f":8670,"s":[0,0,0,0,0,0]},{"n":"Cert. General Management (Mandarin E-Learn)","g":"Full Qualification","m":"Growth","f":8670,"s":[0,0,0,0,0,0]},{"n":"Diploma in Business Management","g":"Full Qualification","m":"Manual","f":9150,"s":[20,20,30,30,30,30]},{"n":"Diploma in Business Management (E-Learning)","g":"Full Qualification","m":"Growth","f":9150,"s":[0,0,0,0,0,0]},{"n":"Diploma in Business Management (Mandarin)","g":"Full Qualification","m":"Growth","f":9150,"s":[0,0,0,0,0,0]},{"n":"Dip. Business Mgmt (Mandarin E-Learning)","g":"Full Qualification","m":"Growth","f":9150,"s":[0,0,0,0,0,0]},{"n":"Advanced Diploma in Business Management","g":"Full Qualification","m":"Manual","f":9690,"s":[10,10,15,15,15,15]},{"n":"Postgraduate Certificate in Business Admin","g":"Full Qualification","m":"Growth","f":7550,"s":[0,0,0,0,0,0]},{"n":"Postgraduate Cert. Business Admin (Mandarin)","g":"Full Qualification","m":"Growth","f":7550,"s":[0,0,0,0,0,0]},{"n":"Postgraduate Diploma in Business Admin","g":"Full Qualification","m":"Manual","f":14550,"s":[0,10,10,15,15,20]},{"n":"Postgraduate Dip. Business Admin (Mandarin)","g":"Full Qualification","m":"Growth","f":14550,"s":[0,0,0,0,0,0]},{"n":"Diploma in Applied Artificial Intelligence","g":"Full Qualification","m":"Manual","f":12900,"s":[5,5,10,10,15,15]},{"n":"Advanced Diploma in Applied AI","g":"Full Qualification","m":"Manual","f":13700,"s":[0,8,8,8,10,10]},{"n":"Diploma in Tourism and Hospitality Management","g":"Full Qualification","m":"Manual","f":7050,"s":[0,0,0,0,0,0]},{"n":"Dip. Tourism & Hospitality (E-Learning)","g":"Full Qualification","m":"Growth","f":7050,"s":[0,0,0,0,0,0]},{"n":"Dip. Tourism & Hospitality (Mandarin)","g":"Full Qualification","m":"Growth","f":7050,"s":[0,0,0,0,0,0]},{"n":"Dip. Tourism & Hospitality (Mandarin E-Learn)","g":"Full Qualification","m":"Growth","f":7050,"s":[0,0,0,0,0,0]},{"n":"Higher Diploma (Tourism)","g":"Full Qualification","m":"Manual","f":7050,"s":[0,0,0,0,0,0]},{"n":"Bachelor’s Degree (Artificial Intelligence)","g":"Full Qualification","m":"Manual","f":18250,"s":[0,0,10,10,10,10]},{"n":"Bachelor’s Degree (Business)","g":"Full Qualification","m":"Manual","f":15750,"s":[0,0,10,10,15,15]},{"n":"Bachelor’s Degree (Hospitality)","g":"Full Qualification","m":"Manual","f":15750,"s":[0,0,0,0,0,0]},{"n":"Master’s Degree (MBA)","g":"Full Qualification","m":"Manual","f":24750,"s":[0,40,50,50,50,50]},{"n":"Master’s Degree (MSc) AI","g":"Full Qualification","m":"Manual","f":25750,"s":[0,0,0,0,0,0]},{"n":"Master’s Degree (MSc) Cybersecurity","g":"Full Qualification","m":"Manual","f":25750,"s":[0,0,0,0,0,0]},{"n":"Certificate in English Level 1 (PT) — Short","g":"Short Course","m":"Flat","f":1950,"s":[15,15,15,15,15,15]},{"n":"Certificate in English Level 2 (PT) — Short","g":"Short Course","m":"Flat","f":2550,"s":[15,15,15,15,15,15]},{"n":"Certificate in English Level 3 (PT) — Short","g":"Short Course","m":"Flat","f":1350,"s":[15,15,15,15,15,15]},{"n":"Package Price 1+2 (-15%)","g":"Short Course","m":"Flat","f":1950,"s":[10,10,10,10,10,10]},{"n":"Package Price 2+3 (-15%)","g":"Short Course","m":"Flat","f":1950,"s":[10,10,10,10,10,10]},{"n":"Japanese Tour Group","g":"Short Course","m":"Flat","f":1074,"s":[3,3,3,3,3,3]}];
+const FC_EXP={cogs:[
+ {label:"Agent commission",v:[486872,525745,843025,948325,1012225,1032625]},
+ {label:"Institutional fee",v:[18000,0,0,0,0,0]},
+ {label:"Temp academic salary",v:[396720,466680,664680,664680,664680,664680]}],
+ opex:[
+  {label:"Administrative",v:[74580,91773,94526,97362,100283,103291]},
+  {label:"Marketing",v:[84000,108768,141821,185965,244955,323821]},
+  {label:"Operating",v:[235440,335203,402548,491334,506074,521256]},
+  {label:"Other / Depreciation",v:[16800,17304,17823,18358,18909,19476]},
+  {label:"Staff",v:[961440,1205347,1350229,1601182,1797769,2188044]}]};
+/* Scenario presets: fee = annual fee growth; vol = extra volume growth vs plan (Base=0 reconciles Excel) */
+const FC_SCENARIOS={Base:{fee:0.05,vol:0},Best:{fee:0.07,vol:0.12},Worst:{fee:0.03,vol:-0.18}};
+
 const ST={
   ci:7,disc:0,agent:40,uni:0,tf:70,cp:100,plan:9,
   act:40,aDisc:0,aAgent:40,aUni:0,
@@ -467,17 +483,20 @@ const ST={
   module:"simulator",navOpen:false,
   intakes:[],ybView:"monthly",ybYear:new Date().getFullYear(),ybCat:"All",
   ybForm:{kind:"budget",ci:0,month:0,year:new Date().getFullYear(),students:15},
-  cloudOpen:false,sbUrl:"",sbKey:"",sbStatus:"",sbStatusOk:null,sbSaves:[],sbLoading:false,sbSaveName:""
+  cloudOpen:false,sbUrl:"",sbKey:"",sbStatus:"",sbStatusOk:null,sbSaves:[],sbLoading:false,sbSaveName:"",
+  fx:{tab:"pnl",scenario:"Base",scen:JSON.parse(JSON.stringify(FC_SCENARIOS)),
+      courses:FC_SEED.map(c=>({...c,s:c.s.slice()})),
+      exp:JSON.parse(JSON.stringify(FC_EXP))}
 };
 const sgd=n=>{const a=Math.abs(Math.round(n));const s="$"+a.toLocaleString();return n<0?"("+s+")":s;};
 const fp=n=>(n*100).toFixed(1)+"%";
-const LS_KEY="ucc_sim_v3";
+const LS_KEY="ucc_sim_v4";
 
 function saveToStorage(){
   try{
     const prices=COURSES.map(c=>({fee:c.fee,mat:c.mat,exam:c.exam,admin:c.admin,hrs:c.hrs,mo:c.mo}));
-    const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey}=ST;
-    localStorage.setItem(LS_KEY,JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey}));
+    const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx}=ST;
+    localStorage.setItem(LS_KEY,JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx}));
   }catch(e){}
 }
 function loadFromStorage(){
@@ -510,6 +529,11 @@ function loadFromStorage(){
     if(d.ybCat)ST.ybCat=d.ybCat;
     if(d.sbUrl)ST.sbUrl=d.sbUrl;
     if(d.sbKey)ST.sbKey=d.sbKey;
+    if(d.fx&&d.fx.courses&&Array.isArray(d.fx.courses)){
+      ST.fx={...ST.fx,...d.fx};
+      if(!ST.fx.scen)ST.fx.scen=JSON.parse(JSON.stringify(FC_SCENARIOS));
+      if(!ST.fx.exp)ST.fx.exp=JSON.parse(JSON.stringify(FC_EXP));
+    }
   }catch(e){}
 }
 function exportData(){
@@ -544,8 +568,8 @@ function importData(file){
 
 function buildFullSnapshot(){
   const prices=COURSES.map(c=>({fee:c.fee,mat:c.mat,exam:c.exam,admin:c.admin,hrs:c.hrs,mo:c.mo}));
-  const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,saved,fcCi,fcSchol,intakes,ybYear,ybCat,ybView}=ST;
-  return{prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,saved,fcCi,fcSchol,intakes,ybYear,ybCat,ybView};
+  const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,saved,fcCi,fcSchol,intakes,ybYear,ybCat,ybView,fx}=ST;
+  return{prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,saved,fcCi,fcSchol,intakes,ybYear,ybCat,ybView,fx};
 }
 function applyFullSnapshot(d){
   if(d.prices&&d.prices.length===COURSES.length){
@@ -562,6 +586,7 @@ function applyFullSnapshot(d){
   if(Array.isArray(d.intakes))ST.intakes=d.intakes.map(ik=>({kind:"budget",...ik}));
   if(d.ybCat)ST.ybCat=d.ybCat;
   if(d.ybView)ST.ybView=d.ybView;
+  if(d.fx&&Array.isArray(d.fx.courses))ST.fx={...ST.fx,...d.fx};
 }
 
 function sbHeaders(){
@@ -2182,7 +2207,7 @@ async function sendToAI(userMsg,s,st){
 const MODULES=[
   {key:"simulator",icon:"📘",label:"Course Simulator",desc:"Single-course pricing & breakeven"},
   {key:"yearlybudget",icon:"📅",label:"Yearly Budget",desc:"Budget vs actual, all courses"},
-  {key:"cashflow",icon:"💵",label:"Cash Flow Forecast",desc:"Coming soon",soon:true},
+  {key:"forecast",icon:"📈",label:"Forecast & P&L",desc:"5-year revenue, expenses, income statement"},
   {key:"reports",icon:"📊",label:"Board Reports",desc:"Coming soon",soon:true},
 ];
 
@@ -2273,6 +2298,257 @@ function buildCloudModal(){
   </div>`;
 }
 
+/* ═══════════════ FORECAST & P&L MODULE (Phase A) ═══════════════ */
+function fcScen(st){return (st.fx.scen&&st.fx.scen[st.fx.scenario])||FC_SCENARIOS[st.fx.scenario]||FC_SCENARIOS.Base;}
+function fcRevenue(st){
+  const sc=fcScen(st);
+  const rows=st.fx.courses.map(c=>({name:c.n,group:c.g,fee2026:c.f,stu:c.s,
+    rev:FC_YEARS.map((y,i)=>(c.f*Math.pow(1+sc.fee,i))*((c.s[i]||0)*Math.pow(1+sc.vol,i)))}));
+  const sumG=(g)=>FC_YEARS.map((y,i)=>rows.filter(r=>!g||r.group===g).reduce((a,r)=>a+r.rev[i],0));
+  return {rows,total:sumG(null),fullq:sumG("Full Qualification"),short:sumG("Short Course")};
+}
+function fcExpenses(st){
+  const cogs=st.fx.exp.cogs,opex=st.fx.exp.opex;
+  return {cogs,opex,
+    cogsTot:FC_YEARS.map((y,i)=>cogs.reduce((a,l)=>a+(Number(l.v[i])||0),0)),
+    opexTot:FC_YEARS.map((y,i)=>opex.reduce((a,l)=>a+(Number(l.v[i])||0),0))};
+}
+function fcPnl(st){
+  const r=fcRevenue(st),e=fcExpenses(st);
+  const rev=r.total,cogs=e.cogsTot,opex=e.opexTot;
+  return {years:FC_YEARS,rev,cogs,opex,fullq:r.fullq,short:r.short,rrows:r.rows,e,
+    gp:rev.map((v,i)=>v-cogs[i]),
+    net:rev.map((v,i)=>v-cogs[i]-opex[i]),
+    mgn:rev.map((v,i)=>v>0?(v-cogs[i]-opex[i])/v:0)};
+}
+
+function renderForecastModule(st){
+  const fx=st.fx;
+  const tabs=[["pnl","Income Statement"],["revenue","Revenue"],["expenses","Expenses"],["assumptions","Assumptions"],["dashboard","Dashboard"]];
+  const scen=fcScen(st);
+  const p=fcPnl(st);
+  const hdr=`
+  <div class="hdr" style="background:linear-gradient(135deg,#3730a3 0%,#6366f1 100%)">
+    <div class="hdr-brand"><div class="hdr-label" style="color:#c7d2fe">United Ceres College</div><div class="hdr-title">Forecast & P&amp;L — 2026–2031</div></div>
+    <div class="hdr-actions" style="align-items:center">
+      <span style="font-size:11px;color:#e0e7ff">Scenario</span>
+      ${["Base","Best","Worst"].map(s=>`<button class="hdr-btn${fx.scenario===s?" primary":""}" data-fcscen="${s}">${s}</button>`).join("")}
+    </div>
+  </div>
+  <div class="subhdr" style="gap:16px">
+    <div style="font-size:11px;color:var(--text-muted)">Fee growth/yr <strong style="color:var(--text-primary)">${fp(scen.fee)}</strong></div>
+    <div style="font-size:11px;color:var(--text-muted)">Volume vs plan/yr <strong style="color:var(--text-primary)">${fp(scen.vol)}</strong></div>
+    <div style="margin-left:auto;font-size:11px;color:var(--text-muted)">2026 net ${sgd(p.net[0])} · 2031 net ${sgd(p.net[5])}</div>
+  </div>`;
+  const body=`<div class="module-body">
+    <div class="tabs-wrap"><div class="tabs">${tabs.map(([k,l])=>`<button class="tab${fx.tab===k?" on":""}" data-fctab="${k}">${l}</button>`).join("")}</div></div>
+    <div id="fccontent">${
+      fx.tab==="pnl"?fcRenderPnl(st,p):
+      fx.tab==="revenue"?fcRenderRevenue(st,p):
+      fx.tab==="expenses"?fcRenderExpenses(st,p):
+      fx.tab==="assumptions"?fcRenderAssumptions(st):
+      fcRenderDashboard(st,p)
+    }</div>
+  </div>`;
+  return hdr+body;
+}
+
+function fcYearCols(){return FC_YEARS.map(y=>`<th style="text-align:right">${y}</th>`).join("");}
+function fcMoneyRow(label,arr,cls,strong){
+  return `<tr>${strong?`<td style="padding:5px 8px;font-weight:700">${label}</td>`:`<td style="padding:5px 8px">${label}</td>`}
+    ${arr.map(v=>`<td style="padding:5px 8px;text-align:right;${strong?"font-weight:700;":""}${cls==="net"?`color:${v>=0?"var(--text-success)":"var(--text-danger)"}`:cls==="muted"?"color:var(--text-muted)":""}">${cls==="pct"?fp(v):sgd(v)}</td>`).join("")}</tr>`;
+}
+
+function fcRenderPnl(st,p){
+  return `
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">Forecasted Income Statement</div><span class="card-badge" style="background:var(--blue-100);color:var(--blue-700)">${st.fx.scenario} scenario</span></div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Revenue is driven live by the Assumptions grid × scenario. Expenses are an editable 6-year schedule (seeded from the master budget). Seeded values reconcile to the Excel's Base case.</div>
+    <div class="tbl-scroll"><table class="cptbl" style="min-width:640px">
+      <thead><tr><th>Line</th>${fcYearCols()}</tr></thead>
+      <tbody>
+        ${fcMoneyRow("Revenue",p.rev,"",true)}
+        ${fcMoneyRow("&nbsp;&nbsp;Full Qualification",p.fullq,"muted")}
+        ${fcMoneyRow("&nbsp;&nbsp;Short Courses",p.short,"muted")}
+        ${fcMoneyRow("Less: COGS",p.cogs.map(v=>-v),"muted")}
+        ${fcMoneyRow("Gross Profit",p.gp,"",true)}
+        ${fcMoneyRow("Less: OPEX",p.opex.map(v=>-v),"muted")}
+        ${fcMoneyRow("Net Profit / (Loss)",p.net,"net",true)}
+        ${fcMoneyRow("Net Margin",p.mgn,"pct")}
+      </tbody>
+    </table></div>
+    <div id="pnlChart" style="position:relative;width:100%;height:280px;margin-top:12px"></div>
+  </div>`;
+}
+
+function fcRenderRevenue(st,p){
+  const cats=["Full Qualification","Short Course"];
+  const rowsHtml=cats.map(cat=>{
+    const rs=p.rrows.map((r,i)=>({r,i})).filter(x=>x.r.group===cat&&x.r.stu.some(v=>v>0));
+    if(!rs.length)return "";
+    return `<tr><td colspan="7" style="padding:7px 8px;font-weight:700;background:var(--surface-1);font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)">${cat}</td></tr>`+
+      rs.map(({r})=>`<tr>
+        <td style="padding:4px 8px;max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.name}">${r.name}</td>
+        ${r.rev.map(v=>`<td style="padding:4px 8px;text-align:right;color:${v>0?"var(--text-secondary)":"var(--gray-300)"}">${v>0?sgd(v):"—"}</td>`).join("")}
+      </tr>`).join("");
+  }).join("");
+  return `<div class="card">
+    <div class="card-hdr"><div class="card-title">Revenue Forecast by course</div><span class="card-badge" style="background:var(--blue-100);color:var(--blue-700)">${sgd(p.rev[0])} in 2026</span></div>
+    <div class="tbl-scroll"><table class="cptbl" style="min-width:640px">
+      <thead><tr><th>Course</th>${fcYearCols()}</tr></thead>
+      <tbody>
+        ${rowsHtml}
+        ${fcMoneyRow("Full Qualification subtotal",p.fullq,"muted",true)}
+        ${fcMoneyRow("Short Course subtotal",p.short,"muted",true)}
+        ${fcMoneyRow("TOTAL REVENUE",p.rev,"",true)}
+      </tbody>
+    </table></div>
+  </div>`;
+}
+
+function fcRenderExpenses(st,p){
+  const grp=(title,lines,keybase)=>`
+    <tr><td colspan="7" style="padding:7px 8px;font-weight:700;background:var(--surface-1);font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)">${title}</td></tr>
+    ${lines.map((l,li)=>`<tr>
+      <td style="padding:3px 8px">${l.label}</td>
+      ${l.v.map((v,yi)=>`<td style="padding:2px 4px;text-align:right"><input type="number" class="plinp" data-fcexp="${keybase}" data-li="${li}" data-yi="${yi}" value="${Math.round(v)}" step="1000" style="width:78px;text-align:right"></td>`).join("")}
+    </tr>`).join("")}`;
+  return `<div class="card">
+    <div class="card-hdr"><div class="card-title">Expense Forecast (editable)</div><span class="card-badge" style="background:var(--red-100);color:var(--red-700)">${sgd(p.cogs[0]+p.opex[0])} in 2026</span></div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">COGS + OPEX by year, seeded from the master budget. Edit any cell — the Income Statement updates live.</div>
+    <div class="tbl-scroll"><table class="cptbl" style="min-width:660px">
+      <thead><tr><th>Account</th>${fcYearCols()}</tr></thead>
+      <tbody>
+        ${grp("Cost of Goods Sold",st.fx.exp.cogs,"cogs")}
+        ${fcMoneyRow("Total COGS",p.cogs,"muted",true)}
+        ${grp("Operating Expenses",st.fx.exp.opex,"opex")}
+        ${fcMoneyRow("Total OPEX",p.opex,"muted",true)}
+        ${fcMoneyRow("TOTAL EXPENSES",p.cogs.map((v,i)=>v+p.opex[i]),"",true)}
+      </tbody>
+    </table></div>
+  </div>`;
+}
+
+function fcRenderAssumptions(st){
+  const cats=["Full Qualification","Short Course"];
+  const rows=cats.map(cat=>`
+    <tr><td colspan="8" style="padding:7px 8px;font-weight:700;background:var(--surface-1);font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)">${cat}</td></tr>
+    ${st.fx.courses.map((c,ci)=>c.g!==cat?"":`<tr>
+      <td style="padding:3px 8px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${c.n}">${c.n}</td>
+      <td style="padding:2px 4px;text-align:right"><input type="number" class="plinp sm" data-fcfee="${ci}" value="${c.f}" step="10" style="width:64px;text-align:right" title="Total fee / student (2026)"></td>
+      ${c.s.map((v,yi)=>`<td style="padding:2px 4px;text-align:right"><input type="number" class="plinp sm" data-fcstu="${ci}" data-yi="${yi}" value="${v}" min="0" style="width:44px;text-align:right"></td>`).join("")}
+    </tr>`).join("")}`).join("");
+  return `<div class="card">
+    <div class="card-hdr"><div class="card-title">Enrolment & fee assumptions</div></div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Planned students per course per year + 2026 fee/student (all-in: course+material+exam+admin). Fees grow by the scenario's fee-growth rate; volume by the scenario's volume adjustment.</div>
+    <div class="tbl-scroll" style="max-height:520px;overflow-y:auto"><table class="cptbl" style="min-width:560px">
+      <thead><tr><th>Course</th><th style="text-align:right">Fee/stu</th>${FC_YEARS.map(y=>`<th style="text-align:right">${y}</th>`).join("")}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+  </div>`;
+}
+
+function fcRenderDashboard(st,p){
+  const kpi=(lbl,val,col,sub)=>`<div class="kpi-card"><div class="kpi-card-lbl">${lbl}</div><div class="kpi-card-val" style="color:${col}">${val}</div><div class="kpi-card-sub">${sub||"&nbsp;"}</div></div>`;
+  const net26=p.net[0],net31=p.net[5];
+  const netAt=(scn)=>fcPnl({...st,fx:{...st.fx,scenario:scn}}).net[5];
+  const swing={base:netAt("Base"),best:netAt("Best"),worst:netAt("Worst")};
+  const sd=(k)=>{const s=fcScen({...st,fx:{...st.fx,scenario:k}});return `${fp(s.fee)} fee, ${fp(s.vol)} volume/yr`;};
+  return `
+  <div class="kpi-grid">
+    ${kpi("Revenue 2026",sgd(p.rev[0]),"var(--text-accent)",`grows to ${sgd(p.rev[5])} by 2031`)}
+    ${kpi("Net profit 2026",sgd(net26),net26>=0?"var(--text-success)":"var(--text-danger)",fp(p.mgn[0])+" margin")}
+    ${kpi("Net profit 2031",sgd(net31),net31>=0?"var(--text-success)":"var(--text-danger)",fp(p.mgn[5])+" margin")}
+    ${kpi("Breakeven year",(()=>{const i=p.net.findIndex(v=>v>=0);return i<0?"beyond 2031":String(FC_YEARS[i]);})(),"var(--text-primary)","first profitable year")}
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">Revenue vs Net Profit</div></div>
+      ${chartLegend([{color:"#6366f1",label:"Revenue"},{color:"#16a34a",label:"Net profit"},{color:"#dc2626",label:"Net loss"}])}
+      <div id="pnlChart" style="position:relative;width:100%;height:260px"></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">Net margin trend</div></div>
+      <div id="marginChart" style="position:relative;width:100%;height:260px"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">Scenario swing — 2031 net profit</div></div>
+    <div class="g3">
+      ${kpi("Worst case",sgd(swing.worst),swing.worst>=0?"var(--text-success)":"var(--text-danger)",sd("Worst"))}
+      ${kpi("Base case",sgd(swing.base),swing.base>=0?"var(--text-success)":"var(--text-danger)",sd("Base"))}
+      ${kpi("Best case",sgd(swing.best),swing.best>=0?"var(--text-success)":"var(--text-danger)",sd("Best"))}
+    </div>
+  </div>`;
+}
+
+function drawPnlChart(p){
+  const el=document.getElementById("pnlChart");if(!el)return;el.innerHTML="";
+  if(typeof d3==="undefined")return chartFallback(el);
+  const width=el.clientWidth||600,height=el===document.getElementById("pnlChart")?(el.style.height?parseInt(el.style.height):280):280;
+  const margin={top:16,right:16,bottom:30,left:64},innerW=Math.max(width-margin.left-margin.right,100),innerH=height-margin.top-margin.bottom;
+  const svg=d3.select(el).append("svg").attr("width",width).attr("height",height);
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
+  const x0=d3.scaleBand().domain(p.years.map((_,i)=>i)).range([0,innerW]).padding(0.25);
+  const x1=d3.scaleBand().domain(["rev","net"]).range([0,x0.bandwidth()]).padding(0.1);
+  const maxV=Math.max(1,...p.rev,...p.net.map(Math.abs));
+  const y=d3.scaleLinear().domain([Math.min(0,...p.net),maxV]).nice().range([innerH,0]);
+  const zeroY=y(0);
+  g.append("g").call(d3.axisLeft(y).ticks(5).tickSize(-innerW).tickFormat("")).call(s=>s.select(".domain").remove()).selectAll("line").attr("stroke","var(--border)").attr("stroke-dasharray","2,3");
+  const tip=d3.select(el).append("div").attr("class","whatif-chart-tip");
+  p.years.forEach((yr,i)=>{
+    [{k:"rev",v:p.rev[i],c:"#6366f1"},{k:"net",v:p.net[i],c:p.net[i]>=0?"#16a34a":"#dc2626"}].forEach(b=>{
+      g.append("rect").attr("x",x0(i)+x1(b.k)).attr("width",x1.bandwidth())
+        .attr("y",b.v>=0?y(b.v):zeroY).attr("height",Math.max(Math.abs(y(0)-y(b.v)),1)).attr("fill",b.c).attr("rx",2)
+        .on("mousemove",function(ev){tip.style("opacity",1).style("left",(ev.offsetX+10)+"px").style("top",(ev.offsetY-24)+"px").html(`<strong>${yr}</strong><br>${b.k==="rev"?"Revenue":"Net profit"}: ${sgd(b.v)}`);})
+        .on("mouseleave",()=>tip.style("opacity",0));
+    });
+  });
+  g.append("line").attr("x1",0).attr("x2",innerW).attr("y1",zeroY).attr("y2",zeroY).attr("stroke","var(--border-strong)");
+  g.append("g").attr("transform",`translate(0,${innerH})`).call(d3.axisBottom(x0).tickFormat(i=>p.years[i]).tickSize(0)).selectAll("text").attr("font-size",10).attr("fill","var(--text-muted)");
+  g.append("g").call(d3.axisLeft(y).ticks(5).tickFormat(d=>"$"+d3.format(",.0f")(d))).selectAll("text").attr("font-size",9).attr("fill","var(--text-muted)");
+  g.selectAll(".domain,.tick line").attr("stroke","var(--border-strong)");
+}
+
+function drawMarginChart(p){
+  const el=document.getElementById("marginChart");if(!el)return;el.innerHTML="";
+  if(typeof d3==="undefined")return chartFallback(el);
+  const width=el.clientWidth||600,height=260,margin={top:16,right:16,bottom:30,left:52};
+  const innerW=Math.max(width-margin.left-margin.right,100),innerH=height-margin.top-margin.bottom;
+  const svg=d3.select(el).append("svg").attr("width",width).attr("height",height);
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
+  const x=d3.scalePoint().domain(p.years.map((_,i)=>i)).range([0,innerW]).padding(0.5);
+  const y=d3.scaleLinear().domain([Math.min(0,...p.mgn),Math.max(0.1,...p.mgn)]).nice().range([innerH,0]);
+  g.append("g").call(d3.axisLeft(y).ticks(5).tickSize(-innerW).tickFormat("")).call(s=>s.select(".domain").remove()).selectAll("line").attr("stroke","var(--border)").attr("stroke-dasharray","2,3");
+  g.append("line").attr("x1",0).attr("x2",innerW).attr("y1",y(0)).attr("y2",y(0)).attr("stroke","var(--border-strong)");
+  const line=d3.line().x((d,i)=>x(i)).y(d=>y(d));
+  g.append("path").datum(p.mgn).attr("fill","none").attr("stroke","#6366f1").attr("stroke-width",2.5).attr("d",line);
+  const tip=d3.select(el).append("div").attr("class","whatif-chart-tip");
+  p.mgn.forEach((m,i)=>g.append("circle").attr("cx",x(i)).attr("cy",y(m)).attr("r",4).attr("fill",m>=0?"#16a34a":"#dc2626").attr("stroke","#fff").attr("stroke-width",1.5)
+    .on("mousemove",function(ev){tip.style("opacity",1).style("left",(ev.offsetX+10)+"px").style("top",(ev.offsetY-24)+"px").html(`<strong>${p.years[i]}</strong><br>Margin: ${fp(m)}<br>Net: ${sgd(p.net[i])}`);})
+    .on("mouseleave",()=>tip.style("opacity",0)));
+  g.append("g").attr("transform",`translate(0,${innerH})`).call(d3.axisBottom(x).tickFormat(i=>p.years[i])).selectAll("text").attr("font-size",10).attr("fill","var(--text-muted)");
+  g.append("g").call(d3.axisLeft(y).ticks(5).tickFormat(d=>fp(d))).selectAll("text").attr("font-size",9).attr("fill","var(--text-muted)");
+  g.selectAll(".domain,.tick line").attr("stroke","var(--border-strong)");
+}
+
+function bindForecastEvents(){
+  const save_render=()=>{saveToStorage();render();};
+  document.querySelectorAll("[data-fctab]").forEach(b=>b.addEventListener("click",e=>{ST.fx.tab=e.currentTarget.dataset.fctab;save_render();}));
+  document.querySelectorAll("[data-fcscen]").forEach(b=>b.addEventListener("click",e=>{ST.fx.scenario=e.currentTarget.dataset.fcscen;save_render();}));
+  document.querySelectorAll("[data-fcstu]").forEach(inp=>inp.addEventListener("change",e=>{
+    const ci=+e.currentTarget.dataset.fcstu,yi=+e.currentTarget.dataset.yi;
+    ST.fx.courses[ci].s[yi]=Math.max(0,parseFloat(e.currentTarget.value)||0);save_render();
+  }));
+  document.querySelectorAll("[data-fcfee]").forEach(inp=>inp.addEventListener("change",e=>{
+    const ci=+e.currentTarget.dataset.fcfee;ST.fx.courses[ci].f=Math.max(0,parseFloat(e.currentTarget.value)||0);save_render();
+  }));
+  document.querySelectorAll("[data-fcexp]").forEach(inp=>inp.addEventListener("change",e=>{
+    const kb=e.currentTarget.dataset.fcexp,li=+e.currentTarget.dataset.li,yi=+e.currentTarget.dataset.yi;
+    ST.fx.exp[kb][li].v[yi]=parseFloat(e.currentTarget.value)||0;save_render();
+  }));
+}
+
 function render(){
   if(ST.module==="yearlybudget"){
     document.getElementById("app").innerHTML=buildModuleNav()+renderYearlyBudgetModule(ST);
@@ -2281,6 +2557,15 @@ function render(){
     const ledger=buildPortfolioLedger(ST.intakes,ST,ST.ybCat,"budget");
     const aLedger=buildPortfolioLedger(ST.intakes,ST,ST.ybCat,"actual");
     drawYearlyBudgetChart(portfolioPeriods(ledger,ST.ybView,ST.ybYear),portfolioPeriods(aLedger,ST.ybView,ST.ybYear));
+    return;
+  }
+  if(ST.module==="forecast"){
+    document.getElementById("app").innerHTML=buildModuleNav()+renderForecastModule(ST);
+    bindModuleNavEvents();
+    bindForecastEvents();
+    const p=fcPnl(ST);
+    if(ST.fx.tab==="pnl")drawPnlChart(p);
+    if(ST.fx.tab==="dashboard"){drawPnlChart(p);drawMarginChart(p);}
     return;
   }
   const s=calc(ST);
