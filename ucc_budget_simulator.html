@@ -91,8 +91,12 @@ button:hover{background:var(--surface-0)}
 .ybg-dupmo:disabled{opacity:.3;cursor:not-allowed}
 .ybg-cells{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:7px 10px}
 .ybg-empty{color:var(--gray-300);font-size:12px}
-.ybg-node{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:4px 5px 4px 10px;box-shadow:var(--shadow-sm)}
+.ybg-node{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:4px 5px 4px 6px;box-shadow:var(--shadow-sm)}
 .ybg-row:nth-child(even) .ybg-node{background:#fff}
+.ybg-node.dragging{opacity:.4}
+.ybg-grip{cursor:grab;color:var(--gray-300);font-size:12px;line-height:1;user-select:none}
+.ybg-grip:active{cursor:grabbing}
+.ybg-cells.drag-over{background:var(--bg-accent);box-shadow:inset 0 0 0 2px var(--blue-600);border-radius:8px}
 .ybg-node-name{font-size:11px;font-weight:700;color:var(--text-primary)}
 .ybg-node-stu{width:44px;text-align:right;font-size:11px;padding:2px 5px;border:1px solid var(--border);border-radius:6px;background:var(--surface-1)}
 .ybg-node-price{font-size:10px;color:var(--text-muted);white-space:nowrap;min-width:44px;text-align:right}
@@ -1812,9 +1816,10 @@ function renderYearlyBudgetModule(st){
     const nodes=rows.map(ik=>{
       const c=COURSES[ik.ci];if(!c)return"";
       const sales=priceOf(c)*ik.students;
-      return`<div class="ybg-node">
+      return`<div class="ybg-node" draggable="true" data-iknode="${ik.id}">
+        <span class="ybg-grip" title="Drag to another month">⠿</span>
         <span class="ybg-node-name" title="${c.name}">${c.abbr}</span>
-        <input type="number" class="ybg-node-stu" data-ikstu="${ik.id}" value="${ik.students}" min="0" title="Students — edit inline">
+        <input type="number" class="ybg-node-stu" data-ikstu="${ik.id}" value="${ik.students}" min="0" draggable="false" title="Students — edit inline">
         <span class="ybg-node-price" title="${ik.students} × ${sgd(priceOf(c))} (Total/student, no discount)">${sgd(sales)}</span>
         <button class="ybg-node-btn" data-ikdup="${ik.id}" title="Duplicate">⧉</button>
         <button class="ybg-node-x" data-delintake="${ik.id}" title="Remove">×</button>
@@ -1826,7 +1831,7 @@ function renderYearlyBudgetModule(st){
         <div class="ybg-mo-tot">${monthStu?`<span class="ybg-mo-sum">${monthStu} stu</span><span class="ybg-mo-sales">${sgd(monthSales)}</span>`:""}</div>
         <button class="ybg-dupmo" data-dupmonth="${m}" title="${rows.length?`Copy all of ${mname} into ${nextName}`:"Nothing to copy"}"${(m>=11||rows.length===0)?" disabled":""}>⧉→${nextName}</button>
       </div>
-      <div class="ybg-cells">
+      <div class="ybg-cells" data-dropmonth="${m}">
         ${nodes||`<span class="ybg-empty">—</span>`}
         <span class="ybg-add">
           <select class="ybg-add-sel" data-addmonthsel="${m}">${addOptions}</select>
@@ -2456,6 +2461,30 @@ function bindYearlyBudgetEvents(){
     src.forEach(ik=>ST.intakes.push({...ik,id:nextId++,month:m+1}));
     save_render();
   }));
+  /* Drag a node to another month (grab the node body; inputs/buttons don't start a drag) */
+  let dragId=null;
+  document.querySelectorAll("[data-iknode]").forEach(node=>{
+    node.addEventListener("dragstart",e=>{
+      if(e.target.closest("input,button,select")){e.preventDefault();return;}
+      dragId=parseInt(node.dataset.iknode);
+      e.dataTransfer.effectAllowed="move";
+      try{e.dataTransfer.setData("text/plain",String(dragId));}catch(_){}
+      node.classList.add("dragging");
+    });
+    node.addEventListener("dragend",()=>{node.classList.remove("dragging");dragId=null;});
+  });
+  document.querySelectorAll("[data-dropmonth]").forEach(cell=>{
+    cell.addEventListener("dragover",e=>{e.preventDefault();e.dataTransfer.dropEffect="move";cell.classList.add("drag-over");});
+    cell.addEventListener("dragleave",e=>{if(!cell.contains(e.relatedTarget))cell.classList.remove("drag-over");});
+    cell.addEventListener("drop",e=>{
+      e.preventDefault();cell.classList.remove("drag-over");
+      const m=parseInt(cell.dataset.dropmonth);
+      let id=dragId;
+      if(id==null){const t=e.dataTransfer.getData("text/plain");id=t?parseInt(t):null;}
+      const ik=ST.intakes.find(i=>i.id===id);
+      if(ik&&ik.month!==m){ik.month=m;save_render();}
+    });
+  });
   /* Copy Budget plan → Actual for the current year */
   const copyBtn=document.getElementById("ybCopyBudToAct");
   if(copyBtn)copyBtn.addEventListener("click",()=>{
