@@ -41,13 +41,33 @@ button:hover{background:var(--surface-0)}
 
 /* Layout */
 .wrap{background:var(--surface-0);min-height:100vh;font-family:var(--font);font-size:13px;color:var(--text-primary)}
-.module-nav{background:#0f1e42;padding:8px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.module-nav{background:#0f1e42;padding:8px 20px;display:flex;align-items:center;gap:14px}
+.burger-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:8px;width:36px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.burger-btn:hover{background:rgba(255,255,255,.16)}
+.burger-btn span,.burger-btn span:before,.burger-btn span:after{display:block;width:16px;height:2px;background:#fff;border-radius:2px;position:relative;transition:all .15s}
+.burger-btn span:before{content:"";position:absolute;top:-5px}
+.burger-btn span:after{content:"";position:absolute;top:5px}
 .module-nav-brand{font-size:10px;font-weight:600;color:#93c5fd;text-transform:uppercase;letter-spacing:.08em}
-.module-nav-tabs{display:flex;gap:6px;margin-left:auto}
-.module-tab{font-size:12px;font-weight:600;padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#cbd5e1;cursor:pointer}
-.module-tab:hover{background:rgba(255,255,255,.14)}
-.module-tab.on{background:#fff;color:#0f1e42;border-color:#fff}
-@media(max-width:640px){.module-nav{padding:8px 12px}.module-nav-brand{display:none}.module-nav-tabs{margin-left:0;width:100%}.module-tab{flex:1;text-align:center;padding:8px 6px;font-size:11px}}
+.module-nav-current{font-size:14px;font-weight:700;color:#fff;margin-top:1px}
+
+.nav-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1998;opacity:0;pointer-events:none;transition:opacity .2s}
+.nav-backdrop.open{opacity:1;pointer-events:all}
+.nav-drawer{position:fixed;top:0;left:0;bottom:0;width:280px;background:#0f1e42;z-index:1999;transform:translateX(-100%);transition:transform .22s ease;display:flex;flex-direction:column;box-shadow:4px 0 24px rgba(0,0,0,.3)}
+.nav-drawer.open{transform:translateX(0)}
+.nav-drawer-hdr{padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,.1)}
+.nav-drawer-brand{font-size:10px;font-weight:600;color:#93c5fd;text-transform:uppercase;letter-spacing:.09em;margin-bottom:2px}
+.nav-drawer-title{font-size:16px;font-weight:700;color:#fff}
+.nav-close{position:absolute;top:14px;right:14px;background:none;border:none;color:#93c5fd;font-size:20px;cursor:pointer;line-height:1;padding:4px}
+.nav-list{padding:10px;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:12px;padding:12px 12px;border-radius:10px;background:transparent;border:none;color:#cbd5e1;cursor:pointer;text-align:left}
+.nav-item:hover{background:rgba(255,255,255,.08)}
+.nav-item.on{background:#fff;color:#0f1e42}
+.nav-item-icon{font-size:18px;width:24px;text-align:center;flex-shrink:0}
+.nav-item-text{display:flex;flex-direction:column;gap:1px}
+.nav-item-label{font-size:13px;font-weight:700}
+.nav-item-desc{font-size:10.5px;color:inherit;opacity:.7}
+.nav-item.soon{opacity:.45;cursor:not-allowed}
+.nav-drawer-ftr{padding:12px 18px;border-top:1px solid rgba(255,255,255,.1);font-size:10px;color:#64748b}
 .hdr{background:linear-gradient(135deg,var(--blue-900) 0%,var(--blue-700) 100%);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .hdr-brand{display:flex;flex-direction:column;gap:1px}
 .hdr-label{font-size:10px;font-weight:500;color:var(--blue-400);text-transform:uppercase;letter-spacing:.1em}
@@ -364,7 +384,7 @@ const ST={
   lpSections:{params:true,inputs:true,actual:false,overhead:true},
   whatIfView:"table",
   views:{costBreakdown:"bars",waterfall:"rows",sens:"table",ulec:"table",compare:"table",pricelist:"table",feecalc:"table"},
-  module:"simulator",
+  module:"simulator",navOpen:false,
   intakes:[],ybView:"monthly",ybYear:new Date().getFullYear(),ybCat:"All",
   ybForm:{kind:"budget",ci:0,month:0,year:new Date().getFullYear(),students:15}
 };
@@ -1943,13 +1963,41 @@ async function sendToAI(userMsg,s,st){
   }
 }
 
+const MODULES=[
+  {key:"simulator",icon:"📘",label:"Course Simulator",desc:"Single-course pricing & breakeven"},
+  {key:"yearlybudget",icon:"📅",label:"Yearly Budget",desc:"Budget vs actual, all courses"},
+  {key:"cashflow",icon:"💵",label:"Cash Flow Forecast",desc:"Coming soon",soon:true},
+  {key:"reports",icon:"📊",label:"Board Reports",desc:"Coming soon",soon:true},
+];
+
 function buildModuleNav(){
-  return`<div class="module-nav">
-    <div class="module-nav-brand">United Ceres College — Planning Suite</div>
-    <div class="module-nav-tabs">
-      <button class="module-tab${ST.module==="simulator"?" on":""}" data-module="simulator">📘 Course Simulator</button>
-      <button class="module-tab${ST.module==="yearlybudget"?" on":""}" data-module="yearlybudget">📅 Yearly Budget</button>
+  const current=MODULES.find(m=>m.key===ST.module)||MODULES[0];
+  return`
+  <div class="module-nav">
+    <button class="burger-btn" id="navBurger" aria-label="Open menu"><span></span></button>
+    <div>
+      <div class="module-nav-brand">United Ceres College — Planning Suite</div>
+      <div class="module-nav-current">${current.icon} ${current.label}</div>
     </div>
+  </div>
+  <div class="nav-backdrop${ST.navOpen?" open":""}" id="navBackdrop"></div>
+  <div class="nav-drawer${ST.navOpen?" open":""}" id="navDrawer">
+    <div class="nav-drawer-hdr">
+      <div class="nav-drawer-brand">United Ceres College</div>
+      <div class="nav-drawer-title">Planning Suite</div>
+      <button class="nav-close" id="navClose">×</button>
+    </div>
+    <div class="nav-list">
+      ${MODULES.map(m=>`
+      <button class="nav-item${ST.module===m.key?" on":""}${m.soon?" soon":""}" ${m.soon?"disabled":`data-module="${m.key}"`}>
+        <span class="nav-item-icon">${m.icon}</span>
+        <span class="nav-item-text">
+          <span class="nav-item-label">${m.label}</span>
+          <span class="nav-item-desc">${m.desc}</span>
+        </span>
+      </button>`).join("")}
+    </div>
+    <div class="nav-drawer-ftr">More modules will appear here as they're added.</div>
   </div>`;
 }
 
@@ -2017,8 +2065,15 @@ function render(){
 }
 
 function bindModuleNavEvents(){
+  const burger=document.getElementById("navBurger");
+  const backdrop=document.getElementById("navBackdrop");
+  const closeBtn=document.getElementById("navClose");
+  if(burger)burger.addEventListener("click",()=>{ST.navOpen=true;render();});
+  if(backdrop)backdrop.addEventListener("click",()=>{ST.navOpen=false;render();});
+  if(closeBtn)closeBtn.addEventListener("click",()=>{ST.navOpen=false;render();});
   document.querySelectorAll("[data-module]").forEach(b=>b.addEventListener("click",e=>{
     ST.module=e.currentTarget.dataset.module;
+    ST.navOpen=false;
     saveToStorage();render();
   }));
 }
