@@ -412,13 +412,13 @@ const COURSES=[
   {cat:"English",name:"Certificate in English Level 3 (PT)",abbr:"CEL3-PT",hrs:120,mo:3,app:400,fee:1488,mat:100,exam:100,admin:150},
   {cat:"English",name:"Certificate in English Language (FT, 6m)",abbr:"CEL-6M",hrs:240,mo:6,app:400,fee:5260,mat:100,exam:100,admin:150},
   {cat:"English",name:"IELTS Preparatory Course",abbr:"IELTS",hrs:396,mo:6,app:400,fee:7040,mat:400,exam:100,admin:150},
-  {cat:"Preparatory",name:"AEIS — Primary 2",abbr:"AEIS-P2",hrs:792,mo:6,app:400,fee:9500,mat:300,exam:300,admin:150},
-  {cat:"Preparatory",name:"AEIS — Primary 3",abbr:"AEIS-P3",hrs:792,mo:6,app:400,fee:9500,mat:300,exam:300,admin:150},
-  {cat:"Preparatory",name:"AEIS — Primary 4",abbr:"AEIS-P4",hrs:792,mo:6,app:400,fee:9500,mat:300,exam:300,admin:150},
-  {cat:"Preparatory",name:"AEIS — Primary 5",abbr:"AEIS-P5",hrs:792,mo:6,app:400,fee:9500,mat:300,exam:300,admin:150},
-  {cat:"Preparatory",name:"AEIS — Secondary 1",abbr:"AEIS-S1",hrs:792,mo:6,app:400,fee:9500,mat:300,exam:300,admin:150},
-  {cat:"Preparatory",name:"AEIS — Secondary 2",abbr:"AEIS-S2",hrs:792,mo:6,app:400,fee:9500,mat:300,exam:300,admin:150},
-  {cat:"Preparatory",name:"AEIS — Secondary 3",abbr:"AEIS-S3",hrs:792,mo:6,app:400,fee:9500,mat:300,exam:300,admin:150},
+  {cat:"Preparatory",name:"AEIS — Primary 2",abbr:"AEIS-P2",hrs:792,mo:6,app:400,fee:11500,mat:300,exam:300,admin:150},
+  {cat:"Preparatory",name:"AEIS — Primary 3",abbr:"AEIS-P3",hrs:792,mo:6,app:400,fee:11500,mat:300,exam:300,admin:150},
+  {cat:"Preparatory",name:"AEIS — Primary 4",abbr:"AEIS-P4",hrs:792,mo:6,app:400,fee:11500,mat:300,exam:300,admin:150},
+  {cat:"Preparatory",name:"AEIS — Primary 5",abbr:"AEIS-P5",hrs:792,mo:6,app:400,fee:11500,mat:300,exam:300,admin:150},
+  {cat:"Preparatory",name:"AEIS — Secondary 1",abbr:"AEIS-S1",hrs:792,mo:6,app:400,fee:11500,mat:300,exam:300,admin:150},
+  {cat:"Preparatory",name:"AEIS — Secondary 2",abbr:"AEIS-S2",hrs:792,mo:6,app:400,fee:11500,mat:300,exam:300,admin:150},
+  {cat:"Preparatory",name:"AEIS — Secondary 3",abbr:"AEIS-S3",hrs:792,mo:6,app:400,fee:11500,mat:300,exam:300,admin:150},
   {cat:"Preparatory",name:"GCE O-Level Preparatory",abbr:"O-LVL",hrs:1440,mo:24,app:400,fee:36950,mat:3400,exam:1200,admin:800},
   {cat:"Preparatory",name:"GCE A-Level Preparatory",abbr:"A-LVL",hrs:2880,mo:24,app:400,fee:42450,mat:3400,exam:1200,admin:800},
   {cat:"Business",name:"Certificate in General Management",abbr:"CM",hrs:160,mo:6,app:400,fee:8120,mat:200,exam:200,admin:150},
@@ -1534,7 +1534,7 @@ function renderULEC(s,st){
     </div>
     <div style="display:flex;align-items:center;padding:0 10px;color:var(--text-muted);font-size:18px">→</div>
     <div style="flex:1;background:#fef9ec;padding:12px 14px;border-right:1px solid var(--border)">
-      <div style="font-size:10px;font-weight:600;color:var(--amber-800);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">UCC pays ULEC</div>
+      <div style="font-size:10px;font-weight:600;color:var(--amber-800);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">UCC pays Contractor</div>
       <div style="font-size:20px;font-weight:700;color:var(--amber-800)">${sgd(s.ulecTotal)}</div>
       <div style="font-size:11px;color:var(--text-muted);margin-top:3px">Teaching ${sgd(s.ulecTeach)} + Mgmt ${sgd(s.ulecMgmtTotal)}</div>
     </div>
@@ -1548,24 +1548,24 @@ function renderULEC(s,st){
 
   <div class="g2">
     <div class="card">
-      <div class="card-hdr"><div class="card-title">What ULEC gets paid</div></div>
+      <div class="card-hdr"><div class="card-title">What Contractor gets paid</div></div>
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Teaching fee is fixed by your teacher rate × hours. Only adjust the monthly course management fee.</div>
       ${NInput("ulecMgmt","Course mgmt fee / month",st.ulecMgmt,100,null,null,"$")}
       <div style="margin-top:12px">
         ${Row("Teaching fee",sgd(s.ulecTeach),"",`$${st.tf}/hr × ${c.hrs} hrs × ${st.cp}%`)}
         ${Row(`Course mgmt (${c.mo} months)`,sgd(s.ulecMgmtTotal),"",`$${st.ulecMgmt}/mo × ${c.mo} mo`)}
-        ${Row("Total paid to ULEC",sgd(s.ulecTotal),"acc bold","",true)}
-        ${Row("ULEC fee per month",sgd(s.ulecTotal/c.mo),"")}
-        ${Row("ULEC fee per student",sgd(s.ulecTotal/Math.max(st.plan,1)),"")}
+        ${Row("Total paid to Contractor",sgd(s.ulecTotal),"acc bold","",true)}
+        ${Row("Contractor fee per month",sgd(s.ulecTotal/c.mo),"")}
+        ${Row("Contractor fee per student",sgd(s.ulecTotal/Math.max(st.plan,1)),"")}
       </div>
       <div style="margin-top:12px;padding:10px;background:var(--surface-1);border-radius:8px;font-size:11px;color:var(--text-muted);line-height:1.6">
         <strong>UCC revenue pool:</strong> ${sgd(s.revPool)}<br>
-        <strong>ULEC share of pool:</strong> ${fp(s.ulecShare)}<br>
+        <strong>Contractor share of pool:</strong> ${fp(s.ulecShare)}<br>
         <strong>UCC retains:</strong> ${fp(1-s.ulecShare)}
       </div>
     </div>
     <div class="card">
-      <div class="card-hdr"><div class="card-title">UCC profit after paying ULEC</div><span class="card-badge" style="background:var(--blue-100);color:var(--blue-700)">${st.plan} students</span></div>
+      <div class="card-hdr"><div class="card-title">UCC profit after paying Contractor</div><span class="card-badge" style="background:var(--blue-100);color:var(--blue-700)">${st.plan} students</span></div>
       ${Row("Revenue pool (students × net rev)",sgd(s.revPool),"acc")}
       ${Row("Less: teaching fee","("+sgd(s.ulecTeach)+")","bad",`$${st.tf}/hr × ${c.hrs} hrs`)}
       ${Row("Less: course mgmt fee","("+sgd(s.ulecMgmtTotal)+")","bad",`$${st.ulecMgmt}/mo × ${c.mo} mo`)}
@@ -1575,7 +1575,7 @@ function renderULEC(s,st){
       ${Row("Breakeven students",s.beStu,"acc")}
       <div class="vcard" style="margin-top:10px;background:var(${s.uccProfit>=0?"--bg-success":"--bg-danger"})">
         <div style="font-size:15px;font-weight:700;color:var(${s.uccProfit>=0?"--text-success":"--text-danger"})">${s.uccProfit>=0?"UCC profitable ✓":"UCC loss-making ✗"}</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:3px">${sgd(Math.abs(s.uccProfit))} ${s.uccProfit>=0?"profit":"loss"} after paying ULEC everything</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:3px">${sgd(Math.abs(s.uccProfit))} ${s.uccProfit>=0?"profit":"loss"} after paying Contractor everything</div>
       </div>
     </div>
   </div>
@@ -1583,7 +1583,7 @@ function renderULEC(s,st){
   <!-- What-if: sweep mgmt fee -->
   <div class="card">
     <div class="card-hdr" style="justify-content:space-between">
-      <div style="display:flex;align-items:center;gap:8px"><div class="card-title">What-if: UCC profit at different ULEC management fees</div><span class="card-badge" style="background:var(--amber-100);color:var(--amber-800)">Teaching ${sgd(s.ulecTeach)} fixed</span></div>
+      <div style="display:flex;align-items:center;gap:8px"><div class="card-title">What-if: UCC profit at different Contractor management fees</div><span class="card-badge" style="background:var(--amber-100);color:var(--amber-800)">Teaching ${sgd(s.ulecTeach)} fixed</span></div>
       ${viewToggle("ulec",[{val:"table",label:"▤ Table"},{val:"chart",label:"📈 Chart"}])}
     </div>
     <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Teaching fee is always ${sgd(s.ulecTeach)} regardless of mgmt fee. Adjust "Course mgmt fee / month" above to move the CURRENT marker.</div>
@@ -1592,7 +1592,7 @@ function renderULEC(s,st){
         <thead><tr>
           <th style="text-align:right">Mgmt fee/mo</th>
           <th style="text-align:right">Mgmt total (${c.mo} mo)</th>
-          <th style="text-align:right">Total to ULEC</th>
+          <th style="text-align:right">Total to Contractor</th>
           <th style="text-align:right">UCC profit</th>
           <th style="text-align:right">UCC margin</th>
           <th style="text-align:right">Profit/mo</th>
@@ -1645,7 +1645,7 @@ function drawUlecChart(s,st){
   g.append("g").call(d3.axisLeft(y).ticks(6).tickFormat(d=>"$"+d3.format(",.0f")(d)))
     .selectAll("text").attr("font-size",10).attr("fill","var(--text-muted)");
   g.selectAll(".domain,.tick line").attr("stroke","var(--border-strong)");
-  g.append("text").attr("x",innerW/2).attr("y",innerH+34).attr("text-anchor","middle").attr("font-size",11).attr("fill","var(--text-muted)").text("ULEC management fee ($/month)");
+  g.append("text").attr("x",innerW/2).attr("y",innerH+34).attr("text-anchor","middle").attr("font-size",11).attr("fill","var(--text-muted)").text("Contractor management fee ($/month)");
   g.append("text").attr("transform","rotate(-90)").attr("x",-innerH/2).attr("y",-56).attr("text-anchor","middle").attr("font-size",11).attr("fill","var(--text-muted)").text("UCC profit / (loss)");
   const tip=d3.select(el).append("div").attr("class","whatif-chart-tip");
   const focusDot=g.append("circle").attr("r",4).attr("fill","var(--blue-600)").attr("stroke","#fff").attr("stroke-width",1.5).attr("opacity",0);
@@ -3542,7 +3542,7 @@ function render(){
   }
   const s=calc(ST);
   const tabs=["overview","sensitivity","ulec","compare","pricelist","feecalc"];
-  const tlbls=["Overview","Sensitivity","ULEC subcontract",`Scenarios (${ST.saved.length})`,"Price List","Fee Calculator"];
+  const tlbls=["Overview","Sensitivity","Subcontract",`Scenarios (${ST.saved.length})`,"Price List","Fee Calculator"];
   document.getElementById("app").innerHTML=buildModuleNav()+`
   <div class="hdr">
     <div class="hdr-brand">
