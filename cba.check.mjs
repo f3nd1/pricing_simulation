@@ -7,7 +7,9 @@
      3. Total cost = direct cost + the WHOLE pool.
      4. Deactivating a course does not shrink the overhead pool — the rent stays.
      5. The academic-salary split nets off the pool exactly, and raising it
-        lowers total cost (teaching stops being counted twice). */
+        lowers total cost (teaching stops being counted twice).
+     6. Per-course verdicts follow the stated rules, not the ratio.
+     7. Institution breakeven enrolment actually breaks even when applied. */
 import pkg from '/opt/node22/lib/node_modules/playwright/index.js';
 const { chromium } = pkg;
 
@@ -48,7 +50,12 @@ const r = await p.evaluate(() => {
     deduct: a50.acad.deduct, poolGross: a50.poolGross,
     pool0: a0.pool, pool50: a50.pool, cost0: a0.T.cost, cost50: a50.T.cost,
     bcr0: a0.T.bcr, bcr50: a50.T.bcr };
-  return { byDriver, victim, acad,
+  const vd = before.live.map(r => ({
+    name: r.name, contribution: r.contribution, minFull: r.minFull,
+    students: r.students, margin: r.margin, k: r.verdict.k }));
+  const need = { n: before.T.needStudents, students: before.T.students,
+    pool: before.pool, contribution: before.T.contribution };
+  return { byDriver, victim, acad, vd, need,
     poolBefore: before.pool, poolAfter: after.pool,
     costBefore: before.T.cost, costAfter: after.T.cost,
     directBefore: before.T.direct, directAfter: after.T.direct };
@@ -75,11 +82,26 @@ if (!near(A.pool50, A.poolGross - A.deduct)) fails.push('pool != OPEX - academic
 if (!near(A.pool0, A.poolGross)) fails.push('0% split still changed the pool');
 if (!(A.cost50 < A.cost0)) fails.push('raising the academic split did not lower total cost');
 if (!(A.bcr50 > A.bcr0)) fails.push('raising the academic split did not improve the ratio');
+for (const v of r.vd) {
+  const want = v.contribution < 0 ? 'stop' : v.minFull == null ? 'reprice'
+    : v.students >= v.minFull ? 'expand' : 'grow';
+  if (v.k !== want) fails.push(`${v.name}: verdict ${v.k}, rules say ${want}`);
+  if (v.k === 'expand' && v.contribution <= 0) fails.push(`${v.name}: told to expand while losing money`);
+  if (v.k === 'stop' && v.contribution >= 0) fails.push(`${v.name}: told to stop while contributing`);
+}
+const N = r.need;
+if (N.n != null) {
+  const k = N.n / N.students;                       // scale the mix to that enrolment
+  if (!near(k * N.contribution, N.pool, Math.max(1, N.pool * 0.02)))
+    fails.push(`breakeven enrolment ${N.n} does not clear the pool`);
+} else if (N.contribution > 0) fails.push('contribution positive but no breakeven enrolment given');
 if (errs.length) fails.push(...errs);
 
 console.log(`ratio (all drivers): ${ds.map(d => d.bcr.toFixed(4)).join(' / ')}`);
 console.log(`pool ${r.poolBefore.toFixed(0)} | cost ${r.costBefore.toFixed(0)} -> ${r.costAfter.toFixed(0)} after dropping "${r.victim}"`);
 console.log(`acad split 0%->50%: pool ${A.pool0.toFixed(0)} -> ${A.pool50.toFixed(0)}, ratio ${A.bcr0.toFixed(4)} -> ${A.bcr50.toFixed(4)}`);
+console.log(`verdicts: ${['expand','grow','reprice','stop'].map(k=>k+'='+r.vd.filter(v=>v.k===k).length).join(' ')}`);
+console.log(`institution breakeven enrolment: ${N.n == null ? 'unreachable at this pricing' : N.n + ' vs ' + N.students + ' planned'}`);
 console.log(fails.length ? 'FAIL:\n  ' + fails.join('\n  ') : 'PASS — all invariants hold');
 await b.close();
 process.exit(fails.length ? 1 : 0);
