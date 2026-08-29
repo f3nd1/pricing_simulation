@@ -642,6 +642,7 @@ const ST={
   views:{costBreakdown:"bars",waterfall:"rows",sens:"table",ulec:"table",compare:"table",pricelist:"table",feecalc:"table"},
   module:"simulator",navOpen:false,
   audit:[],logTab:"edits",logSearch:"",
+  smaster:{q:"",cat:"All",onlyActive:false,groups:{sim:true,oh:true,act:true,sub:true,price:true}},
   cba:{tab:"overview",driver:"hours",off:{},rates:{},def:{},acadPct:0,chartCi:0,
        basis:"budget",otherRev:[],showRates:false},
   intakes:[],ybView:"monthly",ybYear:new Date().getFullYear(),ybCat:"All",
@@ -735,8 +736,8 @@ function saveToStorage(){
   try{
     simSaveCurrent(ST);   /* flush the selected course's working copy first */
     const prices=COURSES.map(c=>({...c}));
-    const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx,op,val,strat,audit,cba,sim}=ST;
-    localStorage.setItem(LS_KEY,JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx,op,val,strat,audit,cba,sim}));
+    const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx,op,val,strat,audit,cba,sim,smaster}=ST;
+    localStorage.setItem(LS_KEY,JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx,op,val,strat,audit,cba,sim,smaster}));
   }catch(e){}
 }
 /* ── Audit trail ─────────────────────────────────────────────────────────
@@ -784,6 +785,7 @@ function loadFromStorage(){
     if(d.strat)ST.strat={...ST.strat,...d.strat};
     /* Legacy saves hold ONE global simulator state. Attribute it only to the
        course it identifies (d.ci) — never copy it across every course. */
+    if(d.smaster)ST.smaster={...ST.smaster,...d.smaster,groups:{...ST.smaster.groups,...(d.smaster.groups||{})}};
     if(d.sim&&typeof d.sim==="object")ST.sim=d.sim;
     else{
       const legacy=COURSES[ST.ci];
@@ -2518,6 +2520,7 @@ const MODULES=[
   {key:"financials",icon:"🏦",label:"Valuation & Statements",desc:"DCF value, ratios, GST & tax"},
   {key:"strategy",icon:"🎯",label:"Strategy & Governance",desc:"Growth business cases, compliance"},
   {key:"cba",icon:"⚖️",label:"Cost-Benefit",desc:"School ratio, active courses, per-course viability"},
+  {key:"simmaster",icon:"🧮",label:"Simulator Inputs",desc:"All courses\u2019 assumptions in one sheet"},
   {key:"log",icon:"📝",label:"Change Log",desc:"Your edits + app version history"},
 ];
 
@@ -2661,9 +2664,9 @@ function fcPnl(st){
 
 /* Build stamp. APP_VERSION is what the Change Log shows so you can tell at a
    glance whether a machine is running the latest file. Regenerate with mkver.py. */
-const APP_VERSION="v1.57.0";
+const APP_VERSION="v1.58.0";
 const APP_BUILD="2026-08-29";
-const APP_CHANGELOG=[{"h": "46ce818", "d": "2026-08-29", "t": "07:22", "s": "Cost-Benefit: separate Operating and Full-Cost break-even, audit metrics, add explanatory diagrams"}, {"h": "b92e23b", "d": "2026-08-29", "t": "06:58", "s": "Yearly Budget: copy a year's intake plan to another year"}, {"h": "dae4d5f", "d": "2026-08-29", "t": "06:53", "s": "Collapse the per-course rate columns on the Active courses tab"}, {"h": "10c1379", "d": "2026-08-29", "t": "06:47", "s": "Cost-Benefit: pass rates, budget vs actual, and other income"}, {"h": "94b1772", "d": "2026-08-29", "t": "06:43", "s": "Fix false positive in the mkver duplicate guard"}, {"h": "07ae6ba", "d": "2026-08-29", "t": "06:42", "s": "Add Cost-Benefit charts tab (D3), ROI, and the do-not-average principle"}, {"h": "593b609", "d": "2026-08-29", "t": "06:21", "s": "Fix fatal duplicate const APP_VERSION that blanked the app"}, {"h": "c180693", "d": "2026-08-29", "t": "06:00", "s": "Explain why the two per-course views give different numbers"}, {"h": "322e4f0", "d": "2026-08-29", "t": "05:57", "s": "Add version stamp and rebuild the changelog from real git history"}, {"h": "dbfd3f0", "d": "2026-08-29", "t": "05:43", "s": "Cost-Benefit: per-course action verdicts and institution sustainability call"}, {"h": "cf96ca6", "d": "2026-08-29", "t": "05:35", "s": "Cost-Benefit: split the blended permanent-salary line out of the overhead pool"}, {"h": "5ddbb02", "d": "2026-08-29", "t": "05:32", "s": "Cost-Benefit rates inherit from Course Simulator instead of own defaults"}, {"h": "3d14a7e", "d": "2026-08-29", "t": "05:21", "s": "Add Cost-Benefit module (school + per-course) and a passcode gate"}, {"h": "360af5b", "d": "2026-08-12", "t": "10:21", "s": "Rename ULEC to Contractor in UI; set AEIS course fee to 11,500"}, {"h": "b568fb8", "d": "2026-07-07", "t": "14:45", "s": "Show comma-separated numbers in editable money fields (24,000 not 24000)"}, {"h": "2180e03", "d": "2026-07-07", "t": "14:37", "s": "Make budget period dynamic: 5-year window, choose start year, save named periods"}, {"h": "c02c902", "d": "2026-07-07", "t": "14:29", "s": "Extend forecast to 2026-2040 (15 years) + add Change Log module"}, {"h": "056a4ef", "d": "2026-07-07", "t": "14:10", "s": "Add yearly expense growth model + budget period selector"}, {"h": "93407a4", "d": "2026-07-07", "t": "13:54", "s": "Add monthly expense breakdown (base-year drill-down) + bake in Supabase config"}, {"h": "b9c34e3", "d": "2026-07-07", "t": "13:20", "s": "Add fixed Supabase config option that locks the Cloud Save fields"}, {"h": "bdd773b", "d": "2026-07-07", "t": "09:27", "s": "Link all modules to live data: revenue from Price List × Yearly Budget, Excel expense sub-items, dynamic course catalog"}, {"h": "e324f9e", "d": "2026-07-07", "t": "09:07", "s": "Add Strategy & Governance module (Phase D): growth initiatives NPV/payback, compliance tracker, funding register; fix mobile overflow"}, {"h": "9d069c9", "d": "2026-07-07", "t": "09:00", "s": "Add Valuation & Statements module (Phase C of Excel master-budget port)"}, {"h": "e209b5e", "d": "2026-07-07", "t": "08:56", "s": "Add Operating Detail module (Phase B of Excel master-budget port)"}, {"h": "f76ed77", "d": "2026-07-07", "t": "08:47", "s": "Add Forecast & P&L module (Phase A of Excel master-budget port)"}, {"h": "352f494", "d": "2026-07-07", "t": "07:47", "s": "Re-add drag-to-move to Yearly Budget nodes with a grip handle"}, {"h": "674ded3", "d": "2026-07-07", "t": "07:25", "s": "Yearly Budget planner: back to vertical month rows, add per-month duplicate + price"}, {"h": "0278c90", "d": "2026-07-07", "t": "07:16", "s": "Yearly Budget planner: horizontal month columns with drag, duplicate, copy"}, {"h": "1a8a09a", "d": "2026-07-07", "t": "07:08", "s": "Redesign Yearly Budget intake area as a month-by-month planner grid"}, {"h": "ff7957c", "d": "2026-07-07", "t": "06:56", "s": "Add duplicate + month-shift controls to Yearly Budget intakes"}, {"h": "c97000b", "d": "2026-07-07", "t": "06:52", "s": "Add \"Save over\" (overwrite) to cloud-saved scenarios"}, {"h": "5c6ff65", "d": "2026-07-07", "t": "02:49", "s": "Add cloud save/load via Supabase"}, {"h": "66c8c12", "d": "2026-07-07", "t": "02:16", "s": "Fix Yearly Budget responsiveness across tablet and small-phone widths"}, {"h": "486dc2b", "d": "2026-07-07", "t": "02:10", "s": "Replace top nav bar with hamburger drawer menu"}, {"h": "2e80831", "d": "2026-07-07", "t": "02:00", "s": "Redesign Yearly Budget module — teal hero banner + attainment strip"}, {"h": "efda20c", "d": "2026-07-07", "t": "01:37", "s": "Add readable TypeScript/React version of the Yearly Budget module"}, {"h": "9c742f7", "d": "2026-07-07", "t": "01:32", "s": "Split into two top-level modules: Course Simulator + Yearly Budget"}, {"h": "35123f6", "d": "2026-07-07", "t": "01:14", "s": "Add Portfolio tab: multi-course Monthly/Quarterly/Yearly/Total menu"}, {"h": "3501c6d", "d": "2026-07-07", "t": "00:51", "s": "Add portfolio performance React prototype"}, {"h": "b716e62", "d": "2026-07-06", "t": "23:55", "s": "Add legends to all D3 chart views"}, {"h": "f2fd130", "d": "2026-07-06", "t": "23:47", "s": "Add D3.js charts to all remaining tabs (6 new chart views)"}, {"h": "b915c0d", "d": "2026-07-06", "t": "23:25", "s": "Add D3.js chart view for What-if profit-by-students, alongside existing table"}, {"h": "13776d3", "d": "2026-06-30", "t": "03:37", "s": "Clarify breakeven is total enrolment for one run, not per month"}, {"h": "2efacb5", "d": "2026-06-30", "t": "02:04", "s": "Widen left panel and redesign ULEC subcontract tab"}, {"h": "64fcb77", "d": "2026-06-30", "t": "01:50", "s": "Rename student inputs to 'Planned/Actual students (total)' with per-month sub-label"}, {"h": "2b2b1a7", "d": "2026-06-30", "t": "01:48", "s": "Clarify Planned/Actual students labels: show total cohort + per-month sub-label"}, {"h": "ebf05c9", "d": "2026-06-30", "t": "01:46", "s": "Split what-if table: separate Students (total) and Per month columns"}, {"h": "8418481", "d": "2026-06-30", "t": "01:42", "s": "Add what-if enrolment table and per-month student figures to Overview"}, {"h": "ae816dd", "d": "2026-06-30", "t": "01:32", "s": "Redesign layout, add AI chatbot, price list with hours/months, and finance advisor skill"}, {"h": "274a2b1", "d": "2026-06-30", "t": "01:10", "s": "Add localStorage persistence + JSON export/import"}, {"h": "b8c60d6", "d": "2026-06-29", "t": "23:29", "s": "Add QuickLook fallback message and DOMContentLoaded guard"}, {"h": "05a4e6d", "d": "2026-06-29", "t": "23:27", "s": "Fix blank page: add proper HTML5 document structure"}, {"h": "b1afa6b", "d": "2026-06-29", "t": "23:26", "s": "Make layout fully responsive for mobile and tablet"}, {"h": "d72fc86", "d": "2026-06-29", "t": "23:08", "s": "Fix visual design: card depth, blue header, active tab, sr-only"}, {"h": "e451348", "d": "2026-06-29", "t": "23:04", "s": "Add CSS variable definitions and form element styling"}, {"h": "8730024", "d": "2026-06-29", "t": "21:19", "s": "Add Fee Calculator tab to UCC budget simulator"}];
+const APP_CHANGELOG=[{"h": "ddcf1f0", "d": "2026-08-29", "t": "07:44", "s": "Course Simulator: give every course its own remembered assumptions"}, {"h": "46ce818", "d": "2026-08-29", "t": "07:22", "s": "Cost-Benefit: separate Operating and Full-Cost break-even, audit metrics, add explanatory diagrams"}, {"h": "b92e23b", "d": "2026-08-29", "t": "06:58", "s": "Yearly Budget: copy a year's intake plan to another year"}, {"h": "dae4d5f", "d": "2026-08-29", "t": "06:53", "s": "Collapse the per-course rate columns on the Active courses tab"}, {"h": "10c1379", "d": "2026-08-29", "t": "06:47", "s": "Cost-Benefit: pass rates, budget vs actual, and other income"}, {"h": "94b1772", "d": "2026-08-29", "t": "06:43", "s": "Fix false positive in the mkver duplicate guard"}, {"h": "07ae6ba", "d": "2026-08-29", "t": "06:42", "s": "Add Cost-Benefit charts tab (D3), ROI, and the do-not-average principle"}, {"h": "593b609", "d": "2026-08-29", "t": "06:21", "s": "Fix fatal duplicate const APP_VERSION that blanked the app"}, {"h": "c180693", "d": "2026-08-29", "t": "06:00", "s": "Explain why the two per-course views give different numbers"}, {"h": "322e4f0", "d": "2026-08-29", "t": "05:57", "s": "Add version stamp and rebuild the changelog from real git history"}, {"h": "dbfd3f0", "d": "2026-08-29", "t": "05:43", "s": "Cost-Benefit: per-course action verdicts and institution sustainability call"}, {"h": "cf96ca6", "d": "2026-08-29", "t": "05:35", "s": "Cost-Benefit: split the blended permanent-salary line out of the overhead pool"}, {"h": "5ddbb02", "d": "2026-08-29", "t": "05:32", "s": "Cost-Benefit rates inherit from Course Simulator instead of own defaults"}, {"h": "3d14a7e", "d": "2026-08-29", "t": "05:21", "s": "Add Cost-Benefit module (school + per-course) and a passcode gate"}, {"h": "360af5b", "d": "2026-08-12", "t": "10:21", "s": "Rename ULEC to Contractor in UI; set AEIS course fee to 11,500"}, {"h": "b568fb8", "d": "2026-07-07", "t": "14:45", "s": "Show comma-separated numbers in editable money fields (24,000 not 24000)"}, {"h": "2180e03", "d": "2026-07-07", "t": "14:37", "s": "Make budget period dynamic: 5-year window, choose start year, save named periods"}, {"h": "c02c902", "d": "2026-07-07", "t": "14:29", "s": "Extend forecast to 2026-2040 (15 years) + add Change Log module"}, {"h": "056a4ef", "d": "2026-07-07", "t": "14:10", "s": "Add yearly expense growth model + budget period selector"}, {"h": "93407a4", "d": "2026-07-07", "t": "13:54", "s": "Add monthly expense breakdown (base-year drill-down) + bake in Supabase config"}, {"h": "b9c34e3", "d": "2026-07-07", "t": "13:20", "s": "Add fixed Supabase config option that locks the Cloud Save fields"}, {"h": "bdd773b", "d": "2026-07-07", "t": "09:27", "s": "Link all modules to live data: revenue from Price List × Yearly Budget, Excel expense sub-items, dynamic course catalog"}, {"h": "e324f9e", "d": "2026-07-07", "t": "09:07", "s": "Add Strategy & Governance module (Phase D): growth initiatives NPV/payback, compliance tracker, funding register; fix mobile overflow"}, {"h": "9d069c9", "d": "2026-07-07", "t": "09:00", "s": "Add Valuation & Statements module (Phase C of Excel master-budget port)"}, {"h": "e209b5e", "d": "2026-07-07", "t": "08:56", "s": "Add Operating Detail module (Phase B of Excel master-budget port)"}, {"h": "f76ed77", "d": "2026-07-07", "t": "08:47", "s": "Add Forecast & P&L module (Phase A of Excel master-budget port)"}, {"h": "352f494", "d": "2026-07-07", "t": "07:47", "s": "Re-add drag-to-move to Yearly Budget nodes with a grip handle"}, {"h": "674ded3", "d": "2026-07-07", "t": "07:25", "s": "Yearly Budget planner: back to vertical month rows, add per-month duplicate + price"}, {"h": "0278c90", "d": "2026-07-07", "t": "07:16", "s": "Yearly Budget planner: horizontal month columns with drag, duplicate, copy"}, {"h": "1a8a09a", "d": "2026-07-07", "t": "07:08", "s": "Redesign Yearly Budget intake area as a month-by-month planner grid"}, {"h": "ff7957c", "d": "2026-07-07", "t": "06:56", "s": "Add duplicate + month-shift controls to Yearly Budget intakes"}, {"h": "c97000b", "d": "2026-07-07", "t": "06:52", "s": "Add \"Save over\" (overwrite) to cloud-saved scenarios"}, {"h": "5c6ff65", "d": "2026-07-07", "t": "02:49", "s": "Add cloud save/load via Supabase"}, {"h": "66c8c12", "d": "2026-07-07", "t": "02:16", "s": "Fix Yearly Budget responsiveness across tablet and small-phone widths"}, {"h": "486dc2b", "d": "2026-07-07", "t": "02:10", "s": "Replace top nav bar with hamburger drawer menu"}, {"h": "2e80831", "d": "2026-07-07", "t": "02:00", "s": "Redesign Yearly Budget module — teal hero banner + attainment strip"}, {"h": "efda20c", "d": "2026-07-07", "t": "01:37", "s": "Add readable TypeScript/React version of the Yearly Budget module"}, {"h": "9c742f7", "d": "2026-07-07", "t": "01:32", "s": "Split into two top-level modules: Course Simulator + Yearly Budget"}, {"h": "35123f6", "d": "2026-07-07", "t": "01:14", "s": "Add Portfolio tab: multi-course Monthly/Quarterly/Yearly/Total menu"}, {"h": "3501c6d", "d": "2026-07-07", "t": "00:51", "s": "Add portfolio performance React prototype"}, {"h": "b716e62", "d": "2026-07-06", "t": "23:55", "s": "Add legends to all D3 chart views"}, {"h": "f2fd130", "d": "2026-07-06", "t": "23:47", "s": "Add D3.js charts to all remaining tabs (6 new chart views)"}, {"h": "b915c0d", "d": "2026-07-06", "t": "23:25", "s": "Add D3.js chart view for What-if profit-by-students, alongside existing table"}, {"h": "13776d3", "d": "2026-06-30", "t": "03:37", "s": "Clarify breakeven is total enrolment for one run, not per month"}, {"h": "2efacb5", "d": "2026-06-30", "t": "02:04", "s": "Widen left panel and redesign ULEC subcontract tab"}, {"h": "64fcb77", "d": "2026-06-30", "t": "01:50", "s": "Rename student inputs to 'Planned/Actual students (total)' with per-month sub-label"}, {"h": "2b2b1a7", "d": "2026-06-30", "t": "01:48", "s": "Clarify Planned/Actual students labels: show total cohort + per-month sub-label"}, {"h": "ebf05c9", "d": "2026-06-30", "t": "01:46", "s": "Split what-if table: separate Students (total) and Per month columns"}, {"h": "8418481", "d": "2026-06-30", "t": "01:42", "s": "Add what-if enrolment table and per-month student figures to Overview"}, {"h": "ae816dd", "d": "2026-06-30", "t": "01:32", "s": "Redesign layout, add AI chatbot, price list with hours/months, and finance advisor skill"}, {"h": "274a2b1", "d": "2026-06-30", "t": "01:10", "s": "Add localStorage persistence + JSON export/import"}, {"h": "b8c60d6", "d": "2026-06-29", "t": "23:29", "s": "Add QuickLook fallback message and DOMContentLoaded guard"}, {"h": "05a4e6d", "d": "2026-06-29", "t": "23:27", "s": "Fix blank page: add proper HTML5 document structure"}, {"h": "b1afa6b", "d": "2026-06-29", "t": "23:26", "s": "Make layout fully responsive for mobile and tablet"}, {"h": "d72fc86", "d": "2026-06-29", "t": "23:08", "s": "Fix visual design: card depth, blue header, active tab, sr-only"}, {"h": "e451348", "d": "2026-06-29", "t": "23:04", "s": "Add CSS variable definitions and form element styling"}, {"h": "8730024", "d": "2026-06-29", "t": "21:19", "s": "Add Fee Calculator tab to UCC budget simulator"}];
 function fmtLogDate(iso){
   const d=new Date(iso);
   if(isNaN(d))return iso||"";
@@ -4477,6 +4480,202 @@ function cbaDrawEnrol(st,d){
     .attr("font-size",10).attr("fill","var(--text-muted)").text("students enrolled");
 }
 
+/* ═══════════════ SIMULATOR INPUTS — MASTER SHEET ═══════════════
+   One consolidated, spreadsheet-style view of every course's simulator
+   assumptions. It is NOT a second dataset: it reads and writes the same
+   ST.sim[courseName] records the individual Course Simulator uses, so an edit
+   here and an edit there are the same edit. ST.sim is the single source of
+   truth; the flat ST fields are only the working copy of the selected course
+   and are refreshed whenever the selected course's record changes.
+
+   Canonical Price List data (fee, materials, exam, admin) is shown read-only
+   for reference and is never writable from this sheet — pricing is edited only
+   through Course Simulator > Price List. */
+const SM_SIM=[["disc","Scholarship %","pct"],["agent","Agent comm %","pct"],["uni","University comm %","pct"],
+              ["tf","Teacher fee / hr","money"],["cp","Contact hours %","pct"],["plan","Planned students","int"]];
+const SM_ACT=[["act","Actual students","int"],["aDisc","Actual discount %","pct"],
+              ["aAgent","Actual agent %","pct"],["aUni","Actual uni %","pct"]];
+const SM_SUB=[["ulecMgmt","Course mgmt fee / mo","money"]];
+const SM_PRICE=[["fee","Course fee"],["mat","Material"],["exam","Exam"],["admin","Admin"]];
+
+/* Write one field of one course's record. Starts from that course's existing
+   values (or its own defaults), never from whatever is on screen. */
+function simSetField(st,key,field,value){
+  st.sim=st.sim||{};
+  const cur=simFor(st,key);
+  cur[field]=value;
+  const o={};SIM_KEYS.forEach(k=>o[k]=cur[k]);
+  o.oh=cur.oh.map(x=>({...x}));
+  st.sim[key]=o;
+  if(courseKey(COURSES[st.ci])===key)simLoad(st,st.ci);   /* keep the working copy in step */
+}
+function simSetOh(st,key,idx,value){
+  st.sim=st.sim||{};
+  const cur=simFor(st,key);
+  if(!cur.oh[idx])return;
+  cur.oh[idx]={...cur.oh[idx],cost:value};
+  const o={};SIM_KEYS.forEach(k=>o[k]=cur[k]);
+  o.oh=cur.oh.map(x=>({...x}));
+  st.sim[key]=o;
+  if(courseKey(COURSES[st.ci])===key)simLoad(st,st.ci);
+}
+function smEdited(st,key,field,idx){
+  const d=simDefaults(),v=simFor(st,key);
+  return idx==null?Number(v[field])!==Number(d[field])
+                  :Number(v.oh[idx].cost)!==Number(d.oh[idx].cost);
+}
+function renderSimMasterModule(st){
+  const S=st.smaster,g=S.groups;
+  const q=(S.q||"").toLowerCase();
+  const cats=courseCats();
+  const rows=COURSES.map((c,i)=>({c,i}))
+    .filter(x=>(!q||x.c.name.toLowerCase().includes(q)||String(x.c.cat).toLowerCase().includes(q)))
+    .filter(x=>S.cat==="All"||x.c.cat===S.cat)
+    .filter(x=>!S.onlyActive||(st.cba&&st.cba.off[x.c.name]!==true));
+  const OH=INIT_OH.map((o,i)=>[i,o.label]);
+  /* column count per group, for the grouped header spans */
+  const span={sim:SM_SIM.length,oh:OH.length,act:SM_ACT.length,sub:SM_SUB.length,price:SM_PRICE.length};
+  const TH=(t,extra)=>`<th style="padding:4px 6px;text-align:right;font-size:10px;font-weight:600;white-space:nowrap;${extra||""}">${t}</th>`;
+  const GH=(t,n,bg)=>n?`<th colspan="${n}" style="padding:3px 6px;text-align:center;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;background:${bg};color:#fff;position:sticky;top:0;z-index:3">${t}</th>`:"";
+  const STICK=`position:sticky;left:0;z-index:2;background:var(--surface-0,#fff);box-shadow:1px 0 0 var(--border)`;
+  const inp=(key,field,kind,val,edited)=>{
+    const money=kind==="money";
+    return `<td style="padding:1px 3px;text-align:right"><input type="${money?"text":"number"}"${money?' inputmode="decimal" class="plinp sm numfmt"':' class="plinp sm"'}
+      data-smk="${esc(key)}" data-smf="${field}"${money?'':` step="${kind==="pct"?1:1}"`}
+      value="${money?fmtN(val):val}" style="width:${money?76:62}px;text-align:right;${edited?"background:var(--amber-100)":""}"></td>`;
+  };
+  const ohInp=(key,idx,val,edited)=>`<td style="padding:1px 3px;text-align:right"><input type="text" inputmode="decimal" class="plinp sm numfmt"
+      data-smk="${esc(key)}" data-smoh="${idx}" value="${fmtN(val)}" style="width:76px;text-align:right;${edited?"background:var(--amber-100)":""}"></td>`;
+  const body=rows.map(({c,i})=>{
+    const key=courseKey(c),v=simFor(st,key),touched=!!(st.sim&&st.sim[key]);
+    return `<tr${i===st.ci?' style="background:var(--blue-50,#eff6ff)"':''}>
+      <td style="padding:3px 8px;${STICK}${i===st.ci?";background:var(--blue-50,#eff6ff)":""}">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:11px;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.name)}">${esc(c.name)}</span>
+          ${touched?`<span title="has saved assumptions" style="font-size:9px;color:var(--text-success)">●</span>`:""}
+          <button data-smgo="${i}" title="Open in Course Simulator" style="font-size:10px;padding:1px 5px;border:1px solid var(--border);border-radius:4px;background:none;cursor:pointer">↗</button>
+          <button data-smreset="${esc(key)}" title="Reset this course to defaults" style="font-size:10px;padding:1px 5px;border:1px solid var(--border);border-radius:4px;background:none;cursor:pointer;color:var(--text-danger)">↺</button>
+        </div></td>
+      <td style="padding:3px 8px;font-size:10px;color:var(--text-muted);white-space:nowrap">${esc(c.cat)}</td>
+      ${g.sim?SM_SIM.map(([f,,k])=>inp(key,f,k,v[f],smEdited(st,key,f))).join(""):""}
+      ${g.oh?OH.map(([idx])=>ohInp(key,idx,v.oh[idx]?v.oh[idx].cost:0,smEdited(st,key,null,idx))).join(""):""}
+      ${g.act?SM_ACT.map(([f,,k])=>inp(key,f,k,v[f],smEdited(st,key,f))).join(""):""}
+      ${g.sub?SM_SUB.map(([f,,k])=>inp(key,f,k,v[f],smEdited(st,key,f))).join(""):""}
+      ${g.price?SM_PRICE.map(([f])=>`<td style="padding:3px 6px;text-align:right;font-size:11px;color:var(--text-muted);background:var(--surface-1)" title="Canonical Price List value — edit in Course Simulator → Price List">${sgd(c[f]||0)}</td>`).join(""):""}
+    </tr>`;}).join("");
+  const toggle=(k,l)=>`<button data-smgrp="${k}" style="font-size:11px;padding:5px 10px;border:1px solid ${g[k]?"var(--blue-600)":"var(--border)"};border-radius:6px;background:${g[k]?"var(--blue-600)":"none"};color:${g[k]?"#fff":"var(--text-secondary)"};cursor:pointer;font-weight:600">${g[k]?"✓":""} ${l}</button>`;
+  const hdr=`
+  <div class="hdr" style="background:linear-gradient(135deg,#334155 0%,#64748b 100%)">
+    <div class="hdr-brand"><div class="hdr-label" style="color:#e2e8f0">United Ceres College</div><div class="hdr-title">Simulator Inputs — all courses</div></div>
+    <div style="margin-left:auto;font-size:11px;color:#e2e8f0">${rows.length} of ${COURSES.length} courses</div>
+  </div>`;
+  return hdr+`<div class="module-body">
+    <div class="card">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.6">
+        Every course's simulator assumptions in one sheet. These are the <strong>same values</strong> the individual Course Simulator edits — change one here and it is there immediately, and the other way round. Amber cells differ from the defaults; ● marks a course with saved assumptions. The grey <strong>Price List</strong> columns on the right are canonical reference data and are read-only here.
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+        ${toggle("sim","Simulation Inputs")}${toggle("oh","Fixed Overhead")}${toggle("act","Actual Performance")}${toggle("sub","Subcontract")}${toggle("price","Price List (read-only)")}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+        <input type="text" id="smQ" placeholder="Search course…" value="${esc(S.q||"")}" style="flex:1;min-width:170px;max-width:280px">
+        <select id="smCat"><option value="All"${S.cat==="All"?" selected":""}>All categories</option>${cats.map(c=>`<option value="${esc(c)}"${S.cat===c?" selected":""}>${esc(c)}</option>`).join("")}</select>
+        <label style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:5px"><input type="checkbox" id="smActive"${S.onlyActive?" checked":""}> Active courses only</label>
+        <span style="margin-left:auto;font-size:11px;color:var(--text-muted)">Copy</span>
+        <select id="smCopyFrom" style="max-width:150px">${COURSES.map((c,i)=>`<option value="${i}">${esc(c.name)}</option>`).join("")}</select>
+        <span style="font-size:11px;color:var(--text-muted)">→</span>
+        <select id="smCopyTo" style="max-width:150px">${COURSES.map((c,i)=>`<option value="${i}"${i===1?" selected":""}>${esc(c.name)}</option>`).join("")}</select>
+        <button id="smCopyGo" style="font-size:11px;padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:none;cursor:pointer;font-weight:600">Copy</button>
+      </div>
+      <div style="overflow:auto;max-height:calc(100vh - 300px);border:1px solid var(--border);border-radius:8px">
+        <table class="tbl" style="border-collapse:separate;border-spacing:0">
+          <thead>
+            <tr>
+              <th style="${STICK};top:0;z-index:4;padding:3px 8px;text-align:left;font-size:10px;font-weight:800;text-transform:uppercase;background:#334155;color:#fff">Course</th>
+              <th style="position:sticky;top:0;z-index:3;padding:3px 6px;font-size:10px;font-weight:800;text-transform:uppercase;background:#334155;color:#fff">Category</th>
+              ${g.sim?GH("Simulation Inputs",span.sim,"#2563eb"):""}
+              ${g.oh?GH("Fixed Overhead",span.oh,"#b45309"):""}
+              ${g.act?GH("Actual Performance",span.act,"#0f766e"):""}
+              ${g.sub?GH("Subcontract",span.sub,"#7c3aed"):""}
+              ${g.price?GH("Price List — read-only",span.price,"#64748b"):""}
+            </tr>
+            <tr>
+              <th style="${STICK};top:26px;z-index:4;padding:4px 8px;text-align:left;font-size:10px;background:var(--surface-1)">&nbsp;</th>
+              <th style="position:sticky;top:26px;z-index:3;background:var(--surface-1)"></th>
+              ${g.sim?SM_SIM.map(([,l])=>TH(l,"position:sticky;top:26px;z-index:3;background:var(--surface-1)")).join(""):""}
+              ${g.oh?OH.map(([,l])=>TH(l,"position:sticky;top:26px;z-index:3;background:var(--surface-1);max-width:110px;white-space:normal")).join(""):""}
+              ${g.act?SM_ACT.map(([,l])=>TH(l,"position:sticky;top:26px;z-index:3;background:var(--surface-1)")).join(""):""}
+              ${g.sub?SM_SUB.map(([,l])=>TH(l,"position:sticky;top:26px;z-index:3;background:var(--surface-1)")).join(""):""}
+              ${g.price?SM_PRICE.map(([,l])=>TH(l,"position:sticky;top:26px;z-index:3;background:var(--surface-1)")).join(""):""}
+            </tr>
+          </thead>
+          <tbody>${body||`<tr><td colspan="30" style="padding:26px;text-align:center;color:var(--text-muted)">No courses match.</td></tr>`}</tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+}
+function bindSimMasterEvents(){
+  const save=()=>saveToStorage();
+  const rerender=()=>{saveToStorage();render();};
+  /* Cell edits do not re-render the whole sheet — that would lose focus and feel
+     nothing like a spreadsheet. State is written, persisted, and the cell's own
+     "edited" shading is updated in place. */
+  document.querySelectorAll("[data-smf]").forEach(el=>el.addEventListener("change",e=>{
+    const t=e.currentTarget,key=t.dataset.smk,f=t.dataset.smf;
+    const money=t.classList.contains("numfmt");
+    const v=money?parseNumInput(t.value):(parseFloat(t.value)||0);
+    const old=simFor(ST,key)[f];
+    simSetField(ST,key,f,v);
+    logAudit("Simulator Inputs",`${key} · ${f}`,old,v);
+    save();
+    t.style.background=smEdited(ST,key,f)?"var(--amber-100)":"";
+  }));
+  document.querySelectorAll("[data-smoh]").forEach(el=>el.addEventListener("change",e=>{
+    const t=e.currentTarget,key=t.dataset.smk,idx=+t.dataset.smoh;
+    const v=parseNumInput(t.value);
+    const old=simFor(ST,key).oh[idx].cost;
+    simSetOh(ST,key,idx,v);
+    logAudit("Simulator Inputs",`${key} · ${INIT_OH[idx].label}`,old,v);
+    save();
+    t.style.background=smEdited(ST,key,null,idx)?"var(--amber-100)":"";
+  }));
+  document.querySelectorAll("[data-smgrp]").forEach(b=>b.addEventListener("click",e=>{
+    const k=e.currentTarget.dataset.smgrp;ST.smaster.groups[k]=!ST.smaster.groups[k];rerender();
+  }));
+  const q=document.getElementById("smQ");
+  if(q)q.addEventListener("input",e=>{ST.smaster.q=e.target.value;const pos=e.target.selectionStart;rerender();
+    const el=document.getElementById("smQ");if(el){el.focus();try{el.setSelectionRange(pos,pos);}catch(_){}}});
+  const cat=document.getElementById("smCat");
+  if(cat)cat.addEventListener("change",e=>{ST.smaster.cat=e.target.value;rerender();});
+  const ac=document.getElementById("smActive");
+  if(ac)ac.addEventListener("change",e=>{ST.smaster.onlyActive=e.target.checked;rerender();});
+  document.querySelectorAll("[data-smgo]").forEach(b=>b.addEventListener("click",e=>{
+    simSelectCourse(ST,+e.currentTarget.dataset.smgo);ST.module="simulator";ST.tab="overview";rerender();
+  }));
+  document.querySelectorAll("[data-smreset]").forEach(b=>b.addEventListener("click",e=>{
+    const key=e.currentTarget.dataset.smreset;
+    if(!confirm(`Reset "${key}" to the default simulator assumptions?\n\nOnly this course is affected.`))return;
+    if(ST.sim)delete ST.sim[key];
+    if(courseKey(COURSES[ST.ci])===key)simLoad(ST,ST.ci);
+    logAudit("Simulator Inputs",`${key} — reset to defaults`,"","defaults");
+    rerender();
+  }));
+  const cg=document.getElementById("smCopyGo");
+  if(cg)cg.addEventListener("click",()=>{
+    const fi=+document.getElementById("smCopyFrom").value,ti=+document.getElementById("smCopyTo").value;
+    const from=COURSES[fi],to=COURSES[ti];
+    if(!from||!to||fi===ti)return;
+    if(!confirm(`Copy every simulator assumption from "${from.name}" to "${to.name}"?\n\nThis replaces ${to.name}'s current assumptions. No other course is affected.`))return;
+    const v=simFor(ST,courseKey(from));
+    const o={};SIM_KEYS.forEach(k=>o[k]=v[k]);o.oh=v.oh.map(x=>({...x}));
+    ST.sim=ST.sim||{};ST.sim[courseKey(to)]=o;
+    if(courseKey(COURSES[ST.ci])===courseKey(to))simLoad(ST,ST.ci);
+    logAudit("Simulator Inputs","Copy assumptions",from.name,to.name);
+    rerender();
+  });
+}
+
 function render(){
   if(ST.module==="yearlybudget"){
     document.getElementById("app").innerHTML=buildModuleNav()+renderYearlyBudgetModule(ST);
@@ -4514,6 +4713,12 @@ function render(){
     document.getElementById("app").innerHTML=buildModuleNav()+renderStrategyModule(ST);
     bindModuleNavEvents();
     bindStrategyEvents();
+    return;
+  }
+  if(ST.module==="simmaster"){
+    document.getElementById("app").innerHTML=buildModuleNav()+renderSimMasterModule(ST);
+    bindModuleNavEvents();
+    bindSimMasterEvents();
     return;
   }
   if(ST.module==="cba"){
