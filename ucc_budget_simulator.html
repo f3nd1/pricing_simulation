@@ -643,7 +643,7 @@ const ST={
   module:"simulator",navOpen:false,
   audit:[],logTab:"edits",logSearch:"",
   smaster:{q:"",cat:"All",onlyActive:false,groups:{sim:true,oh:true,act:true,sub:true,price:true}},
-  cba:{tab:"status",driver:"hours",off:{},rates:{},def:{},acadPct:0,chartCi:0,runBasis:"none",chartMode:"full",
+  cba:{tab:"status",driver:"hours",off:{},rates:{},def:{},acadPct:0,chartCi:0,runBasis:"recorded",runs:{},chartMode:"full",
        basis:"budget",otherRev:[],showRates:false},
   intakes:[],ybView:"monthly",ybYear:new Date().getFullYear(),ybCat:"All",
   ybCopy:{to:0,kind:"both"},
@@ -2684,9 +2684,9 @@ function fcPnl(st){
 
 /* Build stamp. APP_VERSION is what the Change Log shows so you can tell at a
    glance whether a machine is running the latest file. Regenerate with mkver.py. */
-const APP_VERSION="v1.60.0";
+const APP_VERSION="v1.61.0";
 const APP_BUILD="2026-08-29";
-const APP_CHANGELOG=[{"h": "ab9a994", "d": "2026-08-29", "t": "08:34", "s": "Cost-Benefit: canonical Operating BE, run-aware status, YTD attainment"}, {"h": "ae0da18", "d": "2026-08-29", "t": "07:59", "s": "Add Simulator Inputs master sheet; confirm Price List is canonical"}, {"h": "ddcf1f0", "d": "2026-08-29", "t": "07:44", "s": "Course Simulator: give every course its own remembered assumptions"}, {"h": "46ce818", "d": "2026-08-29", "t": "07:22", "s": "Cost-Benefit: separate Operating and Full-Cost break-even, audit metrics, add explanatory diagrams"}, {"h": "b92e23b", "d": "2026-08-29", "t": "06:58", "s": "Yearly Budget: copy a year's intake plan to another year"}, {"h": "dae4d5f", "d": "2026-08-29", "t": "06:53", "s": "Collapse the per-course rate columns on the Active courses tab"}, {"h": "10c1379", "d": "2026-08-29", "t": "06:47", "s": "Cost-Benefit: pass rates, budget vs actual, and other income"}, {"h": "94b1772", "d": "2026-08-29", "t": "06:43", "s": "Fix false positive in the mkver duplicate guard"}, {"h": "07ae6ba", "d": "2026-08-29", "t": "06:42", "s": "Add Cost-Benefit charts tab (D3), ROI, and the do-not-average principle"}, {"h": "593b609", "d": "2026-08-29", "t": "06:21", "s": "Fix fatal duplicate const APP_VERSION that blanked the app"}, {"h": "c180693", "d": "2026-08-29", "t": "06:00", "s": "Explain why the two per-course views give different numbers"}, {"h": "322e4f0", "d": "2026-08-29", "t": "05:57", "s": "Add version stamp and rebuild the changelog from real git history"}, {"h": "dbfd3f0", "d": "2026-08-29", "t": "05:43", "s": "Cost-Benefit: per-course action verdicts and institution sustainability call"}, {"h": "cf96ca6", "d": "2026-08-29", "t": "05:35", "s": "Cost-Benefit: split the blended permanent-salary line out of the overhead pool"}, {"h": "5ddbb02", "d": "2026-08-29", "t": "05:32", "s": "Cost-Benefit rates inherit from Course Simulator instead of own defaults"}, {"h": "3d14a7e", "d": "2026-08-29", "t": "05:21", "s": "Add Cost-Benefit module (school + per-course) and a passcode gate"}, {"h": "360af5b", "d": "2026-08-12", "t": "10:21", "s": "Rename ULEC to Contractor in UI; set AEIS course fee to 11,500"}, {"h": "b568fb8", "d": "2026-07-07", "t": "14:45", "s": "Show comma-separated numbers in editable money fields (24,000 not 24000)"}, {"h": "2180e03", "d": "2026-07-07", "t": "14:37", "s": "Make budget period dynamic: 5-year window, choose start year, save named periods"}, {"h": "c02c902", "d": "2026-07-07", "t": "14:29", "s": "Extend forecast to 2026-2040 (15 years) + add Change Log module"}, {"h": "056a4ef", "d": "2026-07-07", "t": "14:10", "s": "Add yearly expense growth model + budget period selector"}, {"h": "93407a4", "d": "2026-07-07", "t": "13:54", "s": "Add monthly expense breakdown (base-year drill-down) + bake in Supabase config"}, {"h": "b9c34e3", "d": "2026-07-07", "t": "13:20", "s": "Add fixed Supabase config option that locks the Cloud Save fields"}, {"h": "bdd773b", "d": "2026-07-07", "t": "09:27", "s": "Link all modules to live data: revenue from Price List × Yearly Budget, Excel expense sub-items, dynamic course catalog"}, {"h": "e324f9e", "d": "2026-07-07", "t": "09:07", "s": "Add Strategy & Governance module (Phase D): growth initiatives NPV/payback, compliance tracker, funding register; fix mobile overflow"}, {"h": "9d069c9", "d": "2026-07-07", "t": "09:00", "s": "Add Valuation & Statements module (Phase C of Excel master-budget port)"}, {"h": "e209b5e", "d": "2026-07-07", "t": "08:56", "s": "Add Operating Detail module (Phase B of Excel master-budget port)"}, {"h": "f76ed77", "d": "2026-07-07", "t": "08:47", "s": "Add Forecast & P&L module (Phase A of Excel master-budget port)"}, {"h": "352f494", "d": "2026-07-07", "t": "07:47", "s": "Re-add drag-to-move to Yearly Budget nodes with a grip handle"}, {"h": "674ded3", "d": "2026-07-07", "t": "07:25", "s": "Yearly Budget planner: back to vertical month rows, add per-month duplicate + price"}, {"h": "0278c90", "d": "2026-07-07", "t": "07:16", "s": "Yearly Budget planner: horizontal month columns with drag, duplicate, copy"}, {"h": "1a8a09a", "d": "2026-07-07", "t": "07:08", "s": "Redesign Yearly Budget intake area as a month-by-month planner grid"}, {"h": "ff7957c", "d": "2026-07-07", "t": "06:56", "s": "Add duplicate + month-shift controls to Yearly Budget intakes"}, {"h": "c97000b", "d": "2026-07-07", "t": "06:52", "s": "Add \"Save over\" (overwrite) to cloud-saved scenarios"}, {"h": "5c6ff65", "d": "2026-07-07", "t": "02:49", "s": "Add cloud save/load via Supabase"}, {"h": "66c8c12", "d": "2026-07-07", "t": "02:16", "s": "Fix Yearly Budget responsiveness across tablet and small-phone widths"}, {"h": "486dc2b", "d": "2026-07-07", "t": "02:10", "s": "Replace top nav bar with hamburger drawer menu"}, {"h": "2e80831", "d": "2026-07-07", "t": "02:00", "s": "Redesign Yearly Budget module — teal hero banner + attainment strip"}, {"h": "efda20c", "d": "2026-07-07", "t": "01:37", "s": "Add readable TypeScript/React version of the Yearly Budget module"}, {"h": "9c742f7", "d": "2026-07-07", "t": "01:32", "s": "Split into two top-level modules: Course Simulator + Yearly Budget"}, {"h": "35123f6", "d": "2026-07-07", "t": "01:14", "s": "Add Portfolio tab: multi-course Monthly/Quarterly/Yearly/Total menu"}, {"h": "3501c6d", "d": "2026-07-07", "t": "00:51", "s": "Add portfolio performance React prototype"}, {"h": "b716e62", "d": "2026-07-06", "t": "23:55", "s": "Add legends to all D3 chart views"}, {"h": "f2fd130", "d": "2026-07-06", "t": "23:47", "s": "Add D3.js charts to all remaining tabs (6 new chart views)"}, {"h": "b915c0d", "d": "2026-07-06", "t": "23:25", "s": "Add D3.js chart view for What-if profit-by-students, alongside existing table"}, {"h": "13776d3", "d": "2026-06-30", "t": "03:37", "s": "Clarify breakeven is total enrolment for one run, not per month"}, {"h": "2efacb5", "d": "2026-06-30", "t": "02:04", "s": "Widen left panel and redesign ULEC subcontract tab"}, {"h": "64fcb77", "d": "2026-06-30", "t": "01:50", "s": "Rename student inputs to 'Planned/Actual students (total)' with per-month sub-label"}, {"h": "2b2b1a7", "d": "2026-06-30", "t": "01:48", "s": "Clarify Planned/Actual students labels: show total cohort + per-month sub-label"}, {"h": "ebf05c9", "d": "2026-06-30", "t": "01:46", "s": "Split what-if table: separate Students (total) and Per month columns"}, {"h": "8418481", "d": "2026-06-30", "t": "01:42", "s": "Add what-if enrolment table and per-month student figures to Overview"}, {"h": "ae816dd", "d": "2026-06-30", "t": "01:32", "s": "Redesign layout, add AI chatbot, price list with hours/months, and finance advisor skill"}, {"h": "274a2b1", "d": "2026-06-30", "t": "01:10", "s": "Add localStorage persistence + JSON export/import"}, {"h": "b8c60d6", "d": "2026-06-29", "t": "23:29", "s": "Add QuickLook fallback message and DOMContentLoaded guard"}, {"h": "05a4e6d", "d": "2026-06-29", "t": "23:27", "s": "Fix blank page: add proper HTML5 document structure"}, {"h": "b1afa6b", "d": "2026-06-29", "t": "23:26", "s": "Make layout fully responsive for mobile and tablet"}, {"h": "d72fc86", "d": "2026-06-29", "t": "23:08", "s": "Fix visual design: card depth, blue header, active tab, sr-only"}, {"h": "e451348", "d": "2026-06-29", "t": "23:04", "s": "Add CSS variable definitions and form element styling"}, {"h": "8730024", "d": "2026-06-29", "t": "21:19", "s": "Add Fee Calculator tab to UCC budget simulator"}];
+const APP_CHANGELOG=[{"h": "569da30", "d": "2026-08-29", "t": "08:44", "s": "Cost-Benefit diagnostics: fee, commission and cost-driver analysis"}, {"h": "ab9a994", "d": "2026-08-29", "t": "08:34", "s": "Cost-Benefit: canonical Operating BE, run-aware status, YTD attainment"}, {"h": "ae0da18", "d": "2026-08-29", "t": "07:59", "s": "Add Simulator Inputs master sheet; confirm Price List is canonical"}, {"h": "ddcf1f0", "d": "2026-08-29", "t": "07:44", "s": "Course Simulator: give every course its own remembered assumptions"}, {"h": "46ce818", "d": "2026-08-29", "t": "07:22", "s": "Cost-Benefit: separate Operating and Full-Cost break-even, audit metrics, add explanatory diagrams"}, {"h": "b92e23b", "d": "2026-08-29", "t": "06:58", "s": "Yearly Budget: copy a year's intake plan to another year"}, {"h": "dae4d5f", "d": "2026-08-29", "t": "06:53", "s": "Collapse the per-course rate columns on the Active courses tab"}, {"h": "10c1379", "d": "2026-08-29", "t": "06:47", "s": "Cost-Benefit: pass rates, budget vs actual, and other income"}, {"h": "94b1772", "d": "2026-08-29", "t": "06:43", "s": "Fix false positive in the mkver duplicate guard"}, {"h": "07ae6ba", "d": "2026-08-29", "t": "06:42", "s": "Add Cost-Benefit charts tab (D3), ROI, and the do-not-average principle"}, {"h": "593b609", "d": "2026-08-29", "t": "06:21", "s": "Fix fatal duplicate const APP_VERSION that blanked the app"}, {"h": "c180693", "d": "2026-08-29", "t": "06:00", "s": "Explain why the two per-course views give different numbers"}, {"h": "322e4f0", "d": "2026-08-29", "t": "05:57", "s": "Add version stamp and rebuild the changelog from real git history"}, {"h": "dbfd3f0", "d": "2026-08-29", "t": "05:43", "s": "Cost-Benefit: per-course action verdicts and institution sustainability call"}, {"h": "cf96ca6", "d": "2026-08-29", "t": "05:35", "s": "Cost-Benefit: split the blended permanent-salary line out of the overhead pool"}, {"h": "5ddbb02", "d": "2026-08-29", "t": "05:32", "s": "Cost-Benefit rates inherit from Course Simulator instead of own defaults"}, {"h": "3d14a7e", "d": "2026-08-29", "t": "05:21", "s": "Add Cost-Benefit module (school + per-course) and a passcode gate"}, {"h": "360af5b", "d": "2026-08-12", "t": "10:21", "s": "Rename ULEC to Contractor in UI; set AEIS course fee to 11,500"}, {"h": "b568fb8", "d": "2026-07-07", "t": "14:45", "s": "Show comma-separated numbers in editable money fields (24,000 not 24000)"}, {"h": "2180e03", "d": "2026-07-07", "t": "14:37", "s": "Make budget period dynamic: 5-year window, choose start year, save named periods"}, {"h": "c02c902", "d": "2026-07-07", "t": "14:29", "s": "Extend forecast to 2026-2040 (15 years) + add Change Log module"}, {"h": "056a4ef", "d": "2026-07-07", "t": "14:10", "s": "Add yearly expense growth model + budget period selector"}, {"h": "93407a4", "d": "2026-07-07", "t": "13:54", "s": "Add monthly expense breakdown (base-year drill-down) + bake in Supabase config"}, {"h": "b9c34e3", "d": "2026-07-07", "t": "13:20", "s": "Add fixed Supabase config option that locks the Cloud Save fields"}, {"h": "bdd773b", "d": "2026-07-07", "t": "09:27", "s": "Link all modules to live data: revenue from Price List × Yearly Budget, Excel expense sub-items, dynamic course catalog"}, {"h": "e324f9e", "d": "2026-07-07", "t": "09:07", "s": "Add Strategy & Governance module (Phase D): growth initiatives NPV/payback, compliance tracker, funding register; fix mobile overflow"}, {"h": "9d069c9", "d": "2026-07-07", "t": "09:00", "s": "Add Valuation & Statements module (Phase C of Excel master-budget port)"}, {"h": "e209b5e", "d": "2026-07-07", "t": "08:56", "s": "Add Operating Detail module (Phase B of Excel master-budget port)"}, {"h": "f76ed77", "d": "2026-07-07", "t": "08:47", "s": "Add Forecast & P&L module (Phase A of Excel master-budget port)"}, {"h": "352f494", "d": "2026-07-07", "t": "07:47", "s": "Re-add drag-to-move to Yearly Budget nodes with a grip handle"}, {"h": "674ded3", "d": "2026-07-07", "t": "07:25", "s": "Yearly Budget planner: back to vertical month rows, add per-month duplicate + price"}, {"h": "0278c90", "d": "2026-07-07", "t": "07:16", "s": "Yearly Budget planner: horizontal month columns with drag, duplicate, copy"}, {"h": "1a8a09a", "d": "2026-07-07", "t": "07:08", "s": "Redesign Yearly Budget intake area as a month-by-month planner grid"}, {"h": "ff7957c", "d": "2026-07-07", "t": "06:56", "s": "Add duplicate + month-shift controls to Yearly Budget intakes"}, {"h": "c97000b", "d": "2026-07-07", "t": "06:52", "s": "Add \"Save over\" (overwrite) to cloud-saved scenarios"}, {"h": "5c6ff65", "d": "2026-07-07", "t": "02:49", "s": "Add cloud save/load via Supabase"}, {"h": "66c8c12", "d": "2026-07-07", "t": "02:16", "s": "Fix Yearly Budget responsiveness across tablet and small-phone widths"}, {"h": "486dc2b", "d": "2026-07-07", "t": "02:10", "s": "Replace top nav bar with hamburger drawer menu"}, {"h": "2e80831", "d": "2026-07-07", "t": "02:00", "s": "Redesign Yearly Budget module — teal hero banner + attainment strip"}, {"h": "efda20c", "d": "2026-07-07", "t": "01:37", "s": "Add readable TypeScript/React version of the Yearly Budget module"}, {"h": "9c742f7", "d": "2026-07-07", "t": "01:32", "s": "Split into two top-level modules: Course Simulator + Yearly Budget"}, {"h": "35123f6", "d": "2026-07-07", "t": "01:14", "s": "Add Portfolio tab: multi-course Monthly/Quarterly/Yearly/Total menu"}, {"h": "3501c6d", "d": "2026-07-07", "t": "00:51", "s": "Add portfolio performance React prototype"}, {"h": "b716e62", "d": "2026-07-06", "t": "23:55", "s": "Add legends to all D3 chart views"}, {"h": "f2fd130", "d": "2026-07-06", "t": "23:47", "s": "Add D3.js charts to all remaining tabs (6 new chart views)"}, {"h": "b915c0d", "d": "2026-07-06", "t": "23:25", "s": "Add D3.js chart view for What-if profit-by-students, alongside existing table"}, {"h": "13776d3", "d": "2026-06-30", "t": "03:37", "s": "Clarify breakeven is total enrolment for one run, not per month"}, {"h": "2efacb5", "d": "2026-06-30", "t": "02:04", "s": "Widen left panel and redesign ULEC subcontract tab"}, {"h": "64fcb77", "d": "2026-06-30", "t": "01:50", "s": "Rename student inputs to 'Planned/Actual students (total)' with per-month sub-label"}, {"h": "2b2b1a7", "d": "2026-06-30", "t": "01:48", "s": "Clarify Planned/Actual students labels: show total cohort + per-month sub-label"}, {"h": "ebf05c9", "d": "2026-06-30", "t": "01:46", "s": "Split what-if table: separate Students (total) and Per month columns"}, {"h": "8418481", "d": "2026-06-30", "t": "01:42", "s": "Add what-if enrolment table and per-month student figures to Overview"}, {"h": "ae816dd", "d": "2026-06-30", "t": "01:32", "s": "Redesign layout, add AI chatbot, price list with hours/months, and finance advisor skill"}, {"h": "274a2b1", "d": "2026-06-30", "t": "01:10", "s": "Add localStorage persistence + JSON export/import"}, {"h": "b8c60d6", "d": "2026-06-29", "t": "23:29", "s": "Add QuickLook fallback message and DOMContentLoaded guard"}, {"h": "05a4e6d", "d": "2026-06-29", "t": "23:27", "s": "Fix blank page: add proper HTML5 document structure"}, {"h": "b1afa6b", "d": "2026-06-29", "t": "23:26", "s": "Make layout fully responsive for mobile and tablet"}, {"h": "d72fc86", "d": "2026-06-29", "t": "23:08", "s": "Fix visual design: card depth, blue header, active tab, sr-only"}, {"h": "e451348", "d": "2026-06-29", "t": "23:04", "s": "Add CSS variable definitions and form element styling"}, {"h": "8730024", "d": "2026-06-29", "t": "21:19", "s": "Add Fee Calculator tab to UCC budget simulator"}];
 function fmtLogDate(iso){
   const d=new Date(iso);
   if(isNaN(d))return iso||"";
@@ -3674,6 +3674,8 @@ function cbaDefault(st,k){
   if(d[k]!=null&&d[k]!=="")return Number(d[k]);
   return k==="comm"?SIM_DEFAULTS.agent
        : k==="rate"?SIM_DEFAULTS.tf
+       : k==="disc"?SIM_DEFAULTS.disc
+       : k==="uni"?SIM_DEFAULTS.uni
        : k==="pass"?100
        : (Number(st.op.mp.cls)||14);
 }
@@ -3683,9 +3685,11 @@ function cbaRate(st,c,k){
   if(o[k]!=null&&o[k]!=="")return Number(o[k]);          /* per-course override */
   const d=st.cba.def||{};
   if(d[k]!=null&&d[k]!=="")return Number(d[k]);          /* explicit all-courses value */
-  if(k==="comm"||k==="rate"){                            /* else this course's own simulator setting */
-    const v=st.sim&&st.sim[c.name],f=k==="comm"?"agent":"tf";
-    if(v&&v[f]!=null)return Number(v[f]);
+  /* else this course's OWN saved Course Simulator value — the canonical source */
+  const SIMFIELD={comm:"agent",rate:"tf",disc:"disc",uni:"uni"}[k];
+  if(SIMFIELD){
+    const v=st.sim&&st.sim[c.name];
+    if(v&&v[SIMFIELD]!=null)return Number(v[SIMFIELD]);
   }
   return cbaDefault(st,k);
 }
@@ -3700,12 +3704,19 @@ function cbaStudents(st,ci,yr,basis){
    annual total cannot be derived from the data alone. Rather than invent one,
    the basis is an explicit management choice and defaults to "not specified",
    in which case Operating Status is reported as unavailable. */
-const CBA_RUN_BASES=[["none","Not specified","Operating status cannot be determined without a run basis"],
+const CBA_RUN_BASES=[["recorded","Recorded runs (enter per course)","Uses the runs you record for each course; N/A until entered"],
+  ["none","Not specified","Operating status cannot be determined without a run basis"],
   ["month","One run per intake month","Each month with commencements counts as a separate run"],
   ["class","One run per class","Runs = students ÷ class size, rounded up"],
   ["one","One run per year","The whole year's students belong to a single run"]];
+function cbaRunKey(ci,yr){const c=COURSES[ci];return `${c?courseKey(c):ci}:${yr}`;}
+function cbaRecordedRuns(st,ci,yr){
+  const v=(st.cba.runs||{})[cbaRunKey(ci,yr)];
+  return (v==null||v==="")?null:Math.max(0,Math.floor(Number(v)));
+}
 function cbaRuns(st,ci,yr,basis){
-  const b=st.cba.runBasis||"none";
+  const b=st.cba.runBasis||"recorded";
+  if(b==="recorded")return cbaRecordedRuns(st,ci,yr);   /* null until you record it */
   if(b==="one")return 1;
   if(b==="month"){
     const ms=new Set(st.intakes.filter(k=>(k.kind||"budget")===basis&&k.ci===ci&&k.year===yr&&(Number(k.students)||0)>0).map(k=>k.month));
@@ -3788,20 +3799,19 @@ function cbaPool(st){
    is excluded, because those same categories already sit in the institution
    OPEX pool and would otherwise be counted twice. Neither is wrong; they are
    different cost bases, so the two numbers are not expected to match. */
-function cbaBeOperating(c,comm,rate,cls,price){
-  const hrs=c.hrs||0;
-  if(cls*(price-c.fee*comm)-hrs*rate<=0)return null;
-  for(let n=1;n<=cls*200;n++){
-    if(n*price>=hrs*Math.ceil(n/cls)*rate+n*c.fee*comm)return n;
-  }
+/* Net revenue per student after scholarship discount, less the per-student
+   commissions UCC pays out. Same basis as cbaCompute, so nothing drifts. */
+function cbaNetPer(c,comm,uni,disc,price){return price*(1-(disc||0))-(c.fee||0)*(comm+(uni||0));}
+function cbaBeOperating(c,comm,rate,cls,price,uni,disc){
+  const hrs=c.hrs||0,per=cbaNetPer(c,comm,uni,disc,price);
+  if(cls*per-hrs*rate<=0)return null;
+  for(let n=1;n<=cls*200;n++){if(n*per>=hrs*Math.ceil(n/cls)*rate)return n;}
   return null;
 }
-function cbaMinStudents(c,comm,rate,cls,price,allocOH){
-  const hrs=c.hrs||0;
-  if(cls*(price-c.fee*comm)-hrs*rate<=0)return null;
-  for(let n=1;n<=cls*200;n++){
-    if(n*price>=hrs*Math.ceil(n/cls)*rate+n*c.fee*comm+allocOH)return n;
-  }
+function cbaMinStudents(c,comm,rate,cls,price,allocOH,uni,disc){
+  const hrs=c.hrs||0,per=cbaNetPer(c,comm,uni,disc,price);
+  if(cls*per-hrs*rate<=0)return null;
+  for(let n=1;n<=cls*200;n++){if(n*per>=hrs*Math.ceil(n/cls)*rate+allocOH)return n;}
   return null;
 }
 /* Action per course. Driven by the allocation-free signals first (contribution,
@@ -3857,15 +3867,23 @@ function cbaCompute(st,basisOverride){
     const on=cbaOn(st,c),students=on?cbaStudents(st,ci,yr,basis):0;
     const price=priceOfCourse(c);
     const comm=cbaRate(st,c,"comm")/100,rate=cbaRate(st,c,"rate"),cls=Math.max(1,cbaRate(st,c,"cls"));
+    const disc=cbaRate(st,c,"disc")/100,uni=cbaRate(st,c,"uni")/100;
     const pass=Math.min(100,Math.max(0,cbaRate(st,c,"pass")))/100;
     const classes=students>0?Math.ceil(students/cls):0;
-    const revenue=students*price;
+    /* Gross fee revenue -> less scholarship discount -> NET REVENUE (the BCR
+       numerator). Agent and university commission are money UCC pays out, so
+       they are direct COSTS in the denominator and are never also deducted from
+       revenue. Each item is counted exactly once. */
+    const gross=students*price;
+    const discount=gross*disc;
+    const revenue=gross-discount;
     const teaching=(c.hrs||0)*classes*rate;
-    const commission=students*c.fee*comm;
-    const direct=teaching+commission;
+    const commission=students*(c.fee||0)*comm;
+    const uniComm=students*(c.fee||0)*uni;
+    const direct=teaching+commission+uniComm;
     const drv=driver==="hours"?(c.hrs||0)*classes:driver==="months"?students*(c.mo||0):revenue;
-    return {ci,c,name:c.name,group:c.cat,on,students,price,comm,rate,cls,classes,pass,
-            revenue,teaching,commission,direct,contribution:revenue-direct,drv};
+    return {ci,c,name:c.name,group:c.cat,on,students,price,comm,rate,cls,classes,pass,disc,uni,
+            gross,discount,revenue,teaching,commission,uniComm,direct,contribution:revenue-direct,drv};
   });
   const live=rows.filter(r=>r.on&&r.students>0);
   const drvTot=live.reduce((a,r)=>a+r.drv,0);
@@ -3874,8 +3892,8 @@ function cbaCompute(st,basisOverride){
     r.total=r.direct+r.allocOH;
     r.bcr=r.total>0?r.revenue/r.total:null;
     r.costPerStu=r.students>0?r.total/r.students:null;
-    r.beOp=cbaBeOperating(r.c,r.comm,r.rate,r.cls,r.price);      /* direct costs only */
-    r.beFull=cbaMinStudents(r.c,r.comm,r.rate,r.cls,r.price,r.allocOH); /* + allocated overhead */
+    r.beOp=cbaBeOperating(r.c,r.comm,r.rate,r.cls,r.price,r.uni,r.disc);      /* direct costs only */
+    r.beFull=cbaMinStudents(r.c,r.comm,r.rate,r.cls,r.price,r.allocOH,r.uni,r.disc); /* + allocated overhead */
     r.minFull=r.beFull;                                           /* legacy alias */
     r.margin=r.revenue>0?r.contribution/r.revenue:null;   /* contribution margin */
     r.roi=r.total>0?(r.revenue-r.total)/r.total:null;     /* ROI = ratio - 1 */
@@ -3915,6 +3933,9 @@ function cbaCompute(st,basisOverride){
        bcr:cost>0?benefit/cost:null,
        costPerStu:students>0?cost/students:null,
        courseRev,other,passed,
+       gross:live.reduce((a,r)=>a+r.gross,0),
+       discount:live.reduce((a,r)=>a+r.discount,0),
+       uniComm:live.reduce((a,r)=>a+r.uniComm,0),
        costPerPass:passed>0?cost/passed:null,
        margin:benefit>0?(benefit-direct)/benefit:null,          /* contribution margin */
        opMargin:benefit>0?(benefit-cost)/benefit:null,          /* operating margin */
@@ -4202,6 +4223,14 @@ function bindCbaEvents(){
     const nv=parseInt(e.target.value)||FC_YEARS[0];
     logAudit("Cost-Benefit","Year",ST.ybYear,nv);ST.ybYear=nv;save_render();
   });
+  document.querySelectorAll("[data-cbaruns]").forEach(inp=>inp.addEventListener("change",e=>{
+    const ci=+e.currentTarget.dataset.cbaruns,raw=e.currentTarget.value.trim(),yr=cbaYear(ST);
+    ST.cba.runs=ST.cba.runs||{};
+    const key=cbaRunKey(ci,yr),old=ST.cba.runs[key];
+    if(raw==="")delete ST.cba.runs[key]; else ST.cba.runs[key]=Math.max(0,Math.floor(parseFloat(raw)||0));
+    logAudit("Cost-Benefit",`${(COURSES[ci]||{}).name||"course"} — runs ${yr}`,old==null?"(not recorded)":old,raw===""?"(not recorded)":ST.cba.runs[key]);
+    save_render();
+  }));
   const rbs=document.getElementById("cbaRunBasis");
   if(rbs)rbs.addEventListener("change",e=>{
     logAudit("Cost-Benefit","Course-run basis",ST.cba.runBasis,e.target.value);
@@ -4266,28 +4295,46 @@ function bindCbaEvents(){
    they are shown below as scenarios only, because applying them for real would
    change the institution ratio and that is an accounting decision, not a bug
    fix. Every scenario recomputes with the SAME formulas cbaCompute uses. */
+/* Scenario helpers — same accounting flow as cbaCompute, so a 0% change
+   reproduces the live figures exactly. No second financial engine. */
 function cbaFeeScenario(r,pct){
-  const c=r.c,newFee=(c.fee||0)*(1+pct);
-  const price=newFee+(c.mat||0)+(c.exam||0)+(c.admin||0);
-  const revenue=r.students*price;
-  const commission=r.students*newFee*r.comm;
-  const direct=r.teaching+commission;                 /* teaching does not move with fee */
-  const total=direct+r.allocOH;
-  return {pct,fee:newFee,price,revenue,commission,direct,total,
+  const c=r.c,fee=(c.fee||0)*(1+pct);
+  const price=fee+(c.mat||0)+(c.exam||0)+(c.admin||0);
+  const gross=r.students*price,discount=gross*r.disc,revenue=gross-discount;
+  const commission=r.students*fee*r.comm,uniComm=r.students*fee*r.uni;
+  const direct=r.teaching+commission+uniComm,total=direct+r.allocOH;
+  return {pct,fee,gross,discount,revenue,commission,uniComm,direct,total,
     contribution:revenue-direct,
     perStu:r.students>0?(revenue-direct)/r.students:null,
     bcr:total>0?revenue/total:null};
 }
-function cbaRateScenario(r,commPct,discPct){
-  const c=r.c,comm=commPct/100,disc=(discPct||0)/100;
-  const revenue=r.revenue*(1-disc);                   /* discount applied to gross revenue */
-  const commission=r.students*(c.fee||0)*comm;
-  const direct=r.teaching+commission;
-  const total=direct+r.allocOH;
-  return {commPct,discPct:discPct||0,revenue,commission,direct,total,
+function cbaRateScenario(r,commPct,discPct,uniPct){
+  const c=r.c,comm=commPct/100,disc=(discPct==null?r.disc*100:discPct)/100,uni=(uniPct==null?r.uni*100:uniPct)/100;
+  const gross=r.gross,discount=gross*disc,revenue=gross-discount;
+  const commission=r.students*(c.fee||0)*comm,uniComm=r.students*(c.fee||0)*uni;
+  const direct=r.teaching+commission+uniComm,total=direct+r.allocOH;
+  return {commPct,discPct:disc*100,revenue,commission,uniComm,direct,total,
     contribution:revenue-direct,
     perStu:r.students>0?(revenue-direct)/r.students:null,
     bcr:total>0?revenue/total:null};
+}
+/* Four separate statuses, never one combined score. */
+function cbaStatusStrip(r){
+  const B=cbaBudgetState(r);
+  const cell=(lbl,icon,txt,col)=>`<div style="flex:1 1 130px;min-width:118px;padding:9px 11px;border-radius:8px;background:var(--surface-1);border-top:3px solid ${col}">
+    <div style="font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted)">${lbl}</div>
+    <div style="font-size:13px;font-weight:700;color:${col};margin-top:3px;white-space:nowrap">${icon} ${txt}</div></div>`;
+  return `<div style="display:flex;gap:8px;flex-wrap:wrap">
+    ${cell("Operating",r.opStatus==="met"?"✅":r.opStatus==="not"?"❌":"⚪",
+      r.opStatus==="met"?`Met +${r.opGap}`:r.opStatus==="not"?`Short ${Math.abs(r.opGap)}`:"N/A",
+      r.opStatus==="met"?"var(--text-success)":r.opStatus==="not"?"var(--text-danger)":"var(--text-muted)")}
+    ${cell("Budget",B.k==="ok"?"✅":B.k==="na"?"⚪":"⚠️",B.txt,
+      B.k==="ok"?"var(--text-success)":B.k==="na"?"var(--text-muted)":"var(--amber-800)")}
+    ${cell("Contribution",r.contribution>=0?"✅":"❌",sgd(r.contribution),
+      r.contribution>=0?"var(--text-success)":"var(--text-danger)")}
+    ${cell("Full cost",r.fullStatus==="rec"?"✅":"⚠️",r.bcr==null?"—":r.bcr.toFixed(2)+"×",
+      r.fullStatus==="rec"?"var(--text-success)":"var(--amber-800)")}
+  </div>`;
 }
 function cbaRenderDiag(st,d){
   const sel=COURSES.map((c,i)=>({c,i})).filter(x=>cbaOn(st,x.c)&&cbaStudents(st,x.i,d.yr,d.basis)>0);
@@ -4295,122 +4342,185 @@ function cbaRenderDiag(st,d){
   if(!sel.some(x=>x.i===st.cba.chartCi))st.cba.chartCi=sel[0].i;
   const r=d.live.find(x=>x.ci===st.cba.chartCi)||d.live[0];
   if(!r)return "";
-  const c=r.c,n=r.students;
-  const per=v=>n>0?v/n:0;
-  const sim=simFor(st,courseKey(c));                  /* the course's own simulator rates */
+  const c=r.c,n=r.students,per=v=>n>0?v/n:0;
   const basisLbl=(d.basis||"budget")==="actual"?"Actual":"Budget";
+  const drv=CBA_DRIVERS.find(x=>x[0]===d.driver)[1];
 
-  /* ── per-student build-up ───────────────────────────────────────────── */
-  const rowsPS=[
-    ["Gross fee revenue",per(r.revenue),"pos",`${sgd(c.fee)} course + ${sgd((c.mat||0)+(c.exam||0)+(c.admin||0))} materials, exam, admin`],
-    [`Agent commission (${Math.round(r.comm*100)}% of course fee)`,-per(r.commission),"neg",`${sgd(c.fee)} × ${Math.round(r.comm*100)}%`],
-    ["Teaching",-per(r.teaching),"neg",`${c.hrs} hrs × ${sgd(r.rate)}/hr × ${r.classes} class${r.classes===1?"":"es"} ÷ ${n} students`],
-    ["= Contribution per student",per(r.contribution),"tot",""],
-    ["Allocated central overhead",-per(r.allocOH),"neg",`${CBA_DRIVERS.find(x=>x[0]===d.driver)[1]} basis`],
-    ["= Full-cost result per student",per(r.revenue-r.total),"tot",""]];
+  /* ── A. money flow, live values ─────────────────────────────────────── */
+  const step=(lbl,val,col,bg,note,faint)=>`<div style="flex:1 1 132px;min-width:118px;padding:8px 10px;border-radius:8px;background:${bg};border:1px solid ${col}33;${faint?"opacity:.55":""}">
+    <div style="font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:${col}">${lbl}</div>
+    <div style="font-size:14px;font-weight:800;color:${col};margin-top:2px">${val}</div>
+    ${note?`<div style="font-size:9px;color:var(--text-muted);margin-top:1px">${note}</div>`:""}</div>`;
+  const arrow=`<div style="flex:0 0 auto;align-self:center;color:var(--text-muted);font-size:11px">→</div>`;
+  const G="#2563eb",RED="var(--text-danger)",GRN="var(--text-success)",AMB="#b45309";
+  const flow=[
+    step("Gross fee revenue",sgd(r.gross),G,"var(--blue-50,#eff6ff)",`${n} × ${sgd(r.price)}`),
+    arrow,
+    step("Less scholarship",r.discount?`(${sgd(r.discount)})`:"$0",r.discount?RED:"var(--text-muted)",r.discount?"var(--red-100,#fee2e2)":"var(--surface-1)",r.discount?`${Math.round(r.disc*100)}% discount`:"No discount",!r.discount),
+    arrow,
+    step("Net revenue",sgd(r.revenue),G,"var(--blue-50,#eff6ff)","what UCC earns"),
+    arrow,
+    step("Less agent comm.",`(${sgd(r.commission)})`,RED,"var(--red-100,#fee2e2)",`${Math.round(r.comm*100)}% of course fee`),
+    arrow,
+    step("Less uni comm.",r.uniComm?`(${sgd(r.uniComm)})`:"$0",r.uniComm?RED:"var(--text-muted)",r.uniComm?"var(--red-100,#fee2e2)":"var(--surface-1)",r.uniComm?`${Math.round(r.uni*100)}% of course fee`:"Not applicable",!r.uniComm),
+    arrow,
+    step("Less teaching",`(${sgd(r.teaching)})`,RED,"var(--red-100,#fee2e2)",`${c.hrs} hrs × ${sgd(r.rate)} × ${r.classes}`),
+    arrow,
+    step("Contribution",sgd(r.contribution),r.contribution>=0?GRN:RED,r.contribution>=0?"var(--green-100,#dcfce7)":"var(--red-100,#fee2e2)",r.contribution>=0?"funds central costs":"does not cover direct cost"),
+    arrow,
+    step("Less central overhead",`(${sgd(r.allocOH)})`,AMB,"var(--amber-100,#fef3c7)",`${drv} basis`),
+    arrow,
+    step("Full-cost result",sgd(r.revenue-r.total),(r.revenue-r.total)>=0?GRN:RED,(r.revenue-r.total)>=0?"var(--green-100,#dcfce7)":"var(--red-100,#fee2e2)",`BCR ${r.bcr==null?"—":r.bcr.toFixed(2)+"×"}`)
+  ].join("");
 
-  /* ── fee scenarios ──────────────────────────────────────────────────── */
-  const feeS=[-0.05,0,0.05,0.10].map(p=>cbaFeeScenario(r,p));
-  const base=feeS[1];
+  /* ── B. operating break-even ────────────────────────────────────────── */
+  const opBox=(v,l,col)=>`<div style="text-align:center;padding:6px 12px"><div style="font-size:19px;font-weight:800;color:${col}">${v}</div><div style="font-size:10px;color:var(--text-muted)">${l}</div></div>`;
+  const opDiag=r.opStatus==="na"
+    ? `<div style="font-size:12px;color:var(--text-muted);line-height:1.7">Break-even is <strong style="color:var(--text-primary)">${r.beRun==null?"—":r.beRun}</strong> students per run.
+       <strong style="color:var(--amber-800)">Runs not recorded for ${d.yr}</strong> — enter the number of runs on the Course status tab and this becomes a Met / Not-met answer.</div>`
+    : `<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+        ${opBox(r.beRun,"per run","#2563eb")}<div style="font-size:15px;color:var(--text-muted)">×</div>
+        ${opBox(r.runs,`run${r.runs===1?"":"s"}`,"#2563eb")}<div style="font-size:15px;color:var(--text-muted)">=</div>
+        ${opBox(r.opReq,"required","#b45309")}
+        <div style="font-size:15px;color:var(--text-muted);margin:0 4px">vs</div>
+        ${opBox(n,`${basisLbl.toLowerCase()} students`,r.opStatus==="met"?"var(--text-success)":"var(--text-danger)")}
+       </div>
+       <div style="margin-top:8px;font-size:12px;font-weight:700;color:${r.opStatus==="met"?"var(--text-success)":"var(--text-danger)"}">
+        ${r.opStatus==="met"?`✅ ${r.opGap} above operating break-even`:`❌ Needs ${Math.abs(r.opGap)} more student${Math.abs(r.opGap)===1?"":"s"} to cover direct operating costs`}</div>`;
 
-  /* ── commission / discount scenarios ────────────────────────────────── */
-  const cp=Math.round(r.comm*100);
-  const commS=[cp,Math.max(0,cp-10),Math.max(0,cp-20)].map(x=>cbaRateScenario(r,x,0));
-  const discS=cbaRateScenario(r,cp,sim.disc||0);
-  const uniCost=n*(c.fee||0)*((sim.uni||0)/100);
+  /* ── C. budget attainment ───────────────────────────────────────────── */
+  const B=cbaBudgetState(r),bp=r.ytd&&r.ytd.pct!=null?Math.round(r.ytd.pct*100):null;
+  const budDiag=bp==null
+    ? `<div style="font-size:12px;color:var(--text-muted)">No Actual enrolment recorded for ${d.yr}.</div>`
+    : `<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+         <span>YTD Budget <strong>${r.ytd.budget}</strong></span><span>Actual <strong>${r.ytd.actual}</strong></span></div>
+       <div style="height:14px;background:var(--surface-1);border-radius:7px;overflow:hidden">
+         <div style="width:${Math.min(100,bp)}%;height:100%;background:${bp>=100?"#16a34a":bp>=80?"#f59e0b":"#dc2626"}"></div></div>
+       <div style="font-size:12px;font-weight:700;margin-top:6px;color:${bp>=100?"var(--text-success)":bp>=80?"var(--amber-800)":"var(--text-danger)"}">${bp}% — ${bp>=100?`${r.ytd.actual-r.ytd.budget} students above YTD budget`:`${r.ytd.actual} of ${r.ytd.budget} planned students enrolled`}</div>
+       <div style="font-size:10px;color:var(--text-muted);margin-top:2px">Through ${CBA_MONTHS[r.ytd.cut]} · annual target progress ${Math.round(r.ytd.annualPct*100)}% of ${r.ytd.fullBudget}</div>`;
 
-  /* ── direct cost drivers ────────────────────────────────────────────── */
-  const drivers=[["Teaching",r.teaching,"#dc2626"],["Agent commission",r.commission,"#f59e0b"]]
+  /* ── E. full-cost gauge ─────────────────────────────────────────────── */
+  const gp=r.bcr==null?0:Math.min(100,r.bcr*100);
+  const fullDiag=`<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:4px"><span>0.00×</span><span>target 1.00×</span></div>
+    <div style="height:14px;background:var(--surface-1);border-radius:7px;overflow:hidden">
+      <div style="width:${gp}%;height:100%;background:${r.bcr>=1?"#16a34a":"#b45309"}"></div></div>
+    <div style="font-size:12px;font-weight:700;margin-top:6px;color:${r.bcr>=1?"var(--text-success)":"var(--amber-800)"}">
+      Recovers ${r.bcr==null?"—":"$"+r.bcr.toFixed(2)} of every $1.00 of full allocated cost</div>
+    <div style="font-size:10px;color:var(--text-muted);margin-top:2px">Contribution ${sgd(r.contribution)} · allocated overhead ${sgd(r.allocOH)} · result ${sgd(r.revenue-r.total)}</div>`;
+
+  /* ── totals AND per student ─────────────────────────────────────────── */
+  const L=[["Gross fee revenue",r.gross,"pos"],["Less scholarship discount",-r.discount,"neg",!r.discount],
+    ["= Net revenue",r.revenue,"tot"],["Less agent commission",-r.commission,"neg"],
+    ["Less university commission",-r.uniComm,"neg",!r.uniComm],["Less teaching",-r.teaching,"neg"],
+    ["= Contribution",r.contribution,"tot"],["Less allocated central overhead",-r.allocOH,"neg"],
+    ["= Full-cost result",r.revenue-r.total,"tot"]];
+  const col=(v,tone)=>`color:${tone==="neg"?"var(--text-danger)":tone==="tot"?(v>=0?"var(--text-success)":"var(--text-danger)"):"var(--text-primary)"};font-weight:${tone==="tot"?700:400}`;
+
+  const drivers=[["Teaching",r.teaching,"#dc2626"],["Agent commission",r.commission,"#f59e0b"],["University commission",r.uniComm,"#8b5cf6"]]
     .filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]);
-  const dirTot=r.direct||1;
-  const biggest=drivers[0];
-
-  const money=(v,tone)=>`<td style="padding:4px 8px;text-align:right;font-weight:${tone==="tot"?700:400};color:${tone==="neg"?"var(--text-danger)":tone==="tot"?(v>=0?"var(--text-success)":"var(--text-danger)"):"var(--text-primary)"}">${v<0?"−":""}${sgd(Math.abs(v))}</td>`;
+  const dirTot=r.direct||1,biggest=drivers[0];
+  const feeS=[-0.05,0,0.05,0.10].map(x=>cbaFeeScenario(r,x)),base=feeS[1];
+  const cp=Math.round(r.comm*100);
+  const commS=[cp,Math.max(0,cp-10),Math.max(0,cp-20)].map(x=>cbaRateScenario(r,x,null,null));
+  const noDisc=cbaRateScenario(r,cp,0,null);
 
   return `
   <div class="card">
     <div class="card-hdr"><div class="card-title">Course diagnostics</div>
       <span class="card-badge" style="background:var(--surface-1);color:var(--text-primary)">${d.yr} · ${basisLbl.toUpperCase()}</span></div>
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
       <span style="font-size:11px;color:var(--text-muted)">Course</span>
       <select id="cbaDiagCourse" style="max-width:100%">${sel.map(x=>`<option value="${x.i}"${x.i===st.cba.chartCi?" selected":""}>${esc(x.c.name)}</option>`).join("")}</select>
-      <span style="font-size:11px;color:var(--text-muted)">${n} ${basisLbl.toLowerCase()} students · ${r.classes} class${r.classes===1?"":"es"}</span>
+      <span style="font-size:11px;color:var(--text-muted)">${n} ${basisLbl.toLowerCase()} students · ${r.classes} class${r.classes===1?"":"es"} · ${r.runs==null?"runs not recorded":`${r.runs} run${r.runs===1?"":"s"}`}</span>
+    </div>
+    ${cbaStatusStrip(r)}
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">Where the money goes</div></div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:stretch">${flow}</div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:10px;line-height:1.6">
+      Scholarship discount reduces what UCC earns, so it comes off revenue. Agent and university commission are money UCC pays out, so they are costs. Nothing is counted twice.
     </div>
   </div>
 
   <div class="card">
-    <div class="card-hdr"><div class="card-title">Where each student's money goes</div></div>
-    <div style="overflow-x:auto"><table class="tbl" style="width:100%;min-width:520px"><tbody>
-      ${rowsPS.map(([l,v,tone,note])=>`<tr${tone==="tot"?' style="border-top:1.5px solid var(--border-strong)"':''}>
+    <div class="card-hdr"><div class="card-title">Did it cover its own running costs?</div>
+      <span class="card-badge" style="background:var(--surface-1);color:var(--text-muted)">Source: Course Simulator</span></div>
+    ${opDiag}
+    <div style="font-size:11px;color:var(--text-muted);margin-top:9px">Central overhead is deliberately excluded here — this is the open-the-class test only.</div>
+  </div>
+
+  <div style="display:flex;gap:12px;flex-wrap:wrap">
+    <div class="card" style="flex:1 1 320px">
+      <div class="card-hdr"><div class="card-title">Are we hitting the enrolment plan?</div></div>${budDiag}</div>
+    <div class="card" style="flex:1 1 320px">
+      <div class="card-hdr"><div class="card-title">Does it cover central costs too?</div></div>${fullDiag}</div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">Course total and per student</div></div>
+    <div style="overflow-x:auto"><table class="tbl" style="width:100%;min-width:520px">
+      <thead><tr><th style="text-align:left"></th><th style="text-align:right">Course total</th><th style="text-align:right">Per student</th></tr></thead>
+      <tbody>${L.map(([l,v,tone,faint])=>`<tr${tone==="tot"?' style="border-top:1.5px solid var(--border-strong)"':''}${faint?' style="opacity:.5"':''}>
         <td style="padding:4px 8px;${tone==="tot"?"font-weight:700":""}">${l}</td>
-        ${money(v,tone)}
-        <td style="padding:4px 8px;font-size:10px;color:var(--text-muted)">${note}</td></tr>`).join("")}
-    </tbody></table></div>
+        <td style="padding:4px 8px;text-align:right;${col(v,tone)}">${v<0?"−":""}${sgd(Math.abs(v))}</td>
+        <td style="padding:4px 8px;text-align:right;${col(v,tone)}">${v<0?"−":""}${sgd(Math.abs(per(v)))}</td></tr>`).join("")}
+      </tbody></table></div>
   </div>
 
   <div class="card">
     <div class="card-hdr"><div class="card-title">Which direct cost is driving this?</div></div>
     <div style="display:flex;height:22px;border-radius:6px;overflow:hidden;margin-bottom:10px;border:1px solid var(--border)">
-      ${drivers.map(([l,v,col])=>`<div title="${l} ${sgd(v)}" style="width:${(v/dirTot*100).toFixed(2)}%;background:${col}"></div>`).join("")}
-    </div>
+      ${drivers.map(([l,v,cc])=>`<div title="${l} ${sgd(v)}" style="width:${(v/dirTot*100).toFixed(2)}%;background:${cc}"></div>`).join("")}</div>
     <table class="tbl" style="width:100%"><tbody>
-      ${drivers.map(([l,v,col])=>`<tr>
-        <td style="padding:4px 8px;width:16px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${col}"></span></td>
-        <td style="padding:4px 8px">${l}</td>
-        ${money(v)}
-        <td style="padding:4px 8px;text-align:right;color:var(--text-muted);width:70px">${Math.round(v/dirTot*100)}% of direct</td>
-        <td style="padding:4px 8px;text-align:right;color:var(--text-muted);width:74px">${r.revenue>0?Math.round(v/r.revenue*100):0}% of revenue</td></tr>`).join("")}
-      <tr style="border-top:1.5px solid var(--border-strong)"><td></td>
-        <td style="padding:5px 8px;font-weight:700">Total direct cost</td>${money(r.direct,"tot")}
-        <td></td><td style="padding:5px 8px;text-align:right;color:var(--text-muted)">${r.revenue>0?Math.round(r.direct/r.revenue*100):0}% of revenue</td></tr>
+      ${drivers.map(([l,v,cc])=>`<tr><td style="padding:4px 8px;width:16px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${cc}"></span></td>
+        <td style="padding:4px 8px">${l}</td><td style="padding:4px 8px;text-align:right">${sgd(v)}</td>
+        <td style="padding:4px 8px;text-align:right;color:var(--text-muted);width:74px">${Math.round(v/dirTot*100)}% of direct</td>
+        <td style="padding:4px 8px;text-align:right;color:var(--text-muted);width:78px">${r.revenue>0?Math.round(v/r.revenue*100):0}% of net rev</td></tr>`).join("")}
     </tbody></table>
     <div style="font-size:11px;color:var(--text-muted);margin-top:9px;line-height:1.6">
-      ${biggest?`<strong>${biggest[0]}</strong> is the largest direct cost at ${sgd(biggest[1])}, ${Math.round(biggest[1]/dirTot*100)}% of direct cost and ${r.revenue>0?Math.round(biggest[1]/r.revenue*100):0}% of revenue.`:""}
-      Materials, exam and admin fees are revenue components in this model, not costs, so they do not appear here.
+      ${biggest?`<strong>${biggest[0]}</strong> is the largest direct cost at ${sgd(biggest[1])} — ${Math.round(biggest[1]/dirTot*100)}% of direct cost.`:""}
+      Materials, exam and admin fees are revenue components here, not costs.
     </div>
   </div>
 
   <div class="card">
     <div class="card-hdr"><div class="card-title">Would a fee change help?</div>
       <span class="card-badge" style="background:var(--amber-100);color:var(--amber-800)">Scenario only — Price List unchanged</span></div>
-    <div style="overflow-x:auto"><table class="tbl" style="width:100%;min-width:600px">
-      <thead><tr><th style="text-align:left">Scenario</th><th style="text-align:right">Course fee</th>
-        <th style="text-align:right">Revenue</th><th style="text-align:right">Contribution</th>
-        <th style="text-align:right">Per student</th><th style="text-align:right">Full-cost BCR</th>
-        <th style="text-align:right">vs now</th></tr></thead>
-      <tbody>${feeS.map(f=>{const cur=f.pct===0;const diff=f.perStu-base.perStu;return `<tr${cur?' style="background:var(--surface-1);font-weight:600"':''}>
-        <td style="padding:4px 8px">${cur?"Current fee":(f.pct>0?"+":"")+Math.round(f.pct*100)+"%"}</td>
-        <td style="padding:4px 8px;text-align:right">${sgd(f.fee)}</td>
-        <td style="padding:4px 8px;text-align:right">${sgd(f.revenue)}</td>
-        <td style="padding:4px 8px;text-align:right;color:${f.contribution>=0?"var(--text-success)":"var(--text-danger)"}">${sgd(f.contribution)}</td>
-        <td style="padding:4px 8px;text-align:right">${f.perStu==null?"—":sgd(f.perStu)}</td>
-        <td style="padding:4px 8px;text-align:right">${f.bcr==null?"—":f.bcr.toFixed(2)+"×"}</td>
+    <div style="overflow-x:auto"><table class="tbl" style="width:100%;min-width:620px">
+      <thead><tr><th style="text-align:left">Scenario</th><th style="text-align:right">Course fee</th><th style="text-align:right">Net revenue</th>
+        <th style="text-align:right">Contribution</th><th style="text-align:right">Per student</th><th style="text-align:right">BCR</th><th style="text-align:right">vs now</th></tr></thead>
+      <tbody>${feeS.map(x=>{const cur=x.pct===0,diff=x.perStu-base.perStu;return `<tr${cur?' style="background:var(--surface-1);font-weight:600"':''}>
+        <td style="padding:4px 8px">${cur?"Current fee":(x.pct>0?"+":"")+Math.round(x.pct*100)+"%"}</td>
+        <td style="padding:4px 8px;text-align:right">${sgd(x.fee)}</td>
+        <td style="padding:4px 8px;text-align:right">${sgd(x.revenue)}</td>
+        <td style="padding:4px 8px;text-align:right;color:${x.contribution>=0?"var(--text-success)":"var(--text-danger)"}">${sgd(x.contribution)}</td>
+        <td style="padding:4px 8px;text-align:right">${sgd(x.perStu)}</td>
+        <td style="padding:4px 8px;text-align:right">${x.bcr==null?"—":x.bcr.toFixed(2)+"×"}</td>
         <td style="padding:4px 8px;text-align:right;color:${diff>0?"var(--text-success)":diff<0?"var(--text-danger)":"var(--text-muted)"}">${cur?"—":(diff>0?"+":"−")+sgd(Math.abs(diff))+"/stu"}</td></tr>`;}).join("")}</tbody>
     </table></div>
-    <div style="font-size:11px;color:var(--text-muted);margin-top:8px;line-height:1.6">
-      Commission is charged on the course fee, so raising the fee also raises commission — the net gain per student is the last column. Teaching is unchanged by price. These are analysis scenarios; the canonical Price List is untouched.
-    </div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:8px">Commission is charged on the course fee, so a higher fee also raises commission — the last column is the net gain per student.</div>
   </div>
 
   <div class="card">
     <div class="card-hdr"><div class="card-title">Are commission and discount hurting?</div></div>
-    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.6">
-      Agent commission costs this course <strong style="color:var(--text-danger)">${sgd(per(r.commission))} per student</strong> (${sgd(r.commission)} in total, ${r.revenue>0?Math.round(r.commission/r.revenue*100):0}% of revenue).
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.7">
+      Agent commission costs <strong style="color:var(--text-danger)">${sgd(per(r.commission))} per student</strong> (${sgd(r.commission)} total).
+      ${r.uniComm?`University commission costs a further <strong style="color:var(--text-danger)">${sgd(per(r.uniComm))} per student</strong>.`:""}
+      ${r.discount?`The ${Math.round(r.disc*100)}% scholarship discount reduces revenue by <strong style="color:var(--text-danger)">${sgd(r.discount)}</strong>; removing it would lift contribution to <strong>${sgd(noDisc.contribution)}</strong>.`:"No scholarship discount is set for this course."}
     </div>
     <div style="overflow-x:auto"><table class="tbl" style="width:100%;min-width:560px">
       <thead><tr><th style="text-align:left">Agent commission</th><th style="text-align:right">Commission cost</th>
-        <th style="text-align:right">Contribution</th><th style="text-align:right">Per student</th>
-        <th style="text-align:right">Improvement</th></tr></thead>
+        <th style="text-align:right">Contribution</th><th style="text-align:right">Per student</th><th style="text-align:right">Improvement</th></tr></thead>
       <tbody>${commS.map((x,i)=>{const diff=x.perStu-commS[0].perStu;return `<tr${i===0?' style="background:var(--surface-1);font-weight:600"':''}>
         <td style="padding:4px 8px">${x.commPct}%${i===0?" (current)":""}</td>
         <td style="padding:4px 8px;text-align:right;color:var(--text-danger)">${sgd(x.commission)}</td>
         <td style="padding:4px 8px;text-align:right">${sgd(x.contribution)}</td>
-        <td style="padding:4px 8px;text-align:right">${x.perStu==null?"—":sgd(x.perStu)}</td>
+        <td style="padding:4px 8px;text-align:right">${sgd(x.perStu)}</td>
         <td style="padding:4px 8px;text-align:right;color:${diff>0?"var(--text-success)":"var(--text-muted)"}">${i===0?"—":"+"+sgd(diff)+"/stu"}</td></tr>`;}).join("")}</tbody>
     </table></div>
-    <div style="margin-top:12px;padding:9px 11px;background:var(--surface-1);border-left:3px solid var(--amber-400,#fbbf24);border-radius:6px;font-size:11px;color:var(--text-secondary);line-height:1.7">
-      <strong>Not currently in the Cost-Benefit figures.</strong> This course's Course Simulator carries a scholarship discount of <strong>${sim.disc||0}%</strong> and a university commission of <strong>${sim.uni||0}%</strong>, but Cost-Benefit revenue is <strong>gross</strong> — neither is deducted. Applying them would change contribution to <strong>${sgd(discS.contribution)}</strong>${uniCost>0?` and cost a further ${sgd(uniCost)} in university commission`:""}, and the institution ratio with it. That is an accounting decision rather than a defect, so nothing has been changed — say the word if Cost-Benefit should move to net revenue.
-    </div>
+    <div style="font-size:10px;color:var(--text-muted);margin-top:8px">All rates read from this course's saved Course Simulator state: discount ${Math.round(r.disc*100)}% · agent ${Math.round(r.comm*100)}% · university ${Math.round(r.uni*100)}% · teacher ${sgd(r.rate)}/hr.</div>
   </div>`;
 }
 
@@ -4509,7 +4619,7 @@ function cbaRenderStatus(st,d){
     <div class="card-hdr"><div class="card-title">Course-run basis</div>
       ${rb==="none"?`<span class="card-badge" style="background:var(--amber-100);color:var(--amber-800)">operating status unavailable</span>`:""}</div>
     <div style="font-size:11px;color:var(--text-muted);margin-bottom:9px;line-height:1.6">
-      Break-even from the Course Simulator is <strong>per course run</strong>. The Yearly Budget records month, course and student count — it has <strong>no run, class or cohort field</strong> — so the number of runs behind an annual total cannot be derived from the data. Choose the basis that matches how the course is actually delivered; nothing is assumed on your behalf.
+Break-even from the Course Simulator is <strong>per course run</strong>. The Yearly Budget records month, course and student count — it has <strong>no run, class or cohort field</strong> — so the number of runs cannot be derived from the data. With <strong>Recorded runs</strong> you type the real figure per course in the table below; until you do, Operating Status stays N/A rather than guessing. The "classes" figure elsewhere is <em>students ÷ class size</em>, an assumption about how you would split them, not a record of what ran.
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <select id="cbaRunBasis">${CBA_RUN_BASES.map(([k,l])=>`<option value="${k}"${rb===k?" selected":""}>${l}</option>`).join("")}</select>
@@ -4536,6 +4646,7 @@ function cbaRenderStatus(st,d){
           <th style="text-align:left">Course</th>
           <th style="text-align:right" title="Source: Yearly Budget${(d.basis||"budget")==="actual"?" Actual":""}">${basisLbl}<br>students</th>
           <th style="text-align:right" title="Source: Course Simulator — minimum students for one run to cover its own operating costs">Operating BE<br>/ run</th>
+          <th style="text-align:right" title="Number of teaching runs this course actually had in the year. You record this — it is not derived.">Runs<br>(recorded)</th>
           <th style="text-align:right" title="Break-even per run × number of runs">Required</th>
           <th style="text-align:left" title="Does the course cover its own standalone operating economics? Allocated overhead excluded.">Operating</th>
           <th style="text-align:left" title="Year-to-date Actual against Budget for the SAME months">Budget YTD</th>
@@ -4548,7 +4659,8 @@ function cbaRenderStatus(st,d){
             <td style="padding:4px 8px;max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.name)}">${esc(r.name)}</td>
             <td style="padding:4px 8px;text-align:right;font-weight:600">${r.students}</td>
             <td style="padding:4px 8px;text-align:right">${r.beRun==null?"—":r.beRun}</td>
-            <td style="padding:4px 8px;text-align:right;color:var(--text-muted)">${r.opReq==null?"—":`${r.opReq} <span style="font-size:10px">(${r.runs} run${r.runs===1?"":"s"})</span>`}</td>
+            <td style="padding:2px 4px;text-align:right"><input type="number" min="0" step="1" class="plinp sm" data-cbaruns="${r.ci}" value="${cbaRecordedRuns(st,r.ci,d.yr)==null?"":cbaRecordedRuns(st,r.ci,d.yr)}" placeholder="—" title="Runs delivered in ${d.yr}" style="width:56px;text-align:right${cbaRecordedRuns(st,r.ci,d.yr)!=null?";background:var(--amber-100)":""}"></td>
+            <td style="padding:4px 8px;text-align:right;color:var(--text-muted)">${r.opReq==null?"—":r.opReq}</td>
             <td style="padding:4px 8px">${cbaPill(r.opStatus,r.opStatus==="met"?`Met +${r.opGap}`:r.opStatus==="not"?`Short ${Math.abs(r.opGap)}`:"N/A")}</td>
             <td style="padding:4px 8px">${cbaPill(B.k,B.txt)}</td>
             <td style="padding:4px 8px">${cbaPill(r.contribStatus,sgd(r.contribution))}</td>
