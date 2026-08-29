@@ -595,6 +595,7 @@ const ST={
   views:{costBreakdown:"bars",waterfall:"rows",sens:"table",ulec:"table",compare:"table",pricelist:"table",feecalc:"table"},
   module:"simulator",navOpen:false,
   audit:[],logTab:"edits",logSearch:"",
+  cba:{tab:"overview",driver:"hours",off:{},rates:{},def:{comm:50,rate:60,cls:14}},
   intakes:[],ybView:"monthly",ybYear:new Date().getFullYear(),ybCat:"All",
   ybForm:{kind:"budget",ci:0,month:0,year:new Date().getFullYear(),students:15},
   cloudOpen:false,sbUrl:SUPABASE_URL,sbKey:SUPABASE_ANON_KEY,sbStatus:"",sbStatusOk:null,sbSaves:[],sbLoading:false,sbSaveName:"",
@@ -684,8 +685,8 @@ function applyFx(dfx){
 function saveToStorage(){
   try{
     const prices=COURSES.map(c=>({...c}));
-    const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx,op,val,strat,audit}=ST;
-    localStorage.setItem(LS_KEY,JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx,op,val,strat,audit}));
+    const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx,op,val,strat,audit,cba}=ST;
+    localStorage.setItem(LS_KEY,JSON.stringify({prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,tab,saved,fcCi,fcSchol,aiKey,aiModel,aiMessages,lpSections,whatIfView,views,module,intakes,ybView,ybYear,ybCat,sbUrl,sbKey,fx,op,val,strat,audit,cba}));
   }catch(e){}
 }
 /* ── Audit trail ─────────────────────────────────────────────────────────
@@ -731,6 +732,7 @@ function loadFromStorage(){
     if(d.op)ST.op={...ST.op,...d.op,mp:{...FC_MP,...(d.op.mp||{})},comp:d.op.comp||{}};
     if(d.val)ST.val={...ST.val,...d.val};
     if(d.strat)ST.strat={...ST.strat,...d.strat};
+    if(d.cba)ST.cba={...ST.cba,...d.cba,off:d.cba.off||{},rates:d.cba.rates||{},def:{...ST.cba.def,...(d.cba.def||{})}};
     fcSyncPeriodArrays();
   }catch(e){}
 }
@@ -760,8 +762,8 @@ function importData(file){
 
 function buildFullSnapshot(){
   const prices=COURSES.map(c=>({...c}));
-  const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,saved,fcCi,fcSchol,intakes,ybYear,ybCat,ybView,fx,audit}=ST;
-  return{prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,saved,fcCi,fcSchol,intakes,ybYear,ybCat,ybView,fx,audit};
+  const {ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,saved,fcCi,fcSchol,intakes,ybYear,ybCat,ybView,fx,audit,cba}=ST;
+  return{prices,ci,disc,agent,uni,tf,cp,plan,act,aDisc,aAgent,aUni,oh,ulecMgmt,saved,fcCi,fcSchol,intakes,ybYear,ybCat,ybView,fx,audit,cba};
 }
 function applyFullSnapshot(d){
   applyPrices(d.prices);
@@ -773,6 +775,7 @@ function applyFullSnapshot(d){
   if(d.ybCat)ST.ybCat=d.ybCat;
   if(d.ybView)ST.ybView=d.ybView;
   if(Array.isArray(d.audit))ST.audit=d.audit;
+  if(d.cba)ST.cba={...ST.cba,...d.cba,off:d.cba.off||{},rates:d.cba.rates||{},def:{...ST.cba.def,...(d.cba.def||{})}};
   applyFx(d.fx);
   fcSyncPeriodArrays();
 }
@@ -2401,6 +2404,7 @@ const MODULES=[
   {key:"operating",icon:"🛠️",label:"Operating Detail",desc:"Manpower FTE, breakeven, competitor pricing"},
   {key:"financials",icon:"🏦",label:"Valuation & Statements",desc:"DCF value, ratios, GST & tax"},
   {key:"strategy",icon:"🎯",label:"Strategy & Governance",desc:"Growth business cases, compliance"},
+  {key:"cba",icon:"⚖️",label:"Cost-Benefit",desc:"School ratio, active courses, per-course viability"},
   {key:"log",icon:"📝",label:"Change Log",desc:"Your edits + app version history"},
 ];
 
@@ -3495,6 +3499,235 @@ function bindForecastEvents(){
   }));
 }
 
+/* ═══════════════ COST-BENEFIT ANALYSIS MODULE ═══════════════
+   School-level benefit-cost ratio (allocation-free) plus per-course detail.
+
+   The one rule that makes this board-safe: deactivating a course removes its
+   revenue and its DIRECT costs (teaching + commission) but never its share of
+   overhead. The OPEX pool stays whole and re-spreads over the courses that are
+   left — because the rent does not stop when a class stops. So closing courses
+   can make the survivors look worse, which is the truth.
+
+   Direct cost = teaching (hours x classes x rate) + agent commission (on course
+   fee, matching the rest of the app). Overhead pool = Forecast > Expenses OPEX
+   for the selected year; COGS is excluded so agent fee / academic salary are not
+   counted twice. */
+const CBA_DRIVERS=[["hours","Teaching hours"],["months","Student-months"],["revenue","Gross revenue"]];
+function cbaOn(st,c){return st.cba.off[c.name]!==true;}
+function cbaRate(st,c,k){const o=st.cba.rates[c.name]||{};return (o[k]!=null&&o[k]!=="")?Number(o[k]):st.cba.def[k];}
+function cbaYear(st){return FC_YEARS.includes(st.ybYear)?st.ybYear:FC_YEARS[0];}
+function cbaPool(st){const yi=FC_YEARS.indexOf(cbaYear(st));return yi<0?0:(fcExpenses(st).opexTot[yi]||0);}
+/* Smallest enrolment whose revenue covers direct cost + this course's allocated
+   overhead. Returns null when no class count ever closes the gap — i.e. a full
+   class of `cls` students contributes less than it costs to teach. */
+function cbaMinStudents(c,comm,rate,cls,price,allocOH){
+  const hrs=c.hrs||0;
+  if(cls*(price-c.fee*comm)-hrs*rate<=0)return null;
+  for(let n=1;n<=cls*200;n++){
+    if(n*price>=hrs*Math.ceil(n/cls)*rate+n*c.fee*comm+allocOH)return n;
+  }
+  return null;
+}
+function cbaCompute(st){
+  const yr=cbaYear(st),pool=cbaPool(st),driver=st.cba.driver;
+  const rows=COURSES.map((c,ci)=>{
+    const on=cbaOn(st,c),students=on?fcStudents(st,ci,yr):0;
+    const price=priceOfCourse(c);
+    const comm=cbaRate(st,c,"comm")/100,rate=cbaRate(st,c,"rate"),cls=Math.max(1,cbaRate(st,c,"cls"));
+    const classes=students>0?Math.ceil(students/cls):0;
+    const revenue=students*price;
+    const teaching=(c.hrs||0)*classes*rate;
+    const commission=students*c.fee*comm;
+    const direct=teaching+commission;
+    const drv=driver==="hours"?(c.hrs||0)*classes:driver==="months"?students*(c.mo||0):revenue;
+    return {ci,c,name:c.name,group:c.cat,on,students,price,comm,rate,cls,classes,
+            revenue,teaching,commission,direct,contribution:revenue-direct,drv};
+  });
+  const live=rows.filter(r=>r.on&&r.students>0);
+  const drvTot=live.reduce((a,r)=>a+r.drv,0);
+  live.forEach(r=>{
+    r.allocOH=drvTot>0?pool*(r.drv/drvTot):0;
+    r.total=r.direct+r.allocOH;
+    r.bcr=r.total>0?r.revenue/r.total:null;
+    r.costPerStu=r.students>0?r.total/r.students:null;
+    r.minFull=cbaMinStudents(r.c,r.comm,r.rate,r.cls,r.price,r.allocOH);
+  });
+  const benefit=live.reduce((a,r)=>a+r.revenue,0);
+  const direct=live.reduce((a,r)=>a+r.direct,0);
+  const cost=direct+pool;                    /* pool always whole — never scaled away */
+  const students=live.reduce((a,r)=>a+r.students,0);
+  return {yr,pool,rows,live,driver,
+    T:{benefit,direct,cost,students,
+       classes:live.reduce((a,r)=>a+r.classes,0),
+       teaching:live.reduce((a,r)=>a+r.teaching,0),
+       commission:live.reduce((a,r)=>a+r.commission,0),
+       contribution:benefit-direct,
+       bcr:cost>0?benefit/cost:null,
+       costPerStu:students>0?cost/students:null,
+       net:benefit-cost}};
+}
+
+function renderCbaModule(st){
+  const tabs=[["overview","Overview (school)"],["courses","Active courses"],["bycourse","By course"]];
+  const d=cbaCompute(st);
+  const hdr=`
+  <div class="hdr" style="background:linear-gradient(135deg,#7c2d12 0%,#ea580c 100%)">
+    <div class="hdr-brand"><div class="hdr-label" style="color:#fed7aa">United Ceres College</div><div class="hdr-title">Cost-Benefit Analysis — ${d.yr}</div></div>
+    <div style="margin-left:auto;font-size:11px;color:#fed7aa">${d.live.length} running · ratio ${d.T.bcr==null?"—":d.T.bcr.toFixed(2)}</div>
+  </div>`;
+  return hdr+`<div class="module-body">
+    <div class="tabs-wrap"><div class="tabs">${tabs.map(([k,l])=>`<button class="tab${st.cba.tab===k?" on":""}" data-cbatab="${k}">${l}</button>`).join("")}</div></div>
+    <div id="cbacontent">${
+      st.cba.tab==="courses"?cbaRenderCourses(st,d):
+      st.cba.tab==="bycourse"?cbaRenderByCourse(st,d):
+      cbaRenderOverview(st,d)
+    }</div>
+  </div>`;
+}
+
+function cbaRenderOverview(st,d){
+  const T=d.T,ok=T.bcr!=null&&T.bcr>=1;
+  const kpi=(lbl,val,color,sub)=>`<div class="kpi-card"><div class="kpi-card-lbl">${lbl}</div><div class="kpi-card-val"${color?` style="color:${color}"`:""}>${val}</div>${sub?`<div class="kpi-card-sub">${sub}</div>`:""}</div>`;
+  const nActive=COURSES.filter(c=>cbaOn(st,c)).length;
+  const stack=[["Teaching",T.teaching],["Agent commission",T.commission],["Overhead (OPEX pool)",d.pool]];
+  return `
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">Institution</div><span class="card-badge" style="background:${ok?"var(--green-100)":"var(--red-100)"};color:${ok?"var(--green-800)":"var(--red-700)"}">${nActive} of ${COURSES.length} active · ${d.live.length} with students</span></div>
+    <div class="kpi-grid">
+      ${kpi("Benefit-cost ratio",T.bcr==null?"—":T.bcr.toFixed(2),ok?"var(--text-success)":"var(--text-danger)",ok?"covers its costs":`recovers ${T.bcr==null?"—":Math.round(T.bcr*100)}c in the dollar`)}
+      ${kpi("Cost per student",T.costPerStu==null?"—":sgd(T.costPerStu),null,`${T.students} students · ${T.classes} classes`)}
+      ${kpi(T.net>=0?"Net surplus":"Net deficit",sgd(Math.abs(T.net)),T.net>=0?"var(--text-success)":"var(--text-danger)",`${sgd(T.benefit)} benefit − ${sgd(T.cost)} cost`)}
+      ${kpi("Contribution to overhead",sgd(T.contribution),T.contribution>=0?"var(--text-success)":"var(--text-danger)","before overhead — allocation-free")}
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:12px;line-height:1.6">
+      Benefit is gross fee revenue from the ${d.yr} Yearly Budget intakes. Cost is direct teaching + agent commission for the running courses, plus the whole OPEX pool of <strong>${sgd(d.pool)}</strong> (from Forecast → Expenses). <strong>The ratio above is allocation-free</strong> — it does not move when you change the driver below.
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">Where the cost sits</div></div>
+    <table class="tbl" style="width:100%">
+      <tbody>
+        ${stack.map(([l,v])=>`<tr><td style="padding:5px 8px">${l}</td><td style="padding:5px 8px;text-align:right;font-weight:600">${sgd(v)}</td><td style="padding:5px 8px;text-align:right;color:var(--text-muted);width:56px">${T.cost>0?Math.round(v/T.cost*100):0}%</td></tr>`).join("")}
+        <tr style="border-top:1.5px solid var(--border-strong)"><td style="padding:6px 8px;font-weight:700">Total cost</td><td style="padding:6px 8px;text-align:right;font-weight:700">${sgd(T.cost)}</td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">Overhead allocation driver</div></div>
+    <div class="view-toggle" style="margin-bottom:10px">${CBA_DRIVERS.map(([k,l])=>`<button data-cbadriver="${k}" class="${d.driver===k?"on":""}">${l}</button>`).join("")}</div>
+    <div style="font-size:11px;color:var(--text-muted);line-height:1.6">
+      This only changes how the ${sgd(d.pool)} pool is split <em>between</em> courses on the By-course tab. The institution ratio is unaffected. Per-course ratios move a lot with this choice, so state the driver whenever you quote one — and never close a course on its ratio alone, because its overhead does not leave with it.
+    </div>
+  </div>`;
+}
+
+function cbaRenderCourses(st,d){
+  const yr=d.yr;
+  const row=(r)=>`<tr${r.on?"":' style="opacity:.45"'}>
+    <td style="padding:3px 8px"><input type="checkbox" data-cbaon="${esc(r.name)}"${r.on?" checked":""}></td>
+    <td style="padding:3px 8px;font-size:12px">${esc(r.name)}</td>
+    <td style="padding:3px 8px;font-size:11px;color:var(--text-muted)">${esc(r.group)}</td>
+    <td style="padding:3px 8px;text-align:right;font-size:11px;color:${r.students>0?"var(--text-primary)":"var(--text-muted)"}">${r.students||"—"}</td>
+    ${["comm","rate","cls"].map(k=>`<td style="padding:2px 4px;text-align:right"><input type="number" class="plinp sm" data-cbarate="${esc(r.name)}" data-k="${k}" value="${cbaRate(st,r.c,k)}" step="${k==="comm"?5:k==="rate"?5:1}" style="width:62px;text-align:right"></td>`).join("")}
+  </tr>`;
+  return `<div class="card">
+    <div class="card-hdr"><div class="card-title">Active courses &amp; per-course rates</div>
+      <span class="card-badge" style="background:var(--blue-100);color:var(--blue-700)">${d.live.length} running in ${yr}</span></div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.6">
+      Untick a course to take it out of the analysis — its revenue and direct costs go, but the overhead pool stays whole and re-spreads over the rest. Commission, teacher rate and class size are per course; blank falls back to the defaults below. Student numbers come from the ${yr} Yearly Budget.
+    </div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px;padding:10px 12px;background:var(--surface-1);border-radius:8px">
+      ${[["comm","Default commission %"],["rate","Default teacher $/hr"],["cls","Default class size"]].map(([k,l])=>`<div><div style="font-size:10px;color:var(--text-muted)">${l}</div><input type="number" data-cbadef="${k}" value="${st.cba.def[k]}" step="${k==="cls"?1:5}" style="width:86px"></div>`).join("")}
+      <button data-cbaall="on" style="font-size:11px;padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:none;cursor:pointer">Activate all</button>
+      <button data-cbaall="live" style="font-size:11px;padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:none;cursor:pointer">Only courses with students</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="tbl" style="width:100%;min-width:620px">
+        <thead><tr>
+          <th style="width:34px"></th><th style="text-align:left">Course</th><th style="text-align:left">Category</th>
+          <th style="text-align:right">Students</th><th style="text-align:right">Comm %</th><th style="text-align:right">$/hr</th><th style="text-align:right">Class</th>
+        </tr></thead>
+        <tbody>${d.rows.map(row).join("")}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function cbaRenderByCourse(st,d){
+  const rows=d.live.slice().sort((a,b)=>(b.bcr||0)-(a.bcr||0));
+  const off=d.rows.filter(r=>r.on&&r.students===0).length;
+  const cell=(v,extra)=>`<td style="padding:4px 8px;text-align:right;${extra||""}">${v}</td>`;
+  return `<div class="card">
+    <div class="card-hdr"><div class="card-title">By course — ${d.yr}</div>
+      <span class="card-badge" style="background:var(--amber-100);color:var(--amber-800)">driver: ${CBA_DRIVERS.find(x=>x[0]===d.driver)[1]}</span></div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.6">
+      <strong>Contribution</strong> is revenue less direct cost — allocation-free, and the number to judge a course on. <strong>Ratio</strong> depends on the driver, so treat it as a pricing signal only. <strong>Min students</strong> is the enrolment that covers direct cost plus this course's allocated overhead; <em>“never”</em> means a full class contributes less than it costs to teach, which is a pricing or commission problem, not a recruitment one.
+    </div>
+    <div style="overflow-x:auto">
+      <table class="tbl" style="width:100%;min-width:900px">
+        <thead><tr>
+          <th style="text-align:left">Course</th><th style="text-align:right">Stu</th><th style="text-align:right">Cls</th>
+          <th style="text-align:right">Revenue</th><th style="text-align:right">Direct</th><th style="text-align:right">Contribution</th>
+          <th style="text-align:right">Overhead</th><th style="text-align:right">Total cost</th><th style="text-align:right">Cost/stu</th>
+          <th style="text-align:right">Ratio</th><th style="text-align:right">Min stu</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(r=>`<tr>
+            <td style="padding:4px 8px;max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.name)}">${esc(r.name)}</td>
+            ${cell(r.students)}${cell(r.classes)}${cell(sgd(r.revenue))}${cell(sgd(r.direct))}
+            ${cell(sgd(r.contribution),`font-weight:600;color:${r.contribution>=0?"var(--text-success)":"var(--text-danger)"}`)}
+            ${cell(sgd(r.allocOH))}${cell(sgd(r.total))}${cell(r.costPerStu==null?"—":sgd(r.costPerStu))}
+            ${cell(r.bcr==null?"—":r.bcr.toFixed(2),`font-weight:700;color:${r.bcr>=1?"var(--text-success)":r.bcr>=0.7?"var(--amber-800)":"var(--text-danger)"}`)}
+            ${cell(r.minFull==null?`<span style="color:var(--text-danger)">never</span>`:r.minFull,r.minFull!=null&&r.minFull>r.students?"color:var(--text-danger)":"")}
+          </tr>`).join("")}
+          <tr style="border-top:1.5px solid var(--border-strong);font-weight:700">
+            <td style="padding:6px 8px">Institution</td>
+            ${cell(d.T.students)}${cell(d.T.classes)}${cell(sgd(d.T.benefit))}${cell(sgd(d.T.direct))}
+            ${cell(sgd(d.T.contribution),`color:${d.T.contribution>=0?"var(--text-success)":"var(--text-danger)"}`)}
+            ${cell(sgd(d.pool))}${cell(sgd(d.T.cost))}${cell(d.T.costPerStu==null?"—":sgd(d.T.costPerStu))}
+            ${cell(d.T.bcr==null?"—":d.T.bcr.toFixed(2),`color:${d.T.bcr>=1?"var(--text-success)":"var(--text-danger)"}`)}
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    ${off?`<div style="font-size:11px;color:var(--text-muted);margin-top:8px">${off} active course${off>1?"s have":" has"} no planned students in ${d.yr} and ${off>1?"are":"is"} not shown.</div>`:""}
+  </div>`;
+}
+
+function bindCbaEvents(){
+  const save_render=()=>{saveToStorage();render();};
+  document.querySelectorAll("[data-cbatab]").forEach(b=>b.addEventListener("click",e=>{ST.cba.tab=e.currentTarget.dataset.cbatab;save_render();}));
+  document.querySelectorAll("[data-cbadriver]").forEach(b=>b.addEventListener("click",e=>{
+    const nv=e.currentTarget.dataset.cbadriver;
+    logAudit("Cost-Benefit","Allocation driver",ST.cba.driver,nv);ST.cba.driver=nv;save_render();
+  }));
+  document.querySelectorAll("[data-cbaon]").forEach(inp=>inp.addEventListener("change",e=>{
+    const nm=e.currentTarget.dataset.cbaon,on=e.currentTarget.checked;
+    if(on)delete ST.cba.off[nm]; else ST.cba.off[nm]=true;
+    logAudit("Cost-Benefit",`${nm} — active`,on?"inactive":"active",on?"active":"inactive");
+    save_render();
+  }));
+  document.querySelectorAll("[data-cbarate]").forEach(inp=>inp.addEventListener("change",e=>{
+    const nm=e.currentTarget.dataset.cbarate,k=e.currentTarget.dataset.k,raw=e.currentTarget.value.trim();
+    ST.cba.rates[nm]=ST.cba.rates[nm]||{};
+    if(raw==="")delete ST.cba.rates[nm][k]; else ST.cba.rates[nm][k]=parseFloat(raw)||0;
+    logAudit("Cost-Benefit",`${nm} — ${k}`,"",raw===""?"(default)":raw);
+    save_render();
+  }));
+  document.querySelectorAll("[data-cbadef]").forEach(inp=>inp.addEventListener("change",e=>{
+    const k=e.currentTarget.dataset.cbadef,nv=parseFloat(e.currentTarget.value)||0;
+    logAudit("Cost-Benefit",`Default ${k}`,ST.cba.def[k],nv);ST.cba.def[k]=nv;save_render();
+  }));
+  document.querySelectorAll("[data-cbaall]").forEach(b=>b.addEventListener("click",e=>{
+    const mode=e.currentTarget.dataset.cbaall,yr=cbaYear(ST);
+    ST.cba.off={};
+    if(mode==="live")COURSES.forEach((c,ci)=>{if(fcStudents(ST,ci,yr)<=0)ST.cba.off[c.name]=true;});
+    logAudit("Cost-Benefit","Bulk course selection","",mode==="live"?"only courses with students":"activate all");
+    save_render();
+  }));
+}
+
 function render(){
   if(ST.module==="yearlybudget"){
     document.getElementById("app").innerHTML=buildModuleNav()+renderYearlyBudgetModule(ST);
@@ -3532,6 +3765,12 @@ function render(){
     document.getElementById("app").innerHTML=buildModuleNav()+renderStrategyModule(ST);
     bindModuleNavEvents();
     bindStrategyEvents();
+    return;
+  }
+  if(ST.module==="cba"){
+    document.getElementById("app").innerHTML=buildModuleNav()+renderCbaModule(ST);
+    bindModuleNavEvents();
+    bindCbaEvents();
     return;
   }
   if(ST.module==="log"){
@@ -3892,7 +4131,40 @@ async function doAISend(msg,s){
   if(msgs)msgs.scrollTop=msgs.scrollHeight;
 }
 
-function init(){loadFromStorage();initNumfmtDelegation();render();if(sbConfigured())sbFetchSaves();}
+/* ── Access gate ─────────────────────────────────────────────────────────
+   Deliberately simple. This keeps the link from being idly opened; it is NOT
+   encryption — the passcode below is readable by anyone who views the page
+   source. Change APP_PASSCODE to whatever you hand out; set it to "" to turn
+   the gate off entirely. */
+const APP_PASSCODE="ucc2026";
+const GATE_KEY="ucc_unlocked";
+function appLocked(){try{return !!APP_PASSCODE&&localStorage.getItem(GATE_KEY)!==APP_PASSCODE;}catch(e){return !!APP_PASSCODE;}}
+function renderGate(msg){
+  document.getElementById("app").innerHTML=`
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px">
+    <div class="card" style="max-width:340px;width:100%">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:11px;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase">United Ceres College</div>
+        <div style="font-size:17px;font-weight:700;margin-top:2px">Planning Suite</div>
+      </div>
+      <input type="password" id="gatePw" placeholder="Passcode" style="width:100%;margin-bottom:8px;text-align:center">
+      <button id="gateGo" style="width:100%;padding:8px;background:var(--blue-600);color:#fff;border:1px solid var(--blue-600);border-radius:6px;font-weight:600;cursor:pointer">Unlock</button>
+      ${msg?`<div style="color:var(--text-danger);font-size:12px;margin-top:8px;text-align:center">${msg}</div>`:""}
+      <div style="font-size:10px;color:var(--text-muted);margin-top:14px;text-align:center;line-height:1.5">Internal use only. This is a simple access gate, not encryption \u2014 anyone who views the page source can read the passcode.</div>
+    </div>
+  </div>`;
+  const go=()=>{
+    const v=document.getElementById("gatePw").value;
+    if(v===APP_PASSCODE){try{localStorage.setItem(GATE_KEY,v);}catch(e){}start();}
+    else renderGate("Wrong passcode.");
+  };
+  document.getElementById("gateGo").addEventListener("click",go);
+  const pw=document.getElementById("gatePw");
+  pw.addEventListener("keydown",e=>{if(e.key==="Enter")go();});
+  pw.focus();
+}
+function start(){loadFromStorage();initNumfmtDelegation();render();if(sbConfigured())sbFetchSaves();}
+function init(){if(appLocked()){renderGate();return;}start();}
 if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",init);}else{init();}
 </script>
 </body>
