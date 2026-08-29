@@ -3559,6 +3559,27 @@ function cbaMinStudents(c,comm,rate,cls,price,allocOH){
   }
   return null;
 }
+/* Action per course. Driven by the allocation-free signals first (contribution,
+   then whether any class count can cover full cost), so the verdict never rests
+   on the ratio alone — overhead does not leave with a course that is closed.
+     contribution < 0  every student loses money, volume makes it worse
+     minFull null      a full class cannot cover its own teaching + overhead
+     students >= min   already covering full cost, scaling adds surplus */
+function cbaVerdict(r){
+  if(!r.students||r.revenue<=0)return {k:"none",label:"—",tone:"var(--text-muted)"};
+  if(r.contribution<0)return {k:"stop",label:"Reprice or stop",tone:"var(--text-danger)"};
+  if(r.minFull==null)return {k:"reprice",label:"Reprice",tone:"var(--amber-800)"};
+  if(r.students>=r.minFull)return {k:"expand",label:"Expand",tone:"var(--text-success)"};
+  return {k:"grow",label:`Grow to ${r.minFull}`,tone:"var(--blue-700)"};
+}
+const CBA_ACTIONS=[["expand","Expand","var(--text-success)"],["grow","Grow enrolment","var(--blue-700)"],
+                   ["reprice","Reprice","var(--amber-800)"],["stop","Reprice or stop","var(--text-danger)"]];
+function cbaCoVerdict(T){
+  if(T.bcr==null)return {label:"No data",tone:"var(--text-muted)",sub:"no running courses"};
+  if(T.bcr>=1)return {label:"Sustainable",tone:"var(--text-success)",sub:"revenue covers the full cost base"};
+  if(T.bcr>=0.85)return {label:"Near breakeven",tone:"var(--amber-800)",sub:"close, but not yet covering full cost"};
+  return {label:"Not sustainable as configured",tone:"var(--text-danger)",sub:`recovers ${Math.round(T.bcr*100)}c of every dollar spent`};
+}
 function cbaCompute(st){
   const yr=cbaYear(st),driver=st.cba.driver,acad=cbaAcadSplit(st);
   const yi=FC_YEARS.indexOf(yr);
@@ -3585,6 +3606,9 @@ function cbaCompute(st){
     r.bcr=r.total>0?r.revenue/r.total:null;
     r.costPerStu=r.students>0?r.total/r.students:null;
     r.minFull=cbaMinStudents(r.c,r.comm,r.rate,r.cls,r.price,r.allocOH);
+    r.margin=r.revenue>0?r.contribution/r.revenue:null;   /* contribution margin */
+    r.gap=r.minFull==null?null:r.minFull-r.students;
+    r.verdict=cbaVerdict(r);
   });
   const benefit=live.reduce((a,r)=>a+r.revenue,0);
   const direct=live.reduce((a,r)=>a+r.direct,0);
@@ -3598,6 +3622,12 @@ function cbaCompute(st){
        contribution:benefit-direct,
        bcr:cost>0?benefit/cost:null,
        costPerStu:students>0?cost/students:null,
+       margin:benefit>0?(benefit-direct)/benefit:null,
+       /* Scaling the current mix by k gives k*(benefit-direct) = pool at breakeven,
+          so the enrolment that covers the whole cost base is students*pool/contribution.
+          If contribution <= 0 no volume ever closes it. */
+       needStudents:(benefit-direct)>0?Math.ceil(students*pool/(benefit-direct)):null,
+       shortfall:Math.max(0,cost-benefit),
        net:benefit-cost}};
 }
 
@@ -3624,7 +3654,23 @@ function cbaRenderOverview(st,d){
   const kpi=(lbl,val,color,sub)=>`<div class="kpi-card"><div class="kpi-card-lbl">${lbl}</div><div class="kpi-card-val"${color?` style="color:${color}"`:""}>${val}</div>${sub?`<div class="kpi-card-sub">${sub}</div>`:""}</div>`;
   const nActive=COURSES.filter(c=>cbaOn(st,c)).length;
   const stack=[["Teaching",T.teaching],["Agent commission",T.commission],["Overhead (OPEX pool)",d.pool]];
+  const V=cbaCoVerdict(T);
+  const groups=CBA_ACTIONS.map(([k,lbl,tone])=>({k,lbl,tone,rows:d.live.filter(r=>r.verdict.k===k)})).filter(g=>g.rows.length);
   return `
+  <div class="card" style="border-left:4px solid ${V.tone}">
+    <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+      <div style="font-size:19px;font-weight:800;color:${V.tone}">${V.label}</div>
+      <div style="font-size:12px;color:var(--text-muted)">${V.sub}</div>
+    </div>
+    <div style="font-size:12px;color:var(--text-secondary);margin-top:8px;line-height:1.7">
+      Revenue of <strong>${sgd(T.benefit)}</strong> covers <strong>${T.bcr==null?"—":Math.round(T.bcr*100)}%</strong> of the <strong>${sgd(T.cost)}</strong> total operating cost.
+      ${T.net<0?`Shortfall <strong style="color:var(--text-danger)">${sgd(T.shortfall)}</strong>.`:`Surplus <strong style="color:var(--text-success)">${sgd(T.net)}</strong>.`}
+      Return on cost base: <strong>${T.bcr==null?"—":"$"+T.bcr.toFixed(2)}</strong> back per $1 spent.
+      ${T.needStudents!=null
+        ? `At this course mix and pricing, breakeven needs <strong>${T.needStudents}</strong> students against the <strong>${T.students}</strong> planned.`
+        : `<strong style="color:var(--text-danger)">No enrolment reaches breakeven at this pricing</strong> — the running courses contribute ${sgd(T.contribution)} before overhead, so volume cannot close the gap. This is a pricing or commission problem, not a recruitment one.`}
+    </div>
+  </div>
   <div class="card">
     <div class="card-hdr"><div class="card-title">Institution</div><span class="card-badge" style="background:${ok?"var(--green-100)":"var(--red-100)"};color:${ok?"var(--green-800)":"var(--red-700)"}">${nActive} of ${COURSES.length} active · ${d.live.length} with students</span></div>
     <div class="kpi-grid">
@@ -3646,6 +3692,20 @@ function cbaRenderOverview(st,d){
       </tbody>
     </table>
   </div>
+  ${groups.length?`<div class="card">
+    <div class="card-hdr"><div class="card-title">What to do with each course</div></div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      ${groups.map(g=>`<div>
+        <div style="font-size:11px;font-weight:700;color:${g.tone};text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">${g.lbl} · ${g.rows.length}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          ${g.rows.sort((a,b)=>b.contribution-a.contribution).map(r=>`<span style="font-size:11px;padding:3px 8px;border-radius:999px;background:var(--surface-1);border:1px solid var(--border)" title="contribution ${sgd(r.contribution)} · margin ${r.margin==null?"—":Math.round(r.margin*100)+"%"}${r.gap>0?" · needs "+r.gap+" more students":""}">${esc(r.name)}</span>`).join("")}
+        </div>
+      </div>`).join("")}
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:12px;line-height:1.6">
+      <strong>Expand</strong> already covers its full cost. <strong>Grow</strong> is viable but under-enrolled. <strong>Reprice</strong> is positive per student yet a full class still cannot cover its own teaching and overhead. <strong>Reprice or stop</strong> loses money on every student, so more enrolment makes it worse. Stopping a course does not remove its overhead — that re-spreads onto the rest.
+    </div>
+  </div>`:""}
   <div class="card">
     <div class="card-hdr"><div class="card-title">Overhead pool</div>${d.acad.deduct>0?`<span class="card-badge" style="background:var(--green-100);color:var(--green-800)">${sgd(d.acad.deduct)} removed</span>`:""}</div>
     <table class="tbl" style="width:100%">
@@ -3721,32 +3781,35 @@ function cbaRenderByCourse(st,d){
     <div class="card-hdr"><div class="card-title">By course — ${d.yr}</div>
       <span class="card-badge" style="background:var(--amber-100);color:var(--amber-800)">driver: ${CBA_DRIVERS.find(x=>x[0]===d.driver)[1]}</span></div>
     <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.6">
-      <strong>Contribution</strong> is revenue less direct cost — allocation-free, and the number to judge a course on. <strong>Ratio</strong> depends on the driver, so treat it as a pricing signal only. <strong>Min students</strong> is the enrolment that covers direct cost plus this course's allocated overhead; <em>“never”</em> means a full class contributes less than it costs to teach, which is a pricing or commission problem, not a recruitment one.
+      <strong>Contribution</strong> is revenue less direct cost — allocation-free, and the number to judge a course on. <strong>Ratio</strong> depends on the driver, so treat it as a pricing signal only. <strong>Min students</strong> is the enrolment that covers direct cost plus this course's allocated overhead; <em>“never”</em> means a full class contributes less than it costs to teach, which is a pricing or commission problem, not a recruitment one. <strong>Margin</strong> is contribution over revenue — under 30% is amber. <strong>Action</strong> is derived from contribution and reachability, never from the ratio alone.
     </div>
     <div style="overflow-x:auto">
-      <table class="tbl" style="width:100%;min-width:900px">
+      <table class="tbl" style="width:100%;min-width:1120px">
         <thead><tr>
           <th style="text-align:left">Course</th><th style="text-align:right">Stu</th><th style="text-align:right">Cls</th>
-          <th style="text-align:right">Revenue</th><th style="text-align:right">Direct</th><th style="text-align:right">Contribution</th>
+          <th style="text-align:right">Revenue</th><th style="text-align:right">Direct</th><th style="text-align:right">Contribution</th><th style="text-align:right">Margin</th>
           <th style="text-align:right">Overhead</th><th style="text-align:right">Total cost</th><th style="text-align:right">Cost/stu</th>
-          <th style="text-align:right">Ratio</th><th style="text-align:right">Min stu</th>
+          <th style="text-align:right">Ratio</th><th style="text-align:right">Min stu</th><th style="text-align:left">Action</th>
         </tr></thead>
         <tbody>
           ${rows.map(r=>`<tr>
             <td style="padding:4px 8px;max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.name)}">${esc(r.name)}</td>
             ${cell(r.students)}${cell(r.classes)}${cell(sgd(r.revenue))}${cell(sgd(r.direct))}
             ${cell(sgd(r.contribution),`font-weight:600;color:${r.contribution>=0?"var(--text-success)":"var(--text-danger)"}`)}
+            ${cell(r.margin==null?"—":Math.round(r.margin*100)+"%",`color:${r.margin==null?"var(--text-muted)":r.margin<0?"var(--text-danger)":r.margin<0.3?"var(--amber-800)":"var(--text-success)"}`)}
             ${cell(sgd(r.allocOH))}${cell(sgd(r.total))}${cell(r.costPerStu==null?"—":sgd(r.costPerStu))}
             ${cell(r.bcr==null?"—":r.bcr.toFixed(2),`font-weight:700;color:${r.bcr>=1?"var(--text-success)":r.bcr>=0.7?"var(--amber-800)":"var(--text-danger)"}`)}
-            ${cell(r.minFull==null?`<span style="color:var(--text-danger)">never</span>`:r.minFull,r.minFull!=null&&r.minFull>r.students?"color:var(--text-danger)":"")}
+            ${cell(r.minFull==null?`<span style="color:var(--text-danger)">never</span>`:r.minFull+(r.gap>0?` <span style="color:var(--text-muted);font-size:10px">(+${r.gap})</span>`:""),r.minFull!=null&&r.minFull>r.students?"color:var(--text-danger)":"")}
+            <td style="padding:4px 8px;white-space:nowrap;font-weight:600;color:${r.verdict.tone}">${r.verdict.label}</td>
           </tr>`).join("")}
           <tr style="border-top:1.5px solid var(--border-strong);font-weight:700">
             <td style="padding:6px 8px">Institution</td>
             ${cell(d.T.students)}${cell(d.T.classes)}${cell(sgd(d.T.benefit))}${cell(sgd(d.T.direct))}
             ${cell(sgd(d.T.contribution),`color:${d.T.contribution>=0?"var(--text-success)":"var(--text-danger)"}`)}
+            ${cell(d.T.margin==null?"—":Math.round(d.T.margin*100)+"%")}
             ${cell(sgd(d.pool))}${cell(sgd(d.T.cost))}${cell(d.T.costPerStu==null?"—":sgd(d.T.costPerStu))}
             ${cell(d.T.bcr==null?"—":d.T.bcr.toFixed(2),`color:${d.T.bcr>=1?"var(--text-success)":"var(--text-danger)"}`)}
-            <td></td>
+            ${cell(d.T.needStudents==null?"never":d.T.needStudents)}<td></td>
           </tr>
         </tbody>
       </table>
