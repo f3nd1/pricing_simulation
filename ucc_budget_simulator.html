@@ -595,7 +595,7 @@ const ST={
   views:{costBreakdown:"bars",waterfall:"rows",sens:"table",ulec:"table",compare:"table",pricelist:"table",feecalc:"table"},
   module:"simulator",navOpen:false,
   audit:[],logTab:"edits",logSearch:"",
-  cba:{tab:"overview",driver:"hours",off:{},rates:{},def:{}},
+  cba:{tab:"overview",driver:"hours",off:{},rates:{},def:{},acadPct:0},
   intakes:[],ybView:"monthly",ybYear:new Date().getFullYear(),ybCat:"All",
   ybForm:{kind:"budget",ci:0,month:0,year:new Date().getFullYear(),students:15},
   cloudOpen:false,sbUrl:SUPABASE_URL,sbKey:SUPABASE_ANON_KEY,sbStatus:"",sbStatusOk:null,sbSaves:[],sbLoading:false,sbSaveName:"",
@@ -3525,7 +3525,29 @@ function cbaDefault(st,k){
 function cbaSrc(k){return k==="cls"?"Operating \u2192 Manpower":"Course Simulator";}
 function cbaRate(st,c,k){const o=st.cba.rates[c.name]||{};return (o[k]!=null&&o[k]!=="")?Number(o[k]):cbaDefault(st,k);}
 function cbaYear(st){return FC_YEARS.includes(st.ybYear)?st.ybYear:FC_YEARS[0];}
-function cbaPool(st){const yi=FC_YEARS.indexOf(cbaYear(st));return yi<0?0:(fcExpenses(st).opexTot[yi]||0);}
+/* The OPEX line "Salaries - Permanent Staff (Academic and Non-Academic)" blends
+   teaching and admin pay. The CBA already charges teaching at $/hr x hours x
+   classes, so whatever share of that line is academic would be counted twice if
+   it stayed in the overhead pool. cba.acadPct is that share; it is netted off. */
+function cbaAcadLine(st){
+  const yi=FC_YEARS.indexOf(cbaYear(st));
+  if(yi<0)return null;
+  let hit=null;
+  (st.fx.exp.opex||[]).forEach(g=>(g.items||[]).forEach(l=>{
+    if(!hit&&/permanent staff/i.test(l.label||""))hit={label:l.label,gross:Number(l.v[yi])||0};
+  }));
+  return hit;
+}
+function cbaAcadSplit(st){
+  const pct=Math.min(100,Math.max(0,Number(st.cba.acadPct)||0));
+  const line=cbaAcadLine(st);
+  return {pct,line,deduct:line?line.gross*pct/100:0};
+}
+function cbaPool(st){
+  const yi=FC_YEARS.indexOf(cbaYear(st));
+  if(yi<0)return 0;
+  return Math.max(0,(fcExpenses(st).opexTot[yi]||0)-cbaAcadSplit(st).deduct);
+}
 /* Smallest enrolment whose revenue covers direct cost + this course's allocated
    overhead. Returns null when no class count ever closes the gap — i.e. a full
    class of `cls` students contributes less than it costs to teach. */
@@ -3538,7 +3560,10 @@ function cbaMinStudents(c,comm,rate,cls,price,allocOH){
   return null;
 }
 function cbaCompute(st){
-  const yr=cbaYear(st),pool=cbaPool(st),driver=st.cba.driver;
+  const yr=cbaYear(st),driver=st.cba.driver,acad=cbaAcadSplit(st);
+  const yi=FC_YEARS.indexOf(yr);
+  const poolGross=yi<0?0:(fcExpenses(st).opexTot[yi]||0);
+  const pool=Math.max(0,poolGross-acad.deduct);
   const rows=COURSES.map((c,ci)=>{
     const on=cbaOn(st,c),students=on?fcStudents(st,ci,yr):0;
     const price=priceOfCourse(c);
@@ -3565,7 +3590,7 @@ function cbaCompute(st){
   const direct=live.reduce((a,r)=>a+r.direct,0);
   const cost=direct+pool;                    /* pool always whole — never scaled away */
   const students=live.reduce((a,r)=>a+r.students,0);
-  return {yr,pool,rows,live,driver,
+  return {yr,pool,poolGross,acad,rows,live,driver,
     T:{benefit,direct,cost,students,
        classes:live.reduce((a,r)=>a+r.classes,0),
        teaching:live.reduce((a,r)=>a+r.teaching,0),
@@ -3609,7 +3634,7 @@ function cbaRenderOverview(st,d){
       ${kpi("Contribution to overhead",sgd(T.contribution),T.contribution>=0?"var(--text-success)":"var(--text-danger)","before overhead — allocation-free")}
     </div>
     <div style="font-size:11px;color:var(--text-muted);margin-top:12px;line-height:1.6">
-      Benefit is gross fee revenue from the ${d.yr} Yearly Budget intakes. Cost is direct teaching + agent commission for the running courses, plus the whole OPEX pool of <strong>${sgd(d.pool)}</strong> (from Forecast → Expenses). <strong>The ratio above is allocation-free</strong> — it does not move when you change the driver below.
+      Benefit is gross fee revenue from the ${d.yr} Yearly Budget intakes. Cost is direct teaching + agent commission for the running courses, plus the whole overhead pool of <strong>${sgd(d.pool)}</strong> (OPEX for ${d.yr}, less any academic salary already charged as teaching — see below). <strong>The ratio above is allocation-free</strong> — it does not move when you change the driver below.
     </div>
   </div>
   <div class="card">
@@ -3620,6 +3645,26 @@ function cbaRenderOverview(st,d){
         <tr style="border-top:1.5px solid var(--border-strong)"><td style="padding:6px 8px;font-weight:700">Total cost</td><td style="padding:6px 8px;text-align:right;font-weight:700">${sgd(T.cost)}</td><td></td></tr>
       </tbody>
     </table>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">Overhead pool</div>${d.acad.deduct>0?`<span class="card-badge" style="background:var(--green-100);color:var(--green-800)">${sgd(d.acad.deduct)} removed</span>`:""}</div>
+    <table class="tbl" style="width:100%">
+      <tbody>
+        <tr><td style="padding:5px 8px">OPEX total <span style="color:var(--text-muted);font-size:11px">(Forecast → Expenses, ${d.yr})</span></td><td style="padding:5px 8px;text-align:right;font-weight:600">${sgd(d.poolGross)}</td></tr>
+        <tr><td style="padding:5px 8px;color:var(--text-muted)">Less: academic teaching already charged at $/hr</td><td style="padding:5px 8px;text-align:right;color:${d.acad.deduct>0?"var(--text-danger)":"var(--text-muted)"}">${d.acad.deduct>0?"("+sgd(d.acad.deduct)+")":"—"}</td></tr>
+        <tr style="border-top:1.5px solid var(--border-strong)"><td style="padding:6px 8px;font-weight:700">Overhead pool</td><td style="padding:6px 8px;text-align:right;font-weight:700">${sgd(d.pool)}</td></tr>
+      </tbody>
+    </table>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;padding:10px 12px;background:var(--surface-1);border-radius:8px">
+      <span style="font-size:11px;color:var(--text-muted)">Share of that salary line that is academic teaching</span>
+      <input type="number" id="cbaAcad" value="${d.acad.pct}" min="0" max="100" step="5" style="width:74px;text-align:right">
+      <span style="font-size:11px;color:var(--text-muted)">%</span>
+      ${d.acad.line?`<span style="font-size:11px;color:var(--text-muted)">of ${sgd(d.acad.line.gross)} — “${esc(d.acad.line.label)}”</span>`
+        :`<span style="font-size:11px;color:var(--text-danger)">No “permanent staff” line found in OPEX — nothing to split.</span>`}
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:10px;line-height:1.6">
+      That line blends academic and non-academic pay. Teaching is already costed here at hourly rate × hours × classes, so the academic share must come out of the pool or it is counted twice. Set 0% if your teachers are hourly or contract staff and this line is admin only. Associated CPF and levies stay in overhead.
+    </div>
   </div>
   <div class="card">
     <div class="card-hdr"><div class="card-title">Overhead allocation driver</div></div>
@@ -3737,6 +3782,12 @@ function bindCbaEvents(){
     logAudit("Cost-Benefit",`Default ${k}`,old==null?"(inherited)":old,raw===""?"(inherited)":raw);
     save_render();
   }));
+  const acad=document.getElementById("cbaAcad");
+  if(acad)acad.addEventListener("change",e=>{
+    const nv=Math.min(100,Math.max(0,parseFloat(e.target.value)||0));
+    logAudit("Cost-Benefit","Academic share of permanent salary",ST.cba.acadPct+"%",nv+"%");
+    ST.cba.acadPct=nv;save_render();
+  });
   document.querySelectorAll("[data-cbaall]").forEach(b=>b.addEventListener("click",e=>{
     const mode=e.currentTarget.dataset.cbaall,yr=cbaYear(ST);
     ST.cba.off={};
