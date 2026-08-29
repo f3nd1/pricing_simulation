@@ -9,7 +9,10 @@
      5. The academic-salary split nets off the pool exactly, and raising it
         lowers total cost (teaching stops being counted twice).
      6. Per-course verdicts follow the stated rules, not the ratio.
-     7. Institution breakeven enrolment actually breaks even when applied. */
+     7. Institution breakeven enrolment actually breaks even when applied.
+     8. Pass rate drives cost-per-successful-student and nothing else.
+     9. Other income lifts benefit but never touches cost or per-course figures.
+    10. Budget and actual run on the same cost model. */
 import pkg from '/opt/node22/lib/node_modules/playwright/index.js';
 const { chromium } = pkg;
 
@@ -55,7 +58,22 @@ const r = await p.evaluate(() => {
     students: r.students, margin: r.margin, k: r.verdict.k }));
   const need = { n: before.T.needStudents, students: before.T.students,
     pool: before.pool, contribution: before.T.contribution };
-  return { byDriver, victim, acad, vd, need,
+  // 8: pass rate only affects cost-per-pass
+  ST.cba.rates[before.live[0].name] = { ...(ST.cba.rates[before.live[0].name]||{}), pass: 50 };
+  const pAfter = cbaCompute(ST);
+  const pr = { costBefore: before.T.cost, costAfter: pAfter.T.cost,
+    rowCostStu: pAfter.live[0].costPerStu, rowCostPass: pAfter.live[0].costPerPass };
+  delete ST.cba.rates[before.live[0].name].pass;
+  // 9: other income lifts benefit, not cost
+  const o0 = cbaCompute(ST);
+  ST.cba.otherRev = [{ label: 'Room rental', amt: 250000 }];
+  const o1 = cbaCompute(ST);
+  ST.cba.otherRev = [];
+  const oth = { ben0: o0.T.benefit, ben1: o1.T.benefit, cost0: o0.T.cost, cost1: o1.T.cost,
+    rowTotal0: o0.live[0].total, rowTotal1: o1.live[0].total, need0: o0.T.needStudents, need1: o1.T.needStudents };
+  // 10: same cost model on either basis
+  const bs = { bPool: cbaCompute(ST,'budget').pool, aPool: cbaCompute(ST,'actual').pool };
+  return { byDriver, victim, acad, vd, need, pr, oth, bs,
     poolBefore: before.pool, poolAfter: after.pool,
     costBefore: before.T.cost, costAfter: after.T.cost,
     directBefore: before.T.direct, directAfter: after.T.direct };
@@ -95,6 +113,15 @@ if (N.n != null) {
   if (!near(k * N.contribution, N.pool, Math.max(1, N.pool * 0.02)))
     fails.push(`breakeven enrolment ${N.n} does not clear the pool`);
 } else if (N.contribution > 0) fails.push('contribution positive but no breakeven enrolment given');
+const P = r.pr;
+if (!near(P.costBefore, P.costAfter)) fails.push('pass rate changed total cost');
+if (!near(P.rowCostPass, P.rowCostStu * 2, 1)) fails.push(`50% pass should double cost/pass (${P.rowCostPass} vs ${P.rowCostStu})`);
+const O = r.oth;
+if (!near(O.ben1 - O.ben0, 250000)) fails.push('other income did not lift benefit by its amount');
+if (!near(O.cost0, O.cost1)) fails.push('other income changed total cost');
+if (!near(O.rowTotal0, O.rowTotal1)) fails.push('other income leaked into a per-course total');
+if (O.need1 != null && O.need0 != null && !(O.need1 < O.need0)) fails.push('other income did not lower breakeven enrolment');
+if (!near(r.bs.bPool, r.bs.aPool)) fails.push('budget and actual used different overhead pools');
 if (errs.length) fails.push(...errs);
 
 console.log(`ratio (all drivers): ${ds.map(d => d.bcr.toFixed(4)).join(' / ')}`);
@@ -102,6 +129,8 @@ console.log(`pool ${r.poolBefore.toFixed(0)} | cost ${r.costBefore.toFixed(0)} -
 console.log(`acad split 0%->50%: pool ${A.pool0.toFixed(0)} -> ${A.pool50.toFixed(0)}, ratio ${A.bcr0.toFixed(4)} -> ${A.bcr50.toFixed(4)}`);
 console.log(`verdicts: ${['expand','grow','reprice','stop'].map(k=>k+'='+r.vd.filter(v=>v.k===k).length).join(' ')}`);
 console.log(`institution breakeven enrolment: ${N.n == null ? 'unreachable at this pricing' : N.n + ' vs ' + N.students + ' planned'}`);
+console.log(`pass 50%: cost/stu ${P.rowCostStu.toFixed(0)} -> cost/pass ${P.rowCostPass.toFixed(0)}; total cost unchanged ${near(P.costBefore,P.costAfter)}`);
+console.log(`other income +250k: benefit ${O.ben0.toFixed(0)} -> ${O.ben1.toFixed(0)}, cost unchanged ${near(O.cost0,O.cost1)}, breakeven ${O.need0} -> ${O.need1}`);
 console.log(fails.length ? 'FAIL:\n  ' + fails.join('\n  ') : 'PASS — all invariants hold');
 await b.close();
 process.exit(fails.length ? 1 : 0);
