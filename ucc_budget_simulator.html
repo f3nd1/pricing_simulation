@@ -595,7 +595,7 @@ const ST={
   views:{costBreakdown:"bars",waterfall:"rows",sens:"table",ulec:"table",compare:"table",pricelist:"table",feecalc:"table"},
   module:"simulator",navOpen:false,
   audit:[],logTab:"edits",logSearch:"",
-  cba:{tab:"overview",driver:"hours",off:{},rates:{},def:{comm:50,rate:60,cls:14}},
+  cba:{tab:"overview",driver:"hours",off:{},rates:{},def:{}},
   intakes:[],ybView:"monthly",ybYear:new Date().getFullYear(),ybCat:"All",
   ybForm:{kind:"budget",ci:0,month:0,year:new Date().getFullYear(),students:15},
   cloudOpen:false,sbUrl:SUPABASE_URL,sbKey:SUPABASE_ANON_KEY,sbStatus:"",sbStatusOk:null,sbSaves:[],sbLoading:false,sbSaveName:"",
@@ -3514,7 +3514,16 @@ function bindForecastEvents(){
    counted twice. */
 const CBA_DRIVERS=[["hours","Teaching hours"],["months","Student-months"],["revenue","Gross revenue"]];
 function cbaOn(st,c){return st.cba.off[c.name]!==true;}
-function cbaRate(st,c,k){const o=st.cba.rates[c.name]||{};return (o[k]!=null&&o[k]!=="")?Number(o[k]):st.cba.def[k];}
+/* One source of truth for rates: the Course Simulator (agent %, teacher $/hr)
+   and Manpower (class size). ST.cba.def only holds explicit overrides of those,
+   and a per-course entry in ST.cba.rates overrides both. */
+function cbaDefault(st,k){
+  const d=st.cba.def||{};
+  if(d[k]!=null&&d[k]!=="")return Number(d[k]);
+  return k==="comm"?(Number(st.agent)||0):k==="rate"?(Number(st.tf)||0):(Number(st.op.mp.cls)||14);
+}
+function cbaSrc(k){return k==="cls"?"Operating \u2192 Manpower":"Course Simulator";}
+function cbaRate(st,c,k){const o=st.cba.rates[c.name]||{};return (o[k]!=null&&o[k]!=="")?Number(o[k]):cbaDefault(st,k);}
 function cbaYear(st){return FC_YEARS.includes(st.ybYear)?st.ybYear:FC_YEARS[0];}
 function cbaPool(st){const yi=FC_YEARS.indexOf(cbaYear(st));return yi<0?0:(fcExpenses(st).opexTot[yi]||0);}
 /* Smallest enrolment whose revenue covers direct cost + this course's allocated
@@ -3628,16 +3637,22 @@ function cbaRenderCourses(st,d){
     <td style="padding:3px 8px;font-size:12px">${esc(r.name)}</td>
     <td style="padding:3px 8px;font-size:11px;color:var(--text-muted)">${esc(r.group)}</td>
     <td style="padding:3px 8px;text-align:right;font-size:11px;color:${r.students>0?"var(--text-primary)":"var(--text-muted)"}">${r.students||"—"}</td>
-    ${["comm","rate","cls"].map(k=>`<td style="padding:2px 4px;text-align:right"><input type="number" class="plinp sm" data-cbarate="${esc(r.name)}" data-k="${k}" value="${cbaRate(st,r.c,k)}" step="${k==="comm"?5:k==="rate"?5:1}" style="width:62px;text-align:right"></td>`).join("")}
+    ${["comm","rate","cls"].map(k=>{
+      const ov=(st.cba.rates[r.name]||{})[k],isOv=ov!=null&&ov!=="";
+      return `<td style="padding:2px 4px;text-align:right"><input type="number" class="plinp sm" data-cbarate="${esc(r.name)}" data-k="${k}" value="${isOv?ov:""}" placeholder="${cbaDefault(st,k)}" step="${k==="cls"?1:5}" title="${isOv?"override \u2014 blank to go back to "+cbaDefault(st,k):"inherited "+cbaDefault(st,k)}" style="width:62px;text-align:right;${isOv?"background:var(--amber-100)":""}"></td>`;
+    }).join("")}
   </tr>`;
   return `<div class="card">
     <div class="card-hdr"><div class="card-title">Active courses &amp; per-course rates</div>
       <span class="card-badge" style="background:var(--blue-100);color:var(--blue-700)">${d.live.length} running in ${yr}</span></div>
     <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.6">
-      Untick a course to take it out of the analysis — its revenue and direct costs go, but the overhead pool stays whole and re-spreads over the rest. Commission, teacher rate and class size are per course; blank falls back to the defaults below. Student numbers come from the ${yr} Yearly Budget.
+      Untick a course to take it out of the analysis — its revenue and direct costs go, but the overhead pool stays whole and re-spreads over the rest. Rates flow from the <strong>Course Simulator</strong> (commission, teacher $/hr) and <strong>Manpower</strong> (class size). Blank inherits; type to override just this course (amber). Student numbers come from the ${yr} Yearly Budget.
     </div>
     <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px;padding:10px 12px;background:var(--surface-1);border-radius:8px">
-      ${[["comm","Default commission %"],["rate","Default teacher $/hr"],["cls","Default class size"]].map(([k,l])=>`<div><div style="font-size:10px;color:var(--text-muted)">${l}</div><input type="number" data-cbadef="${k}" value="${st.cba.def[k]}" step="${k==="cls"?1:5}" style="width:86px"></div>`).join("")}
+      ${[["comm","Commission %"],["rate","Teacher $/hr"],["cls","Class size"]].map(([k,l])=>{
+        const set=st.cba.def[k]!=null&&st.cba.def[k]!=="";
+        return `<div><div style="font-size:10px;color:var(--text-muted)">${l}</div><input type="number" data-cbadef="${k}" value="${set?st.cba.def[k]:""}" placeholder="${cbaDefault(st,k)}" step="${k==="cls"?1:5}" title="Blank = inherit ${cbaDefault(st,k)} from ${cbaSrc(k)}" style="width:92px;${set?"background:var(--amber-100)":""}"><div style="font-size:9px;color:var(--text-muted);margin-top:2px">${set?"overridden":"from "+cbaSrc(k)}</div></div>`;
+      }).join("")}
       <button data-cbaall="on" style="font-size:11px;padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:none;cursor:pointer">Activate all</button>
       <button data-cbaall="live" style="font-size:11px;padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:none;cursor:pointer">Only courses with students</button>
     </div>
@@ -3716,8 +3731,11 @@ function bindCbaEvents(){
     save_render();
   }));
   document.querySelectorAll("[data-cbadef]").forEach(inp=>inp.addEventListener("change",e=>{
-    const k=e.currentTarget.dataset.cbadef,nv=parseFloat(e.currentTarget.value)||0;
-    logAudit("Cost-Benefit",`Default ${k}`,ST.cba.def[k],nv);ST.cba.def[k]=nv;save_render();
+    const k=e.currentTarget.dataset.cbadef,raw=e.currentTarget.value.trim();
+    const old=ST.cba.def[k];
+    if(raw==="")delete ST.cba.def[k]; else ST.cba.def[k]=parseFloat(raw)||0;
+    logAudit("Cost-Benefit",`Default ${k}`,old==null?"(inherited)":old,raw===""?"(inherited)":raw);
+    save_render();
   }));
   document.querySelectorAll("[data-cbaall]").forEach(b=>b.addEventListener("click",e=>{
     const mode=e.currentTarget.dataset.cbaall,yr=cbaYear(ST);
