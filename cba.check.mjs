@@ -5,7 +5,9 @@
      1. The institution ratio does NOT move when the allocation driver changes.
      2. Allocated overhead across courses sums to exactly the OPEX pool.
      3. Total cost = direct cost + the WHOLE pool.
-     4. Deactivating a course does not shrink the overhead pool — the rent stays. */
+     4. Deactivating a course does not shrink the overhead pool — the rent stays.
+     5. The academic-salary split nets off the pool exactly, and raising it
+        lowers total cost (teaching stops being counted twice). */
 import pkg from '/opt/node22/lib/node_modules/playwright/index.js';
 const { chromium } = pkg;
 
@@ -39,7 +41,14 @@ const r = await p.evaluate(() => {
   ST.cba.off[victim] = true;
   const after = cbaCompute(ST);
   delete ST.cba.off[victim];
-  return { byDriver, victim,
+  ST.cba.acadPct = 0;  const a0 = cbaCompute(ST);
+  ST.cba.acadPct = 50; const a50 = cbaCompute(ST);
+  ST.cba.acadPct = 0;
+  const acad = { gross: a50.acad.line ? a50.acad.line.gross : 0,
+    deduct: a50.acad.deduct, poolGross: a50.poolGross,
+    pool0: a0.pool, pool50: a50.pool, cost0: a0.T.cost, cost50: a50.T.cost,
+    bcr0: a0.T.bcr, bcr50: a50.T.bcr };
+  return { byDriver, victim, acad,
     poolBefore: before.pool, poolAfter: after.pool,
     costBefore: before.T.cost, costAfter: after.T.cost,
     directBefore: before.T.direct, directAfter: after.T.direct };
@@ -60,10 +69,17 @@ if (!near(r.poolBefore, r.poolAfter))
   fails.push(`pool shrank when "${r.victim}" was deactivated: ${r.poolBefore} -> ${r.poolAfter}`);
 if (!(r.directAfter < r.directBefore))
   fails.push('deactivating did not remove direct cost');
+const A = r.acad;
+if (!near(A.deduct, A.gross * 0.5)) fails.push(`50% split != half the salary line (${A.deduct} vs ${A.gross / 2})`);
+if (!near(A.pool50, A.poolGross - A.deduct)) fails.push('pool != OPEX - academic deduction');
+if (!near(A.pool0, A.poolGross)) fails.push('0% split still changed the pool');
+if (!(A.cost50 < A.cost0)) fails.push('raising the academic split did not lower total cost');
+if (!(A.bcr50 > A.bcr0)) fails.push('raising the academic split did not improve the ratio');
 if (errs.length) fails.push(...errs);
 
 console.log(`ratio (all drivers): ${ds.map(d => d.bcr.toFixed(4)).join(' / ')}`);
 console.log(`pool ${r.poolBefore.toFixed(0)} | cost ${r.costBefore.toFixed(0)} -> ${r.costAfter.toFixed(0)} after dropping "${r.victim}"`);
+console.log(`acad split 0%->50%: pool ${A.pool0.toFixed(0)} -> ${A.pool50.toFixed(0)}, ratio ${A.bcr0.toFixed(4)} -> ${A.bcr50.toFixed(4)}`);
 console.log(fails.length ? 'FAIL:\n  ' + fails.join('\n  ') : 'PASS — all invariants hold');
 await b.close();
 process.exit(fails.length ? 1 : 0);
