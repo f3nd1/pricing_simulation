@@ -643,7 +643,7 @@ const ST={
   module:"simulator",navOpen:false,
   audit:[],logTab:"edits",logSearch:"",
   smaster:{q:"",cat:"All",onlyActive:false,groups:{sim:true,oh:true,act:true,sub:true,price:true}},
-  cba:{tab:"status",driver:"hours",off:{},rates:{},def:{},acadPct:0,chartCi:0,runBasis:"recorded",runs:{},chartMode:"full",
+  cba:{tab:"status",rankBy:"contribution",trendMetric:"bcr",trendBasis:"budget",driver:"hours",off:{},rates:{},def:{},acadPct:0,chartCi:0,runBasis:"recorded",runs:{},chartMode:"full",
        basis:"budget",otherRev:[],showRates:false},
   intakes:[],ybView:"monthly",ybYear:new Date().getFullYear(),ybCat:"All",
   ybCopy:{to:0,kind:"both"},
@@ -2684,9 +2684,9 @@ function fcPnl(st){
 
 /* Build stamp. APP_VERSION is what the Change Log shows so you can tell at a
    glance whether a machine is running the latest file. Regenerate with mkver.py. */
-const APP_VERSION="v1.61.0";
+const APP_VERSION="v1.62.0";
 const APP_BUILD="2026-08-29";
-const APP_CHANGELOG=[{"h": "569da30", "d": "2026-08-29", "t": "08:44", "s": "Cost-Benefit diagnostics: fee, commission and cost-driver analysis"}, {"h": "ab9a994", "d": "2026-08-29", "t": "08:34", "s": "Cost-Benefit: canonical Operating BE, run-aware status, YTD attainment"}, {"h": "ae0da18", "d": "2026-08-29", "t": "07:59", "s": "Add Simulator Inputs master sheet; confirm Price List is canonical"}, {"h": "ddcf1f0", "d": "2026-08-29", "t": "07:44", "s": "Course Simulator: give every course its own remembered assumptions"}, {"h": "46ce818", "d": "2026-08-29", "t": "07:22", "s": "Cost-Benefit: separate Operating and Full-Cost break-even, audit metrics, add explanatory diagrams"}, {"h": "b92e23b", "d": "2026-08-29", "t": "06:58", "s": "Yearly Budget: copy a year's intake plan to another year"}, {"h": "dae4d5f", "d": "2026-08-29", "t": "06:53", "s": "Collapse the per-course rate columns on the Active courses tab"}, {"h": "10c1379", "d": "2026-08-29", "t": "06:47", "s": "Cost-Benefit: pass rates, budget vs actual, and other income"}, {"h": "94b1772", "d": "2026-08-29", "t": "06:43", "s": "Fix false positive in the mkver duplicate guard"}, {"h": "07ae6ba", "d": "2026-08-29", "t": "06:42", "s": "Add Cost-Benefit charts tab (D3), ROI, and the do-not-average principle"}, {"h": "593b609", "d": "2026-08-29", "t": "06:21", "s": "Fix fatal duplicate const APP_VERSION that blanked the app"}, {"h": "c180693", "d": "2026-08-29", "t": "06:00", "s": "Explain why the two per-course views give different numbers"}, {"h": "322e4f0", "d": "2026-08-29", "t": "05:57", "s": "Add version stamp and rebuild the changelog from real git history"}, {"h": "dbfd3f0", "d": "2026-08-29", "t": "05:43", "s": "Cost-Benefit: per-course action verdicts and institution sustainability call"}, {"h": "cf96ca6", "d": "2026-08-29", "t": "05:35", "s": "Cost-Benefit: split the blended permanent-salary line out of the overhead pool"}, {"h": "5ddbb02", "d": "2026-08-29", "t": "05:32", "s": "Cost-Benefit rates inherit from Course Simulator instead of own defaults"}, {"h": "3d14a7e", "d": "2026-08-29", "t": "05:21", "s": "Add Cost-Benefit module (school + per-course) and a passcode gate"}, {"h": "360af5b", "d": "2026-08-12", "t": "10:21", "s": "Rename ULEC to Contractor in UI; set AEIS course fee to 11,500"}, {"h": "b568fb8", "d": "2026-07-07", "t": "14:45", "s": "Show comma-separated numbers in editable money fields (24,000 not 24000)"}, {"h": "2180e03", "d": "2026-07-07", "t": "14:37", "s": "Make budget period dynamic: 5-year window, choose start year, save named periods"}, {"h": "c02c902", "d": "2026-07-07", "t": "14:29", "s": "Extend forecast to 2026-2040 (15 years) + add Change Log module"}, {"h": "056a4ef", "d": "2026-07-07", "t": "14:10", "s": "Add yearly expense growth model + budget period selector"}, {"h": "93407a4", "d": "2026-07-07", "t": "13:54", "s": "Add monthly expense breakdown (base-year drill-down) + bake in Supabase config"}, {"h": "b9c34e3", "d": "2026-07-07", "t": "13:20", "s": "Add fixed Supabase config option that locks the Cloud Save fields"}, {"h": "bdd773b", "d": "2026-07-07", "t": "09:27", "s": "Link all modules to live data: revenue from Price List × Yearly Budget, Excel expense sub-items, dynamic course catalog"}, {"h": "e324f9e", "d": "2026-07-07", "t": "09:07", "s": "Add Strategy & Governance module (Phase D): growth initiatives NPV/payback, compliance tracker, funding register; fix mobile overflow"}, {"h": "9d069c9", "d": "2026-07-07", "t": "09:00", "s": "Add Valuation & Statements module (Phase C of Excel master-budget port)"}, {"h": "e209b5e", "d": "2026-07-07", "t": "08:56", "s": "Add Operating Detail module (Phase B of Excel master-budget port)"}, {"h": "f76ed77", "d": "2026-07-07", "t": "08:47", "s": "Add Forecast & P&L module (Phase A of Excel master-budget port)"}, {"h": "352f494", "d": "2026-07-07", "t": "07:47", "s": "Re-add drag-to-move to Yearly Budget nodes with a grip handle"}, {"h": "674ded3", "d": "2026-07-07", "t": "07:25", "s": "Yearly Budget planner: back to vertical month rows, add per-month duplicate + price"}, {"h": "0278c90", "d": "2026-07-07", "t": "07:16", "s": "Yearly Budget planner: horizontal month columns with drag, duplicate, copy"}, {"h": "1a8a09a", "d": "2026-07-07", "t": "07:08", "s": "Redesign Yearly Budget intake area as a month-by-month planner grid"}, {"h": "ff7957c", "d": "2026-07-07", "t": "06:56", "s": "Add duplicate + month-shift controls to Yearly Budget intakes"}, {"h": "c97000b", "d": "2026-07-07", "t": "06:52", "s": "Add \"Save over\" (overwrite) to cloud-saved scenarios"}, {"h": "5c6ff65", "d": "2026-07-07", "t": "02:49", "s": "Add cloud save/load via Supabase"}, {"h": "66c8c12", "d": "2026-07-07", "t": "02:16", "s": "Fix Yearly Budget responsiveness across tablet and small-phone widths"}, {"h": "486dc2b", "d": "2026-07-07", "t": "02:10", "s": "Replace top nav bar with hamburger drawer menu"}, {"h": "2e80831", "d": "2026-07-07", "t": "02:00", "s": "Redesign Yearly Budget module — teal hero banner + attainment strip"}, {"h": "efda20c", "d": "2026-07-07", "t": "01:37", "s": "Add readable TypeScript/React version of the Yearly Budget module"}, {"h": "9c742f7", "d": "2026-07-07", "t": "01:32", "s": "Split into two top-level modules: Course Simulator + Yearly Budget"}, {"h": "35123f6", "d": "2026-07-07", "t": "01:14", "s": "Add Portfolio tab: multi-course Monthly/Quarterly/Yearly/Total menu"}, {"h": "3501c6d", "d": "2026-07-07", "t": "00:51", "s": "Add portfolio performance React prototype"}, {"h": "b716e62", "d": "2026-07-06", "t": "23:55", "s": "Add legends to all D3 chart views"}, {"h": "f2fd130", "d": "2026-07-06", "t": "23:47", "s": "Add D3.js charts to all remaining tabs (6 new chart views)"}, {"h": "b915c0d", "d": "2026-07-06", "t": "23:25", "s": "Add D3.js chart view for What-if profit-by-students, alongside existing table"}, {"h": "13776d3", "d": "2026-06-30", "t": "03:37", "s": "Clarify breakeven is total enrolment for one run, not per month"}, {"h": "2efacb5", "d": "2026-06-30", "t": "02:04", "s": "Widen left panel and redesign ULEC subcontract tab"}, {"h": "64fcb77", "d": "2026-06-30", "t": "01:50", "s": "Rename student inputs to 'Planned/Actual students (total)' with per-month sub-label"}, {"h": "2b2b1a7", "d": "2026-06-30", "t": "01:48", "s": "Clarify Planned/Actual students labels: show total cohort + per-month sub-label"}, {"h": "ebf05c9", "d": "2026-06-30", "t": "01:46", "s": "Split what-if table: separate Students (total) and Per month columns"}, {"h": "8418481", "d": "2026-06-30", "t": "01:42", "s": "Add what-if enrolment table and per-month student figures to Overview"}, {"h": "ae816dd", "d": "2026-06-30", "t": "01:32", "s": "Redesign layout, add AI chatbot, price list with hours/months, and finance advisor skill"}, {"h": "274a2b1", "d": "2026-06-30", "t": "01:10", "s": "Add localStorage persistence + JSON export/import"}, {"h": "b8c60d6", "d": "2026-06-29", "t": "23:29", "s": "Add QuickLook fallback message and DOMContentLoaded guard"}, {"h": "05a4e6d", "d": "2026-06-29", "t": "23:27", "s": "Fix blank page: add proper HTML5 document structure"}, {"h": "b1afa6b", "d": "2026-06-29", "t": "23:26", "s": "Make layout fully responsive for mobile and tablet"}, {"h": "d72fc86", "d": "2026-06-29", "t": "23:08", "s": "Fix visual design: card depth, blue header, active tab, sr-only"}, {"h": "e451348", "d": "2026-06-29", "t": "23:04", "s": "Add CSS variable definitions and form element styling"}, {"h": "8730024", "d": "2026-06-29", "t": "21:19", "s": "Add Fee Calculator tab to UCC budget simulator"}];
+const APP_CHANGELOG=[{"h": "6c37f64", "d": "2026-08-29", "t": "09:04", "s": "Cost-Benefit: net-revenue accounting, recorded runs, rebuilt diagnostics"}, {"h": "569da30", "d": "2026-08-29", "t": "08:44", "s": "Cost-Benefit diagnostics: fee, commission and cost-driver analysis"}, {"h": "ab9a994", "d": "2026-08-29", "t": "08:34", "s": "Cost-Benefit: canonical Operating BE, run-aware status, YTD attainment"}, {"h": "ae0da18", "d": "2026-08-29", "t": "07:59", "s": "Add Simulator Inputs master sheet; confirm Price List is canonical"}, {"h": "ddcf1f0", "d": "2026-08-29", "t": "07:44", "s": "Course Simulator: give every course its own remembered assumptions"}, {"h": "46ce818", "d": "2026-08-29", "t": "07:22", "s": "Cost-Benefit: separate Operating and Full-Cost break-even, audit metrics, add explanatory diagrams"}, {"h": "b92e23b", "d": "2026-08-29", "t": "06:58", "s": "Yearly Budget: copy a year's intake plan to another year"}, {"h": "dae4d5f", "d": "2026-08-29", "t": "06:53", "s": "Collapse the per-course rate columns on the Active courses tab"}, {"h": "10c1379", "d": "2026-08-29", "t": "06:47", "s": "Cost-Benefit: pass rates, budget vs actual, and other income"}, {"h": "94b1772", "d": "2026-08-29", "t": "06:43", "s": "Fix false positive in the mkver duplicate guard"}, {"h": "07ae6ba", "d": "2026-08-29", "t": "06:42", "s": "Add Cost-Benefit charts tab (D3), ROI, and the do-not-average principle"}, {"h": "593b609", "d": "2026-08-29", "t": "06:21", "s": "Fix fatal duplicate const APP_VERSION that blanked the app"}, {"h": "c180693", "d": "2026-08-29", "t": "06:00", "s": "Explain why the two per-course views give different numbers"}, {"h": "322e4f0", "d": "2026-08-29", "t": "05:57", "s": "Add version stamp and rebuild the changelog from real git history"}, {"h": "dbfd3f0", "d": "2026-08-29", "t": "05:43", "s": "Cost-Benefit: per-course action verdicts and institution sustainability call"}, {"h": "cf96ca6", "d": "2026-08-29", "t": "05:35", "s": "Cost-Benefit: split the blended permanent-salary line out of the overhead pool"}, {"h": "5ddbb02", "d": "2026-08-29", "t": "05:32", "s": "Cost-Benefit rates inherit from Course Simulator instead of own defaults"}, {"h": "3d14a7e", "d": "2026-08-29", "t": "05:21", "s": "Add Cost-Benefit module (school + per-course) and a passcode gate"}, {"h": "360af5b", "d": "2026-08-12", "t": "10:21", "s": "Rename ULEC to Contractor in UI; set AEIS course fee to 11,500"}, {"h": "b568fb8", "d": "2026-07-07", "t": "14:45", "s": "Show comma-separated numbers in editable money fields (24,000 not 24000)"}, {"h": "2180e03", "d": "2026-07-07", "t": "14:37", "s": "Make budget period dynamic: 5-year window, choose start year, save named periods"}, {"h": "c02c902", "d": "2026-07-07", "t": "14:29", "s": "Extend forecast to 2026-2040 (15 years) + add Change Log module"}, {"h": "056a4ef", "d": "2026-07-07", "t": "14:10", "s": "Add yearly expense growth model + budget period selector"}, {"h": "93407a4", "d": "2026-07-07", "t": "13:54", "s": "Add monthly expense breakdown (base-year drill-down) + bake in Supabase config"}, {"h": "b9c34e3", "d": "2026-07-07", "t": "13:20", "s": "Add fixed Supabase config option that locks the Cloud Save fields"}, {"h": "bdd773b", "d": "2026-07-07", "t": "09:27", "s": "Link all modules to live data: revenue from Price List × Yearly Budget, Excel expense sub-items, dynamic course catalog"}, {"h": "e324f9e", "d": "2026-07-07", "t": "09:07", "s": "Add Strategy & Governance module (Phase D): growth initiatives NPV/payback, compliance tracker, funding register; fix mobile overflow"}, {"h": "9d069c9", "d": "2026-07-07", "t": "09:00", "s": "Add Valuation & Statements module (Phase C of Excel master-budget port)"}, {"h": "e209b5e", "d": "2026-07-07", "t": "08:56", "s": "Add Operating Detail module (Phase B of Excel master-budget port)"}, {"h": "f76ed77", "d": "2026-07-07", "t": "08:47", "s": "Add Forecast & P&L module (Phase A of Excel master-budget port)"}, {"h": "352f494", "d": "2026-07-07", "t": "07:47", "s": "Re-add drag-to-move to Yearly Budget nodes with a grip handle"}, {"h": "674ded3", "d": "2026-07-07", "t": "07:25", "s": "Yearly Budget planner: back to vertical month rows, add per-month duplicate + price"}, {"h": "0278c90", "d": "2026-07-07", "t": "07:16", "s": "Yearly Budget planner: horizontal month columns with drag, duplicate, copy"}, {"h": "1a8a09a", "d": "2026-07-07", "t": "07:08", "s": "Redesign Yearly Budget intake area as a month-by-month planner grid"}, {"h": "ff7957c", "d": "2026-07-07", "t": "06:56", "s": "Add duplicate + month-shift controls to Yearly Budget intakes"}, {"h": "c97000b", "d": "2026-07-07", "t": "06:52", "s": "Add \"Save over\" (overwrite) to cloud-saved scenarios"}, {"h": "5c6ff65", "d": "2026-07-07", "t": "02:49", "s": "Add cloud save/load via Supabase"}, {"h": "66c8c12", "d": "2026-07-07", "t": "02:16", "s": "Fix Yearly Budget responsiveness across tablet and small-phone widths"}, {"h": "486dc2b", "d": "2026-07-07", "t": "02:10", "s": "Replace top nav bar with hamburger drawer menu"}, {"h": "2e80831", "d": "2026-07-07", "t": "02:00", "s": "Redesign Yearly Budget module — teal hero banner + attainment strip"}, {"h": "efda20c", "d": "2026-07-07", "t": "01:37", "s": "Add readable TypeScript/React version of the Yearly Budget module"}, {"h": "9c742f7", "d": "2026-07-07", "t": "01:32", "s": "Split into two top-level modules: Course Simulator + Yearly Budget"}, {"h": "35123f6", "d": "2026-07-07", "t": "01:14", "s": "Add Portfolio tab: multi-course Monthly/Quarterly/Yearly/Total menu"}, {"h": "3501c6d", "d": "2026-07-07", "t": "00:51", "s": "Add portfolio performance React prototype"}, {"h": "b716e62", "d": "2026-07-06", "t": "23:55", "s": "Add legends to all D3 chart views"}, {"h": "f2fd130", "d": "2026-07-06", "t": "23:47", "s": "Add D3.js charts to all remaining tabs (6 new chart views)"}, {"h": "b915c0d", "d": "2026-07-06", "t": "23:25", "s": "Add D3.js chart view for What-if profit-by-students, alongside existing table"}, {"h": "13776d3", "d": "2026-06-30", "t": "03:37", "s": "Clarify breakeven is total enrolment for one run, not per month"}, {"h": "2efacb5", "d": "2026-06-30", "t": "02:04", "s": "Widen left panel and redesign ULEC subcontract tab"}, {"h": "64fcb77", "d": "2026-06-30", "t": "01:50", "s": "Rename student inputs to 'Planned/Actual students (total)' with per-month sub-label"}, {"h": "2b2b1a7", "d": "2026-06-30", "t": "01:48", "s": "Clarify Planned/Actual students labels: show total cohort + per-month sub-label"}, {"h": "ebf05c9", "d": "2026-06-30", "t": "01:46", "s": "Split what-if table: separate Students (total) and Per month columns"}, {"h": "8418481", "d": "2026-06-30", "t": "01:42", "s": "Add what-if enrolment table and per-month student figures to Overview"}, {"h": "ae816dd", "d": "2026-06-30", "t": "01:32", "s": "Redesign layout, add AI chatbot, price list with hours/months, and finance advisor skill"}, {"h": "274a2b1", "d": "2026-06-30", "t": "01:10", "s": "Add localStorage persistence + JSON export/import"}, {"h": "b8c60d6", "d": "2026-06-29", "t": "23:29", "s": "Add QuickLook fallback message and DOMContentLoaded guard"}, {"h": "05a4e6d", "d": "2026-06-29", "t": "23:27", "s": "Fix blank page: add proper HTML5 document structure"}, {"h": "b1afa6b", "d": "2026-06-29", "t": "23:26", "s": "Make layout fully responsive for mobile and tablet"}, {"h": "d72fc86", "d": "2026-06-29", "t": "23:08", "s": "Fix visual design: card depth, blue header, active tab, sr-only"}, {"h": "e451348", "d": "2026-06-29", "t": "23:04", "s": "Add CSS variable definitions and form element styling"}, {"h": "8730024", "d": "2026-06-29", "t": "21:19", "s": "Add Fee Calculator tab to UCC budget simulator"}];
 function fmtLogDate(iso){
   const d=new Date(iso);
   if(isNaN(d))return iso||"";
@@ -3750,6 +3750,16 @@ function cbaYtd(st,ci,yr){
 function cbaOtherRev(st){return (st.cba.otherRev||[]).reduce((a,o)=>a+(Number(o.amt)||0),0);}
 /* Years offered are the forecast window plus any year with recorded intakes —
    never a hardcoded list. */
+/* Years that genuinely hold enrolment data — used for trends, so a year with
+   nothing recorded shows N/A rather than a misleading zero. */
+function cbaYearsWithData(st,basis){
+  const ys=new Set();
+  (st.intakes||[]).forEach(k=>{
+    if((Number(k.students)||0)<=0)return;
+    if(basis&&(k.kind||"budget")!==basis)return;
+    if(k.year)ys.add(k.year);});
+  return [...ys].sort((a,b)=>a-b);
+}
 function cbaYearOptions(st){
   const ys=new Set(FC_YEARS);
   (st.intakes||[]).forEach(k=>{if(k.year)ys.add(k.year);});
@@ -3760,8 +3770,8 @@ function cbaYear(st){return cbaYearOptions(st).includes(st.ybYear)?st.ybYear:FC_
    teaching and admin pay. The CBA already charges teaching at $/hr x hours x
    classes, so whatever share of that line is academic would be counted twice if
    it stayed in the overhead pool. cba.acadPct is that share; it is netted off. */
-function cbaAcadLine(st){
-  const yi=FC_YEARS.indexOf(cbaYear(st));
+function cbaAcadLine(st,yr){
+  const yi=FC_YEARS.indexOf(yr==null?cbaYear(st):yr);
   if(yi<0)return null;
   let hit=null;
   (st.fx.exp.opex||[]).forEach(g=>(g.items||[]).forEach(l=>{
@@ -3769,15 +3779,16 @@ function cbaAcadLine(st){
   }));
   return hit;
 }
-function cbaAcadSplit(st){
+function cbaAcadSplit(st,yr){
   const pct=Math.min(100,Math.max(0,Number(st.cba.acadPct)||0));
-  const line=cbaAcadLine(st);
+  const line=cbaAcadLine(st,yr);
   return {pct,line,deduct:line?line.gross*pct/100:0};
 }
-function cbaPool(st){
-  const yi=FC_YEARS.indexOf(cbaYear(st));
+function cbaPool(st,yr){
+  const y=yr==null?cbaYear(st):yr;
+  const yi=FC_YEARS.indexOf(y);
   if(yi<0)return 0;
-  return Math.max(0,(fcExpenses(st).opexTot[yi]||0)-cbaAcadSplit(st).deduct);
+  return Math.max(0,(fcExpenses(st).opexTot[yi]||0)-cbaAcadSplit(st,y).deduct);
 }
 /* Two different break-evens, and they answer different questions.
 
@@ -3857,9 +3868,10 @@ function cbaCoVerdict(T){
   if(T.bcr>=0.85)return {label:"Near breakeven",tone:"var(--amber-800)",sub:"close, but not yet covering full cost"};
   return {label:"Not sustainable as configured",tone:"var(--text-danger)",sub:`recovers ${Math.round(T.bcr*100)}c of every dollar spent`};
 }
-function cbaCompute(st,basisOverride){
+function cbaCompute(st,basisOverride,yearOverride){
   const basis=basisOverride||st.cba.basis||"budget";
-  const yr=cbaYear(st),driver=st.cba.driver,acad=cbaAcadSplit(st);
+  const yr=yearOverride==null?cbaYear(st):yearOverride;
+  const driver=st.cba.driver,acad=cbaAcadSplit(st,yr);
   const yi=FC_YEARS.indexOf(yr);
   const poolGross=yi<0?0:(fcExpenses(st).opexTot[yi]||0);
   const pool=Math.max(0,poolGross-acad.deduct);
@@ -3952,7 +3964,7 @@ function cbaCompute(st,basisOverride){
 }
 
 function renderCbaModule(st){
-  const tabs=[["status","✅ Course status"],["overview","Overview (school)"],["diag","🔎 Diagnostics"],["courses","Active courses"],["bycourse","By course"],["charts","📊 Charts"]];
+  const tabs=[["status","✅ Course status"],["overview","Overview (school)"],["portfolio","🏆 Portfolio"],["years","📅 Year trend"],["diag","🔎 Diagnostics"],["courses","Active courses"],["bycourse","By course"],["charts","📊 Charts"]];
   const d=cbaCompute(st);
   const hdr=`
   <div class="hdr" style="background:linear-gradient(135deg,#7c2d12 0%,#ea580c 100%)">
@@ -3971,6 +3983,8 @@ function renderCbaModule(st){
     <div class="tabs-wrap"><div class="tabs">${tabs.map(([k,l])=>`<button class="tab${st.cba.tab===k?" on":""}" data-cbatab="${k}">${l}</button>`).join("")}</div></div>
     <div id="cbacontent">${
       st.cba.tab==="status"?cbaRenderStatus(st,d):
+      st.cba.tab==="portfolio"?cbaRenderPortfolio(st,d):
+      st.cba.tab==="years"?cbaRenderYears(st,d):
       st.cba.tab==="diag"?cbaRenderDiag(st,d):
       st.cba.tab==="courses"?cbaRenderCourses(st,d):
       st.cba.tab==="bycourse"?cbaRenderByCourse(st,d):
@@ -4255,6 +4269,13 @@ function bindCbaEvents(){
   }));
   const oa=document.getElementById("cbaOthAdd");
   if(oa)oa.addEventListener("click",()=>{ST.cba.otherRev.push({label:"",amt:0});save_render();});
+  const rk=document.getElementById("cbaRankBy");
+  if(rk)rk.addEventListener("change",e=>{ST.cba.rankBy=e.target.value;save_render();});
+  const tm=document.getElementById("cbaTrendMetric");
+  if(tm)tm.addEventListener("change",e=>{ST.cba.trendMetric=e.target.value;save_render();});
+  document.querySelectorAll("[data-cbatrendbasis]").forEach(b=>b.addEventListener("click",e=>{ST.cba.trendBasis=e.currentTarget.dataset.cbatrendbasis;save_render();}));
+  const yc=document.getElementById("cbaYearCourse");
+  if(yc)yc.addEventListener("change",e=>{ST.cba.chartCi=parseInt(e.target.value)||0;save_render();});
   const dc=document.getElementById("cbaDiagCourse");
   if(dc)dc.addEventListener("change",e=>{ST.cba.chartCi=parseInt(e.target.value)||0;save_render();});
   const cc=document.getElementById("cbaChartCourse");
@@ -4522,6 +4543,317 @@ function cbaRenderDiag(st,d){
     </table></div>
     <div style="font-size:10px;color:var(--text-muted);margin-top:8px">All rates read from this course's saved Course Simulator state: discount ${Math.round(r.disc*100)}% · agent ${Math.round(r.comm*100)}% · university ${Math.round(r.uni*100)}% · teacher ${sgd(r.rate)}/hr.</div>
   </div>`;
+}
+
+/* ═══════════ PORTFOLIO — which courses carry UCC, and is it enough ═══════════
+   Ranking defaults to CONTRIBUTION, not allocated BCR: contribution is
+   allocation-free and is what actually pays the central costs. */
+const CBA_RANK=[["contribution","Contribution","money"],["margin","Contribution margin","pct"],
+  ["profit","Profit / loss","money"],["profitMargin","Profit margin","pct"],
+  ["bcr","Full-cost BCR","x"],["roi","ROI","pct"],["costPerStu","Cost per student","money"],
+  ["budget","Budget attainment","pct"],["students","Students","num"]];
+function cbaRankValue(r,k){
+  switch(k){
+    case "contribution":return r.contribution;
+    case "margin":return r.margin;
+    case "profit":return r.revenue-r.total;
+    case "profitMargin":return r.revenue>0?(r.revenue-r.total)/r.revenue:null;
+    case "bcr":return r.bcr;
+    case "roi":return r.roi;
+    case "costPerStu":return r.costPerStu==null?null:-r.costPerStu;  /* lower is better */
+    case "budget":return r.ytd&&r.ytd.pct!=null?r.ytd.pct:null;
+    default:return r.students;
+  }
+}
+function cbaRankFmt(v,kind){
+  if(v==null)return "—";
+  return kind==="money"?sgd(v):kind==="pct"?Math.round(v*100)+"%":kind==="x"?v.toFixed(2)+"×":Math.round(v);
+}
+function cbaRenderPortfolio(st,d){
+  const T=d.T,live=d.live;
+  if(!live.length)return `<div class="card"><div style="padding:30px;text-align:center;color:var(--text-muted)">No running courses in ${d.yr} on the ${(d.basis||"budget").toUpperCase()} basis.</div></div>`;
+  const key=st.cba.rankBy||"contribution";
+  const meta=CBA_RANK.find(x=>x[0]===key)||CBA_RANK[0];
+  const rows=live.slice().sort((a,b)=>{
+    const av=cbaRankValue(a,key),bv=cbaRankValue(b,key);
+    if(av==null&&bv==null)return 0; if(av==null)return 1; if(bv==null)return -1;
+    return bv-av;});
+  /* portfolio health */
+  const pos=live.filter(r=>r.contribution>=0).length;
+  const opKnown=live.filter(r=>r.opStatus!=="na");
+  const opMet=opKnown.filter(r=>r.opStatus==="met").length;
+  const rec=live.filter(r=>r.fullStatus==="rec").length;
+  const uncovered=Math.max(0,d.pool-T.contribution);
+  const tile=(lbl,val,col,sub)=>`<div class="kpi-card"><div class="kpi-card-lbl">${lbl}</div><div class="kpi-card-val"${col?` style="color:${col}"`:""}>${val}</div>${sub?`<div class="kpi-card-sub">${sub}</div>`:""}</div>`;
+  /* overhead burden, from the real expense groups */
+  const yi=FC_YEARS.indexOf(d.yr);
+  const ohGroups=yi<0?[]:(st.fx.exp.opex||[]).map(g=>[g.label.replace(/^Expenses-/,""),fcExpGroupTotal(g)[yi]||0])
+    .filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]);
+  const ohTot=ohGroups.reduce((a,x)=>a+x[1],0)||1;
+  const PAL=["#6366f1","#0891b2","#f59e0b","#dc2626","#16a34a","#8b5cf6","#64748b"];
+  return `
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">Portfolio health</div>
+      <span class="card-badge" style="background:var(--surface-1);color:var(--text-primary)">${d.yr} · ${(d.basis||"budget").toUpperCase()}</span></div>
+    <div class="kpi-grid">
+      ${tile("Active courses",live.length,null,"with students this year")}
+      ${tile("Positive contribution",`${pos} of ${live.length}`,pos===live.length?"var(--text-success)":"var(--amber-800)","help pay central costs")}
+      ${tile("Meeting Operating BE",opKnown.length?`${opMet} of ${opKnown.length}`:"—",opKnown.length&&opMet===opKnown.length?"var(--text-success)":"var(--amber-800)",opKnown.length?"where runs are recorded":"record runs to measure")}
+      ${tile("Recovering full cost",`${rec} of ${live.length}`,rec?"var(--text-success)":"var(--text-danger)","cover their allocated share")}
+      ${tile("Total course contribution",sgd(T.contribution),T.contribution>=0?"var(--text-success)":"var(--text-danger)","available for overhead")}
+      ${tile(uncovered>0?"Overhead still uncovered":"Overhead fully covered",sgd(uncovered||Math.abs(T.contribution-d.pool)),uncovered>0?"var(--text-danger)":"var(--text-success)",`central overhead ${sgd(d.pool)}`)}
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:12px;line-height:1.6">
+      ${uncovered>0
+        ? `The courses generate <strong>${sgd(T.contribution)}</strong> towards central overhead of <strong>${sgd(d.pool)}</strong>, leaving <strong style="color:var(--text-danger)">${sgd(uncovered)}</strong> uncovered. That gap closes either through more course contribution or a smaller cost base.`
+        : `Course contribution of <strong>${sgd(T.contribution)}</strong> covers the central overhead of <strong>${sgd(d.pool)}</strong>.`}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">Which courses help pay UCC's central costs?</div></div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Contribution is revenue less the course's own direct costs — allocation-free, so it does not move with the overhead driver. Green bars fund central costs; red bars consume more than they bring in.</div>
+    <div id="cbaPortChart" style="width:100%"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">Course ranking</div></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+      <span style="font-size:11px;color:var(--text-muted)">Rank by</span>
+      <select id="cbaRankBy">${CBA_RANK.map(([k,l])=>`<option value="${k}"${key===k?" selected":""}>${l}</option>`).join("")}</select>
+      <span style="font-size:11px;color:var(--text-muted)">best first${key==="costPerStu"?" (lowest cost)":""}</span>
+    </div>
+    <div style="overflow-x:auto"><table class="tbl" style="width:100%;min-width:860px">
+      <thead><tr><th style="text-align:left">#</th><th style="text-align:left">Course</th>
+        <th style="text-align:right">Students</th><th style="text-align:right">Contribution</th>
+        <th style="text-align:right">Contrib margin</th><th style="text-align:right">Profit / loss</th>
+        <th style="text-align:right">Profit margin</th><th style="text-align:right">BCR</th>
+        <th style="text-align:right">ROI</th><th style="text-align:right">Cost / student</th>
+        <th style="text-align:left">Operating</th></tr></thead>
+      <tbody>${rows.map((r,i)=>{
+        const profit=r.revenue-r.total,pm=r.revenue>0?profit/r.revenue:null;
+        return `<tr${key!=="students"&&cbaRankValue(r,key)==null?' style="opacity:.55"':''}>
+        <td style="padding:4px 8px;color:var(--text-muted)">${i+1}</td>
+        <td style="padding:4px 8px;max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.name)}">${esc(r.name)}</td>
+        <td style="padding:4px 8px;text-align:right">${r.students}</td>
+        <td style="padding:4px 8px;text-align:right;font-weight:600;color:${r.contribution>=0?"var(--text-success)":"var(--text-danger)"}">${sgd(r.contribution)}</td>
+        <td style="padding:4px 8px;text-align:right">${r.margin==null?"—":Math.round(r.margin*100)+"%"}</td>
+        <td style="padding:4px 8px;text-align:right;color:${profit>=0?"var(--text-success)":"var(--text-danger)"}">${sgd(profit)}</td>
+        <td style="padding:4px 8px;text-align:right">${pm==null?"—":Math.round(pm*100)+"%"}</td>
+        <td style="padding:4px 8px;text-align:right">${r.bcr==null?"—":r.bcr.toFixed(2)+"×"}</td>
+        <td style="padding:4px 8px;text-align:right;color:${r.roi>=0?"var(--text-success)":"var(--text-danger)"}">${r.roi==null?"—":(r.roi>0?"+":"")+Math.round(r.roi*100)+"%"}</td>
+        <td style="padding:4px 8px;text-align:right">${r.costPerStu==null?"—":sgd(r.costPerStu)}</td>
+        <td style="padding:4px 8px">${cbaPill(r.opStatus,r.opStatus==="met"?`Met +${r.opGap}`:r.opStatus==="not"?`Short ${Math.abs(r.opGap)}`:"N/A")}</td>
+      </tr>`;}).join("")}</tbody>
+    </table></div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:8px">Ranked by <strong>${meta[1]}</strong>. Best contribution and best full-cost BCR are different questions — a course can lead on one and trail on the other.</div>
+  </div>
+
+  ${ohGroups.length?`<div class="card">
+    <div class="card-hdr"><div class="card-title">What the central overhead is spent on</div>
+      <span class="card-badge" style="background:var(--surface-1);color:var(--text-primary)">${sgd(ohTot)}</span></div>
+    <div style="display:flex;height:22px;border-radius:6px;overflow:hidden;margin-bottom:10px;border:1px solid var(--border)">
+      ${ohGroups.map(([l,v],i)=>`<div title="${l} ${sgd(v)}" style="width:${(v/ohTot*100).toFixed(2)}%;background:${PAL[i%PAL.length]}"></div>`).join("")}</div>
+    <table class="tbl" style="width:100%"><tbody>
+      ${ohGroups.map(([l,v],i)=>`<tr><td style="padding:4px 8px;width:16px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${PAL[i%PAL.length]}"></span></td>
+        <td style="padding:4px 8px">${esc(l)}</td><td style="padding:4px 8px;text-align:right;font-weight:600">${sgd(v)}</td>
+        <td style="padding:4px 8px;text-align:right;color:var(--text-muted);width:56px">${Math.round(v/ohTot*100)}%</td></tr>`).join("")}
+    </tbody></table>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:9px;line-height:1.6">
+      Course contribution currently covers <strong>${d.pool>0?Math.round(Math.max(0,T.contribution)/d.pool*100):0}%</strong> of this overhead. Source: Forecast → Expenses for ${d.yr}. Shown to size the categories, not to imply any of them should be cut.
+    </div>
+  </div>`:""}`;
+}
+function cbaDrawPortfolio(st){
+  const el=cbaChartBox("cbaPortChart");if(!el)return;
+  const d=cbaCompute(st);
+  const rows=d.live.slice().sort((a,b)=>b.contribution-a.contribution);
+  if(!rows.length)return;
+  const width=el.clientWidth||600;
+  const margin={top:14,right:70,bottom:28,left:Math.min(190,Math.max(110,width*0.32))};
+  const rowH=Math.max(15,Math.min(24,300/rows.length));
+  const innerW=Math.max(width-margin.left-margin.right,80),innerH=rows.length*rowH;
+  const svg=d3.select(el).append("svg").attr("width",width).attr("height",innerH+margin.top+margin.bottom);
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
+  const lo=Math.min(0,d3.min(rows,r=>r.contribution)),hi=Math.max(0,d3.max(rows,r=>r.contribution));
+  const x=d3.scaleLinear().domain([lo,hi]).nice().range([0,innerW]);
+  const y=d3.scaleBand().domain(rows.map(r=>r.name)).range([0,innerH]).padding(.22);
+  g.append("g").attr("transform",`translate(0,${innerH})`).call(d3.axisBottom(x).ticks(5).tickFormat(v=>sgd(v)))
+    .selectAll("text").attr("font-size",9).attr("fill","var(--text-muted)");
+  g.append("g").call(d3.axisLeft(y).tickSize(0)).call(sel=>sel.select(".domain").remove())
+    .selectAll("text").attr("font-size",10).attr("fill","var(--text-secondary)")
+    .text(function(){const t=d3.select(this).text();return t.length>28?t.slice(0,27)+"…":t;})
+    .append("title").text(t=>t);
+  g.selectAll("rect.c").data(rows).join("rect").attr("class","c")
+    .attr("x",r=>Math.min(x(0),x(r.contribution))).attr("y",r=>y(r.name))
+    .attr("width",r=>Math.max(1,Math.abs(x(r.contribution)-x(0)))).attr("height",y.bandwidth())
+    .attr("fill",r=>r.contribution>=0?"#16a34a":"#dc2626").attr("rx",2)
+    .append("title").text(r=>`${r.name}\ncontribution ${sgd(r.contribution)}\n${r.contribution>=0?"funds central costs":"consumes more than it brings in"}`);
+  g.selectAll("text.v").data(rows).join("text").attr("class","v")
+    .attr("x",r=>r.contribution>=0?x(r.contribution)+4:x(r.contribution)-4)
+    .attr("text-anchor",r=>r.contribution>=0?"start":"end")
+    .attr("y",r=>y(r.name)+y.bandwidth()/2+3).attr("font-size",9).attr("font-weight",600)
+    .attr("fill",r=>r.contribution>=0?"#16a34a":"#dc2626").text(r=>sgd(r.contribution));
+  g.append("line").attr("x1",x(0)).attr("x2",x(0)).attr("y1",-4).attr("y2",innerH)
+    .attr("stroke","var(--border-strong)").attr("stroke-width",1.4);
+}
+
+/* ═══════════════ YEAR COMPARISON — are we improving or deteriorating ════════
+   Every figure is a real cbaCompute for that year. A year with no enrolment
+   recorded on the selected basis shows N/A, never a zero that reads as a
+   collapse. There is no Forecast dataset in this application, so only Budget
+   and Actual are offered — nothing is invented. */
+const CBA_TREND=[["bcr","Benefit-cost ratio","x"],["revenue","Net revenue","money"],
+  ["cost","Total cost","money"],["profit","Profit / loss","money"],
+  ["contribution","Course contribution","money"],["students","Student enrolments","num"],
+  ["roi","ROI","pct"],["opMargin","Operating margin","pct"],["overhead","Central overhead","money"]];
+function cbaYearRow(st,y,basis){
+  if(!cbaYearsWithData(st,basis).includes(y))return null;   /* genuinely no data */
+  const d=cbaCompute(st,basis,y),T=d.T;
+  return {year:y,basis,bcr:T.bcr,revenue:T.benefit,cost:T.cost,profit:T.net,
+    contribution:T.contribution,students:T.students,roi:T.roi,opMargin:T.opMargin,
+    overhead:d.pool,courses:d.live.length};
+}
+function cbaTrendValue(row,k){return row==null?null:row[k];}
+function cbaTrendFmt(v,kind){
+  if(v==null)return "N/A";
+  return kind==="money"?sgd(v):kind==="pct"?Math.round(v*100)+"%":kind==="x"?v.toFixed(2)+"×":Math.round(v);
+}
+function cbaRenderYears(st,d){
+  const basis=st.cba.trendBasis||"budget";
+  const years=cbaYearOptions(st);
+  const rowsB=years.map(y=>cbaYearRow(st,y,"budget"));
+  const rowsA=years.map(y=>cbaYearRow(st,y,"actual"));
+  const anyB=rowsB.some(Boolean),anyA=rowsA.some(Boolean);
+  const metric=st.cba.trendMetric||"bcr";
+  const mMeta=CBA_TREND.find(x=>x[0]===metric)||CBA_TREND[0];
+  const active=basis==="actual"?rowsA:rowsB;
+  const withData=active.filter(Boolean);
+  /* movement between the first and last year that hold data */
+  let trend="";
+  if(withData.length>=2){
+    const a=withData[0],b2=withData[withData.length-1];
+    const va=cbaTrendValue(a,metric),vb=cbaTrendValue(b2,metric);
+    if(va!=null&&vb!=null&&va!==0){
+      const up=vb>va, pct=Math.abs((vb-va)/Math.abs(va)*100);
+      const goodUp=metric!=="cost"&&metric!=="overhead";
+      trend=`<div style="font-size:12px;color:var(--text-secondary);margin-top:8px;line-height:1.7">
+        <strong>${mMeta[1]}</strong> moved from <strong>${cbaTrendFmt(va,mMeta[2])}</strong> in ${a.year} to <strong>${cbaTrendFmt(vb,mMeta[2])}</strong> in ${b2.year} —
+        <strong style="color:${(up===goodUp)?"var(--text-success)":"var(--text-danger)"}">${up?"up":"down"} ${pct.toFixed(0)}%</strong> on the ${basis.toUpperCase()} basis.</div>`;
+    }
+  }
+  const cell=(row,k,kind)=>{
+    const v=cbaTrendValue(row,k);
+    const col=v==null?"var(--text-muted)"
+      :(k==="profit"||k==="contribution")?(v>=0?"var(--text-success)":"var(--text-danger)")
+      :k==="bcr"?(v>=1?"var(--text-success)":"var(--text-danger)"):"var(--text-primary)";
+    return `<td style="padding:4px 8px;text-align:right;color:${col}">${cbaTrendFmt(v,kind)}</td>`;
+  };
+  const table=(rows,label)=>`
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:10px 0 4px">${label}</div>
+    <div style="overflow-x:auto"><table class="tbl" style="width:100%;min-width:${120+years.length*92}px">
+      <thead><tr><th style="text-align:left">Measure</th>${years.map(y=>`<th style="text-align:right">${y}</th>`).join("")}</tr></thead>
+      <tbody>${CBA_TREND.map(([k,l,kind])=>`<tr>
+        <td style="padding:4px 8px">${l}</td>${rows.map(r=>cell(r,k,kind)).join("")}</tr>`).join("")}
+        <tr style="border-top:1.5px solid var(--border-strong)"><td style="padding:5px 8px;color:var(--text-muted)">Courses running</td>
+          ${rows.map(r=>`<td style="padding:5px 8px;text-align:right;color:var(--text-muted)">${r==null?"N/A":r.courses}</td>`).join("")}</tr>
+      </tbody></table></div>`;
+
+  /* per-course across years */
+  const csel=COURSES.map((c,i)=>({c,i})).filter(x=>cbaOn(st,x.c));
+  if(!csel.some(x=>x.i===st.cba.chartCi))st.cba.chartCi=csel.length?csel[0].i:0;
+  const cRows=years.map(y=>{
+    if(!cbaYearsWithData(st,basis).includes(y))return null;
+    const r=cbaCompute(st,basis,y).live.find(x=>x.ci===st.cba.chartCi);
+    return r?{year:y,students:r.students,revenue:r.revenue,contribution:r.contribution,
+              margin:r.margin,bcr:r.bcr}:null;});
+
+  return `
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">Year comparison</div>
+      <span class="card-badge" style="background:var(--surface-1);color:var(--text-primary)">${basis.toUpperCase()}</span></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
+      <span style="font-size:11px;color:var(--text-muted)">Basis</span>
+      <div class="view-toggle">
+        <button data-cbatrendbasis="budget" class="${basis==="budget"?"on":""}">Budget</button>
+        <button data-cbatrendbasis="actual" class="${basis==="actual"?"on":""}">Actual</button>
+      </div>
+      <span style="font-size:11px;color:var(--text-muted);margin-left:6px">Chart metric</span>
+      <select id="cbaTrendMetric">${CBA_TREND.map(([k,l])=>`<option value="${k}"${metric===k?" selected":""}>${l}</option>`).join("")}</select>
+    </div>
+    ${!withData.length?`<div style="padding:24px;text-align:center;color:var(--text-muted)">No ${basis} enrolment recorded for any year. Enter intakes in <strong>Yearly Budget</strong>.</div>`
+      :`<div id="cbaTrendChart" style="width:100%"></div>${trend}`}
+    <div style="font-size:11px;color:var(--text-muted);margin-top:8px;line-height:1.6">
+      Only Budget and Actual are offered — this application holds no Forecast enrolment data, so none is shown rather than invented. Years without recorded enrolment read <strong>N/A</strong>, not zero.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">Institution by year</div></div>
+    ${anyB?table(rowsB,"Budget"):""}
+    ${anyA?table(rowsA,"Actual"):`<div style="font-size:11px;color:var(--text-muted);margin-top:10px">No Actual enrolment recorded in any year yet.</div>`}
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">One course across years</div></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+      <span style="font-size:11px;color:var(--text-muted)">Course</span>
+      <select id="cbaYearCourse" style="max-width:100%">${csel.map(x=>`<option value="${x.i}"${x.i===st.cba.chartCi?" selected":""}>${esc(x.c.name)}</option>`).join("")}</select>
+    </div>
+    <div style="overflow-x:auto"><table class="tbl" style="width:100%;min-width:${120+years.length*92}px">
+      <thead><tr><th style="text-align:left">Measure</th>${years.map(y=>`<th style="text-align:right">${y}</th>`).join("")}</tr></thead>
+      <tbody>
+        ${[["students","Students","num"],["revenue","Net revenue","money"],["contribution","Contribution","money"],
+           ["margin","Contribution margin","pct"],["bcr","Full-cost BCR","x"]].map(([k,l,kind])=>`<tr>
+          <td style="padding:4px 8px">${l}</td>
+          ${cRows.map(r=>{const v=r?r[k]:null;
+            const col=v==null?"var(--text-muted)":k==="contribution"?(v>=0?"var(--text-success)":"var(--text-danger)"):"var(--text-primary)";
+            return `<td style="padding:4px 8px;text-align:right;color:${col}">${cbaTrendFmt(v,kind)}</td>`;}).join("")}</tr>`).join("")}
+      </tbody></table></div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:8px">A year shows N/A where this course had no recorded ${basis} enrolment.</div>
+  </div>`;
+}
+function cbaDrawTrend(st){
+  const el=cbaChartBox("cbaTrendChart");if(!el)return;
+  const basis=st.cba.trendBasis||"budget",metric=st.cba.trendMetric||"bcr";
+  const meta=CBA_TREND.find(x=>x[0]===metric)||CBA_TREND[0];
+  const pts=cbaYearOptions(st).map(y=>cbaYearRow(st,y,basis)).filter(Boolean)
+    .map(r=>({year:r.year,v:cbaTrendValue(r,metric)})).filter(p=>p.v!=null);
+  if(pts.length<1)return;
+  const width=el.clientWidth||600,height=250;
+  const margin={top:20,right:22,bottom:34,left:82};
+  const innerW=Math.max(width-margin.left-margin.right,80),innerH=height-margin.top-margin.bottom;
+  const svg=d3.select(el).append("svg").attr("width",width).attr("height",height);
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
+  const x=d3.scalePoint().domain(pts.map(p=>p.year)).range([0,innerW]).padding(.5);
+  const lo=Math.min(0,d3.min(pts,p=>p.v)),hi=Math.max(d3.max(pts,p=>p.v),metric==="bcr"?1.05:0);
+  const y=d3.scaleLinear().domain([lo,hi]).nice().range([innerH,0]);
+  g.append("g").call(d3.axisLeft(y).ticks(5).tickSize(-innerW).tickFormat(v=>cbaTrendFmt(v,meta[2])))
+    .call(s=>s.select(".domain").remove())
+    .call(s=>s.selectAll("line").attr("stroke","var(--border)").attr("stroke-dasharray","2,3"))
+    .selectAll("text").attr("font-size",9).attr("fill","var(--text-muted)");
+  if(metric==="bcr"&&hi>=1){
+    g.append("line").attr("x1",0).attr("x2",innerW).attr("y1",y(1)).attr("y2",y(1))
+      .attr("stroke","var(--text-primary)").attr("stroke-width",1.3).attr("stroke-dasharray","4,3");
+    g.append("text").attr("x",innerW).attr("y",y(1)-4).attr("text-anchor","end").attr("font-size",9)
+      .attr("font-weight",700).attr("fill","var(--text-primary)").text("1.00× break-even");
+  }
+  if(pts.length>1){
+    g.append("path").datum(pts).attr("fill","none").attr("stroke","#2563eb").attr("stroke-width",2.4)
+      .attr("d",d3.line().x(p=>x(p.year)).y(p=>y(p.v)));
+  }
+  g.selectAll("circle.p").data(pts).join("circle").attr("class","p")
+    .attr("cx",p=>x(p.year)).attr("cy",p=>y(p.v)).attr("r",4.5).attr("fill","#2563eb")
+    .attr("stroke","#fff").attr("stroke-width",1.5)
+    .append("title").text(p=>`${p.year}: ${cbaTrendFmt(p.v,meta[2])}`);
+  g.selectAll("text.l").data(pts).join("text").attr("class","l")
+    .attr("x",p=>x(p.year)).attr("y",p=>y(p.v)-10).attr("text-anchor","middle")
+    .attr("font-size",10).attr("font-weight",700).attr("fill","#2563eb")
+    .text(p=>cbaTrendFmt(p.v,meta[2]));
+  g.append("g").attr("transform",`translate(0,${innerH})`).call(d3.axisBottom(x))
+    .selectAll("text").attr("font-size",10).attr("fill","var(--text-muted)");
+  g.append("text").attr("x",0).attr("y",-8).attr("font-size",10).attr("font-weight",700)
+    .attr("fill","var(--text-muted)").text(`${meta[1]} · ${basis.toUpperCase()}`);
 }
 
 /* ═══════════ COURSE STATUS — the four separate management tests ═══════════
@@ -5284,6 +5616,8 @@ function render(){
     bindModuleNavEvents();
     bindCbaEvents();
     if(ST.cba.tab==="charts")cbaDrawCharts(ST);
+    if(ST.cba.tab==="portfolio")cbaDrawPortfolio(ST);
+    if(ST.cba.tab==="years")cbaDrawTrend(ST);
     return;
   }
   if(ST.module==="log"){
