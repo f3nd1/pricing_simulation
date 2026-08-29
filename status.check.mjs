@@ -22,7 +22,7 @@ const seed = () => p.evaluate(() => {
   [1,2].forEach(ci => [0,6].forEach(m => {
     ST.intakes.push({id:id++,kind:'budget',ci,month:m,year:y,students:15});
     ST.intakes.push({id:id++,kind:'actual',ci,month:m,year:y,students:ci===1?16:3}); }));
-  ST.cba.runBasis='one'; ST.cba.basis='actual'; ST.module='cba'; ST.cba.tab='status'; render();
+  ST.cba.basis='actual'; ST.module='cba'; ST.cba.tab='status'; render();
   return IE; });
 const IE = await seed();
 const row = (basis='actual') => p.evaluate(([IE,basis]) =>
@@ -43,21 +43,15 @@ const moved = await p.evaluate(IE => { simSelectCourse(ST,IE); ST.tf=140; saveTo
 ok('Operating BE follows the Course Simulator when its assumptions change',
    moved.sim===moved.cba && moved.sim!==canon.sim, `teacher $140 → both ${moved.sim}`);
 
-// ── run mapping is never fabricated ───────────────────────────────────────
-const na = await p.evaluate(() => { ST.cba.runBasis='none'; render();
-  const rs = cbaCompute(ST,'actual').live;
-  return { allNa: rs.every(r=>r.opStatus==='na' && r.opReq===null),
-           shown: /run mapping unavailable|operating status unavailable/i.test(document.body.innerText) }; });
-ok('No run basis → status N/A, nothing fabricated', na.allNa && na.shown);
-
-const bases = await p.evaluate(IE => { const o={};
-  ['one','month','class'].forEach(bs => { ST.cba.runBasis=bs;
-    const r=cbaCompute(ST,'actual').live.find(x=>x.ci===IE);
-    o[bs]={runs:r.runs,req:r.opReq,st:r.opStatus}; });
-  ST.cba.runBasis='one'; render(); return o; }, IE);
-ok('Run basis drives the requirement, per run not per year',
-   bases.one.req===canon.sim && bases.month.runs===9 && bases.month.req===canon.sim*9,
-   `one:${bases.one.req} month:${bases.month.runs} runs→${bases.month.req} class:${bases.class.req}`);
+// ── rolling intake replaces the run model ────────────────────────────────
+const roll = await p.evaluate(IE => { const r=cbaCompute(ST,'actual').live.find(x=>x.ci===IE);
+  return { pace:r.paceReq, act:r.paceActual, months:r.months, req:r.reqPeriod,
+           status:r.opStatus, gap:r.opGap, beExact:r.beExact, mo:r.mo }; }, IE);
+ok('operating requirement comes from enrolment pace, not a run count',
+   Math.abs(roll.pace - roll.beExact/roll.mo) < 1e-9 && Math.abs(roll.req - roll.pace*roll.months) < 1e-9,
+   `${roll.beExact.toFixed(2)} ÷ ${roll.mo}mo = ${roll.pace.toFixed(2)}/month × ${roll.months}mo = ${roll.req.toFixed(1)}`);
+ok('a course with enrolment always gets a real status, never N/A for lack of runs',
+   roll.status !== 'na', roll.status.toUpperCase());
 
 // ── YTD vs annual target progress ─────────────────────────────────────────
 const r1 = await row();
