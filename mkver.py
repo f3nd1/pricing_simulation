@@ -6,7 +6,7 @@ version replaced only the changelog line, leaving the previous const APP_VERSION
 behind -- a duplicate const is a fatal SyntaxError that blanks the whole app.
 Self-checks for duplicates before saving. Always run cba.check.mjs afterwards.
 """
-import subprocess, json, datetime, sys
+import subprocess, json, datetime, sys, re
 
 MARK = "/* Build stamp."
 f = "ucc_budget_simulator.html"
@@ -37,9 +37,13 @@ block = (MARK + " APP_VERSION is what the Change Log shows so you can tell at a\
          "const APP_CHANGELOG=" + json.dumps(entries, ensure_ascii=False) + ";")
 s = s[:start] + block + s[end:]
 
-for ident in ("const APP_VERSION", "const APP_BUILD", "const APP_CHANGELOG"):
-    if s.count(ident) != 1:
-        sys.exit(f"ABORT: {ident} appears {s.count(ident)} times -- would break the app")
+# Count real declarations only, anchored to line start. A plain substring count
+# also matches commit subjects quoted inside the changelog JSON (one of them
+# literally says "const APP_VERSION"), which is data, not a redeclaration.
+for ident in ("APP_VERSION", "APP_BUILD", "APP_CHANGELOG"):
+    n = len(re.findall(r"^const " + ident + r"=", s, re.M))
+    if n != 1:
+        sys.exit(f"ABORT: {n} declarations of {ident} -- would break the app")
 
 open(f, "w", encoding="utf-8").write(s)
 print(f"{ver} build {today} · {len(entries)} entries, newest {entries[0]['h']}")
