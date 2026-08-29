@@ -26,7 +26,6 @@ const IE = await p.evaluate(() => {
   let id=1; ST.intakes=[];
   for(let m=0;m<12;m++) ST.intakes.push({id:id++,kind:'budget',ci:i,month:m,year:y,students:2});
   for(let m=0;m<9;m++)  ST.intakes.push({id:id++,kind:'actual',ci:i,month:m,year:y,students:m<8?2:1});
-  ST.cba.runBasis='recorded'; ST.cba.runs={[cbaRunKey(i,y)]:2};
   ST.cba.chartCi=i; ST.cba.basis='actual'; ST.module='cba'; return i; });
 const R = () => p.evaluate(IE => cbaCompute(ST,'actual').live.find(x=>x.ci===IE), IE);
 const r = await R();
@@ -57,15 +56,16 @@ ok('removing the discount raises net revenue, contribution and BCR',
    noD.rev>r.revenue && noD.con>r.contribution && noD.bcr>r.bcr,
    `BCR ${r.bcr.toFixed(3)}× → ${noD.bcr.toFixed(3)}×`);
 
-// ── recorded runs ─────────────────────────────────────────────────────────
-ok('recorded runs drive the requirement (BE/run × runs)',
-   r.runs===2 && r.opReq===r.beRun*2 && r.opStatus==='not' && r.opGap===n-r.opReq,
-   `${r.beRun}/run × 2 = ${r.opReq} vs ${n} actual → short ${Math.abs(r.opGap)}`);
-const blank = await p.evaluate(IE => { const y=cbaYear(ST), k=cbaRunKey(IE,y), keep=ST.cba.runs[k];
-  delete ST.cba.runs[k];
-  const x=cbaCompute(ST,'actual').live.find(z=>z.ci===IE); const out={st:x.opStatus,req:x.opReq,runs:x.runs};
-  ST.cba.runs[k]=keep; return out; }, IE);
-ok('runs not recorded → N/A, never guessed', blank.st==='na' && blank.req===null && blank.runs===null);
+// ── rolling intake ────────────────────────────────────────────────────────
+const roll = await p.evaluate(IE => { const r=cbaCompute(ST,'actual').live.find(x=>x.ci===IE);
+  return { pace:r.paceReq, act:r.paceActual, req:r.reqPeriod, months:r.months,
+           status:r.opStatus, beExact:r.beExact, mo:r.mo, roll:r.roll }; }, IE);
+ok('requirement is pace × months in the period',
+   near(roll.req, roll.pace*roll.months, 1e-9) && near(roll.pace, roll.beExact/roll.mo, 1e-9),
+   `${roll.pace.toFixed(2)}/month × ${roll.months} = ${roll.req.toFixed(1)}`);
+ok('rolling window spans one course duration', roll.roll && roll.roll.len===Math.min(roll.mo,roll.months),
+   `last ${roll.roll.len} months: ${roll.roll.enrol} vs ${roll.roll.need.toFixed(1)}`);
+ok('status is decided, not deferred for missing run data', roll.status!=='na', roll.status.toUpperCase());
 
 // ── §K reconciliation: every tab and diagram shows the same figure ────────
 const recon = await p.evaluate(IE => {
@@ -82,14 +82,14 @@ const recon = await p.evaluate(IE => {
     flowHasGross: dtxt.includes(fmt(x.gross)),
     flowHasNet: dtxt.includes(fmt(x.revenue)),
     flowHasContribution: dtxt.includes(fmt(x.contribution)),
-    opDiagram: dtxt.includes(String(x.opReq)) && dtxt.includes(String(x.beRun)),
+    opDiagram: dtxt.includes(x.paceReq.toFixed(2)) && dtxt.includes(x.reqPeriod.toFixed(1)) && dtxt.includes(x.paceActual.toFixed(2)),
     perStudent: dtxt.includes(fmt(x.contribution/x.students)) }; }, IE);
 ok('same contribution on Diagnostics, By course and Course status',
    recon.seen.diag.contribution && recon.seen.bycourse.contribution && recon.seen.status.contribution,
    recon.want.contribution);
 ok('money-flow diagram reconciles with the table (gross, net, contribution)',
    recon.flowHasGross && recon.flowHasNet && recon.flowHasContribution);
-ok('operating diagram shows the same BE/run and requirement', recon.opDiagram);
+ok('operating diagram reconciles with the computed pace and requirement', recon.opDiagram);
 ok('per-student column present alongside course totals', recon.perStudent);
 
 // ── scenarios still match the live engine ─────────────────────────────────
