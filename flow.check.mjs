@@ -82,15 +82,17 @@ const off = await p.evaluate(([ci]) => {
   return document.body.innerText;
 }, [ci]);
 r = await R('budget',yr);
-ok('an excluded course still reports its real Yearly Budget enrolment',
-   r.students===0 && r.raw===15 && r.excluded===1, `analysis ${r.students} · yearly budget ${r.raw}`);
+ok('an excluded course keeps its real Yearly Budget enrolment and stays visible',
+   r.students===15 && r.act && !r.live && r.excluded===1,
+   `students ${r.students} · activity ${r.act} · in analysis ${r.live}`);
 ok('excluding a course with enrolment is warned about on screen, never silent',
    /excluded from this analysis/i.test(off) && /FLOWTEST/i.test(off));
 
 // 9. clearing the exclusion brings the students straight back
 await p.evaluate(([ci]) => { delete ST.cba.off[COURSES[ci].name]; saveToStorage(); render(); }, [ci]);
 r = await R('budget',yr);
-ok('including the course again restores its students', r.students===15 && r.live && r.excluded===0);
+ok('including the course again brings it back into the analysis',
+   r.students===15 && r.live && r.excluded===0);
 
 // 10. persistence: the whole flow survives a reload
 const after = await p.evaluate(() => { saveToStorage(); return null; });
