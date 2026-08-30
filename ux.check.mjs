@@ -86,7 +86,7 @@ ok('the long explanation is behind Why?, not on the page by default',
    (whyTxt.match(/Income of [^]*?%[^.]*\./)||[''])[0].slice(0,110));
 const mtx = await p.evaluate(() => {
   const pts=[...document.querySelectorAll('#cbaMatrix g.pt')];
-  return { n:pts.length, focusable:pts.every(g=>g.getAttribute('tabindex')==='0'),
+  return { n:pts.length, focusable:[...document.querySelectorAll('#cbaMatrix g.pt circle.hit')].every(c=>c.getAttribute('tabindex')==='0'),
            labelled:[...document.querySelectorAll('#cbaMatrix text.lb')].filter(t=>+t.getAttribute('opacity')===1).length,
            axes:document.getElementById('cbaMatrix').innerHTML };
 });
@@ -96,8 +96,8 @@ ok('the matrix states the relevant total and how many are plotted',
    /Relevant courses \d+ · plotted \d+/i.test(await txt()));
 ok('some points are labelled by default, so no dot is anonymous', mtx.labelled>=1, `${mtx.labelled} labelled`);
 ok('the axes are in plain English with the break-even lines shown',
-   /LOSING ON OWN COSTS.*HELPING UCC/.test(mtx.axes) &&
-   /BELOW MINIMUM.*ABOVE MINIMUM/.test(mtx.axes) &&
+   /Losing on the course/.test(mtx.axes) && /Helping UCC/.test(mtx.axes) &&
+   /AFTER OWN COSTS/.test(mtx.axes) && /Above/.test(mtx.axes) && /Below/.test(mtx.axes) &&
    /GROW/.test(mtx.axes) && /REVIEW/.test(mtx.axes));
 const overlap = await p.evaluate(() => {
   const pts=[...document.querySelectorAll('#cbaMatrix g.pt')]
