@@ -106,10 +106,10 @@ ok('§14 the simulator assumption and the Yearly Budget enrolment have distinct 
 // ── §8/§9 Course Status counts and the three views, in the DOM ─────────────
 await go('cba','status','actual','incl');
 let t = await text();
-ok('§8 counts are factual: the excluded course still raises "with actual enrolment"',
-   /1 excluded despite enrolment/i.test(t.replace(/\n/g,' ')) &&
-   /analysed of \d+ with actual enrolment/i.test(t.replace(/\n/g,' ')),
-   (t.match(/\d+ analysed of[\s\S]{0,90}/i)||[''])[0].replace(/\n+/g,' · '));
+ok('§8 counts are factual: the excluded course still counts as a relevant course',
+   /\d+ relevant courses/i.test(t.replace(/\n/g,' ')) &&
+   /included in analysis/i.test(t.replace(/\n/g,' ')),
+   (t.match(/\d+ relevant courses[\s\S]{0,80}/i)||[''])[0].replace(/\n+/g,' · '));
 ok('§7 the upgrade warning names the excluded course and its student count',
    /excluded from the analysis/i.test(t) && t.includes(AI) && /\(15\)/.test(t));
 
@@ -117,19 +117,19 @@ const inView = () => p.evaluate(([AI]) => {
   const tbl = [...document.querySelectorAll('table')].find(x=>/Action/i.test(x.innerText));
   return !!(tbl && tbl.innerText.includes(AI)); }, [AI]);
 const v1 = await inView();
-await go('cba','status','actual','activity'); const v2 = await inView();
+await go('cba','status','actual','relevant'); const v2 = await inView();
 const v2txt = await p.evaluate(([AI]) => {
   const tr = [...document.querySelectorAll('tbody tr')].find(x=>x.innerText.includes(AI));
   return tr ? tr.innerText.replace(/\n/g,' | ') : null; }, [AI]);
 await go('cba','status','actual','all'); const v3 = await inView();
 await go('cba','status','actual','incl');
-ok('§9 Included+activity hides it · All activity shows it · All configured shows it',
-   v1===false && v2===true && v3===true, `incl ${v1} · activity ${v2} · all ${v3}`);
+ok('§9 the excluded course is visible in every view — it never disappears',
+   v1===true && v2===true && v3===true, `relevant ${v1} · relevant ${v2} · all ${v3}`);
 ok('§9 in All activity the row keeps 15 and is badged Excluded',
    !!v2txt && /15/.test(v2txt) && /Excluded/i.test(v2txt), v2txt);
 
 // ── §10 Include in analysis, through the real button ───────────────────────
-await go('cba','status','actual','activity');
+await go('cba','status','actual','relevant');
 const before = await p.evaluate(() => { const d=cbaCompute(ST,'actual');
   return {rev:d.T.benefit,dir:d.T.direct,con:d.T.contribution,bcr:d.T.bcr,n:d.counts.both}; });
 const clicked = await p.evaluate(([AI]) => {

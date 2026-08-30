@@ -82,12 +82,12 @@ ok('D · activity stays YES while inclusion is NO — the two are independent',
 const views = await p.evaluate(([ci]) => {
   const d = cbaCompute(ST,'budget');
   const show = sc => { ST.cba.scope=sc; return !!cbaScopeRows(ST,d).find(r=>r.ci===ci); };
-  const out = { incl:show('incl'), activity:show('activity'), all:show('all'),
+  const out = { relevant:show('relevant'), all:show('all'),
                 T:d.T.students, counts:d.counts };
-  ST.cba.scope='incl'; return out;
+  ST.cba.scope='relevant'; return out;
 }, [ci]);
-ok('D · excluded course is hidden from Included+activity but visible in the other two views',
-   views.incl===false && views.activity===true && views.all===true);
+ok('D · an excluded course stays visible in both views — inclusion is a badge, not a filter',
+   views.relevant===true && views.all===true);
 ok('D · institution totals exclude it, and the count strip says so',
    views.counts.excludedWithActivity===1 && views.counts.activity>views.counts.both,
    `activity ${views.counts.activity} · analysed ${views.counts.both} · excluded-with-enrolment ${views.counts.excludedWithActivity}`);

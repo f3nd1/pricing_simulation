@@ -58,7 +58,7 @@ const sticky = await p.evaluate(() => {
   return el?{txt:el.innerText.replace(/\n+/g,' · '),pos:getComputedStyle(el).position}:null; });
 ok('a sticky context bar carries year, basis, view, modes and the counts',
    !!sticky && sticky.pos==='sticky' && /2026/.test(sticky.txt) && /Actual/.test(sticky.txt) &&
-   /Simple/.test(sticky.txt) && /analysed/.test(sticky.txt) && /configured/.test(sticky.txt) &&
+   /Simple/.test(sticky.txt) && /relevant courses/i.test(sticky.txt) && /configured/.test(sticky.txt) &&
    /Manage/.test(sticky.txt), sticky && sticky.txt.slice(0,120));
 ok('Simple is the default view and hides the finance columns',
    await p.evaluate(() => !cbaAdv(ST)) && !/\bBCR\b/.test(t) && /After own costs/.test(t));
@@ -92,6 +92,8 @@ const mtx = await p.evaluate(() => {
 });
 ok('the action matrix draws one focusable point per analysed course',
    mtx.n===C0.counts.both && mtx.focusable, `${mtx.n} points`);
+ok('the matrix states the relevant total and how many are plotted',
+   /Relevant courses \d+ · plotted \d+/i.test(await txt()));
 ok('some points are labelled by default, so no dot is anonymous', mtx.labelled>=1, `${mtx.labelled} labelled`);
 ok('the axes are in plain English with the break-even lines shown',
    /LOSING ON OWN COSTS.*HELPING UCC/.test(mtx.axes) &&
@@ -120,19 +122,17 @@ ok('hovering a point shows the full tooltip and dims the others',
 ok('Management attention still splits needs-attention from opportunities',
    /needs attention/i.test(t) && /opportunities/i.test(t));
 
-// dismissal is presentation-only
-const dis = await p.evaluate(() => {
-  const before = JSON.stringify(cbaCompute(ST,'actual',2026).T);
-  const btn=document.querySelector('[data-cbadismiss]'); const k=btn&&btn.dataset.cbadismiss;
-  if(btn) btn.click();
-  const after = JSON.stringify(cbaCompute(ST,'actual',2026).T);
-  return { k, same: before===after, hidden: Object.keys(cbaDismissed(ST)).length }; });
-ok('dismissing an insight changes no institution figure', dis.same && dis.hidden===1, dis.k);
-const rest = await p.evaluate(() => {
-  document.querySelector('[data-cbashowdis]').click();
-  const b=document.querySelector('[data-cbaundismiss]'); const had=!!b; if(b)b.click();
-  return { had, left:Object.keys(cbaDismissed(ST)).length }; });
-ok('a dismissed insight can be restored', rest.had && rest.left===0);
+const noDismiss = await p.evaluate(() => ({
+  x: document.querySelectorAll('[data-cbadismiss],[data-cbaundismiss],[data-cbashowdis],[data-cbarestoreall]').length,
+  txt: document.body.innerText }));
+ok('Management attention has no dismiss, no Dismissed (n) and no restore',
+   noDismiss.x===0 && !/dismiss/i.test(noDismiss.txt), `${noDismiss.x} dismissal controls`);
+ok('Show all / Show fewer remains as presentation-only expansion',
+   await p.evaluate(() => { const b2=document.querySelector('[data-cbashowall]');
+     if(!b2) return true; const before=document.querySelectorAll('.cb-ins').length;
+     b2.click(); const after=document.querySelectorAll('.cb-ins').length;
+     document.querySelector('[data-cbashowall]').click();
+     return after>=before; }));
 
 // ── Simple / Advanced is presentation only ─────────────────────────────────
 const adv = await p.evaluate(() => {

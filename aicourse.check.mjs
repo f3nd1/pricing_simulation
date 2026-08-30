@@ -61,9 +61,10 @@ const txt = () => p.evaluate(() => document.body.innerText);
 // ── §2/§3 header and KPI wording ───────────────────────────────────────────
 await go('cba','status','incl');
 let t = await txt();
-ok('§2 the header no longer calls only the analysed courses "running"',
-   !/\d+ running/i.test(t) && /6 analysed of 8 with actual enrolment/i.test(t.replace(/\n/g,' ')),
-   (t.match(/\d+ analysed of \d+ with actual enrolment[^\n]*/i)||['(not found)'])[0]);
+ok('§2 the header states the relevant population, never only the analysed subset',
+   !/\d+ running/i.test(t) && /8 relevant courses/i.test(t.replace(/\n/g,' ')) &&
+   /6 included in analysis/i.test(t.replace(/\n/g,' ')),
+   (t.match(/\d+ relevant courses[^\n]*/i)||['(not found)'])[0]);
 const whyT = await p.evaluate(() => { ST.cba.showWhy=true; render();
   const s=document.body.innerText; ST.cba.showWhy=false; render(); return s; });
 ok('§3 no run-basis wording anywhere on the page',
@@ -72,16 +73,15 @@ ok('§3 no run-basis wording anywhere on the page',
    (whyT.match(/\d+ of \d+ meet the enrolment pace[^.]*\./i)||['(not found)'])[0]);
 
 // ── §4/§5 view labels and the plain-English line ───────────────────────────
-ok('§4 the three views are named for what they contain, with live counts',
-   /Analysed courses \(6\)/i.test(t) && /All courses with enrolment \(8\)/i.test(t) &&
-   /All configured \(\d+\)/i.test(t),
-   (t.match(/Analysed courses[\s\S]{0,70}/i)||[''])[0].replace(/\n+/g,' · '));
+ok('§4 the view switcher is Relevant courses / All configured, with live counts',
+   /Relevant courses \(8\)/i.test(t) && /All configured \(\d+\)/i.test(t),
+   (t.match(/Relevant courses[\s\S]{0,60}/i)||[''])[0].replace(/\n+/g,' · '));
 ok('§5 the page explains the split in plain English',
-   /8 courses have Actual enrolment in 2026\. 6 are included in Cost-Benefit and 2 are excluded/i.test(t.replace(/\s+/g,' ')) &&
+   /8 courses have Budget or Actual enrolment in 2026\. 6 are included in Cost-Benefit and 2 are excluded/i.test(t.replace(/\s+/g,' ')) &&
    /Excluded courses keep their Yearly Budget enrolment/i.test(t.replace(/\s+/g,' ')));
 
 // ── §4 both courses visible with 15 and an Include action ──────────────────
-await go('cba','status','activity');
+await go('cba','status','relevant');
 const rows = await p.evaluate(([DIPAI,ADIPAI]) => {
   const get = nm => { const tr=[...document.querySelectorAll('tbody tr')].find(x=>x.innerText.includes(nm));
     return tr ? { text:tr.innerText.replace(/\n/g,' | '),
@@ -111,7 +111,7 @@ ok('§6 it states that inclusion changes the analysis only',
    /never alters the Yearly Budget, the Price List/i.test(rev.body));
 
 // ── §8 include both, live ──────────────────────────────────────────────────
-await go('cba','status','activity');
+await go('cba','status','relevant');
 const before = await p.evaluate(() => { const d=cbaCompute(ST,'actual');
   return {rev:d.T.benefit,cost:d.T.cost,con:d.T.contribution,bcr:d.T.bcr,c:d.counts}; });
 await p.evaluate(([DIPAI,ADIPAI]) => {
