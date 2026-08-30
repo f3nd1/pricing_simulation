@@ -25,7 +25,7 @@ await p.waitForTimeout(300);
 
 const port=await p.evaluate(()=>{
   const d=cbaCompute(ST);
-  const bars=[...document.querySelectorAll('#cbaContribChart g.b rect')];
+  const bars=[...document.querySelectorAll('#cbaContribChart g.b rect.bar')];
   const fills=bars.map(b2=>b2.getAttribute('fill'));
   return {live:d.live.length, pos:d.live.filter(r=>r.contribution>=0).length,
     neg:d.live.filter(r=>r.contribution<0).length, bars:bars.length,
