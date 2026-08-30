@@ -116,7 +116,7 @@ const hov = await p.evaluate(([ADIPAI]) => {
   return { text:tip?tip.innerText.replace(/\n/g,' | '):null, dimmed }; }, [ADIPAI]);
 ok('hovering a point shows the full tooltip and dims the others',
    !!hov.text && /advanced diploma in applied ai/i.test(hov.text) &&
-   /Students/.test(hov.text) && /Minimum needed/.test(hov.text) &&
+   /Students/.test(hov.text) && /Operating requirement/.test(hov.text) &&
    /After own costs/.test(hov.text) && /Full-cost result/.test(hov.text) &&
    /Coverage/.test(hov.text) && hov.dimmed>0, `dimmed ${hov.dimmed} · `+hov.text);
 ok('Management attention still splits needs-attention from opportunities',

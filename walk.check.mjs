@@ -95,7 +95,7 @@ const m = await p.evaluate(() => {
            after:{mode:ST.cba.mode,sub:ST.cba.sub,ci:ST.cba.chartCi},
            positions:new Set(pts.map(x=>x.getAttribute('transform'))).size, n:pts.length }; });
 ok('every matrix point identifies itself on hover with the full decision set',
-   !!m.tipTxt && /Students/.test(m.tipTxt) && /Minimum needed/.test(m.tipTxt) &&
+   !!m.tipTxt && /Students/.test(m.tipTxt) && /Operating requirement/.test(m.tipTxt) &&
    /After own costs/.test(m.tipTxt) && /Full-cost result/.test(m.tipTxt) && /Coverage/.test(m.tipTxt),
    m.tipTxt);
 ok('hovering fades the others, reveals that point\'s label and lights its row',

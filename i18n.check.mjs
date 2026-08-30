@@ -98,13 +98,13 @@ ok('every Cost-Benefit mode and sub-view translates, in Simple and Advanced',
 await p.evaluate(() => { ST.cba.mode='manage'; ST.cba.view='simple'; render(); });
 const key = await txt();
 ok('the standardised finance labels appear in Chinese',
-   /扣除课程直接成本后/.test(key) && /最低所需人数/.test(key) && /对学院有正贡献的课程/.test(key) &&
+   /扣除课程直接成本后/.test(key) && /运营要求/.test(key) && /对学院有正贡献的课程/.test(key) &&
    /可持续性缺口/.test(key));
 const advKey = await p.evaluate(() => { ST.cba.view='advanced'; render();
   const t=document.getElementById('cbacontent').innerText; ST.cba.view='simple'; render(); return t; });
 ok('Advanced mode shows the technical labels in Chinese too',
    /全成本覆盖率/.test(advKey) && /收入减直接成本与分摊的间接费用/.test(advKey) && /生均成本/.test(advKey) &&
-   /每月所需招生人数/.test(advKey) && /下一名学生的增量影响/.test(advKey) &&
+   /所需招生节奏|每月所需招生人数/.test(advKey) && /下一名学生的增量影响/.test(advKey) &&
    /全成本盈亏平衡/.test(advKey));
 /* every new planning term must exist in Chinese */
 const plan = await p.evaluate(() => {
@@ -127,7 +127,7 @@ ok('the solved plan and its course targets are Chinese',
    /各课程目标/.test(plan.after) && /新增招生占比/.test(plan.after) &&
    /按这些假设与此课程组合/.test(plan.after));
 ok('Course and Compare planning rows are Chinese',
-   /招生经济性/.test(plan.course) && /运营最低人数/.test(plan.course) &&
+   /招生经济性/.test(plan.course) && /运营所需招生人数/.test(plan.course) &&
    /全成本盈亏平衡/.test(plan.course) && /下一名学生的增量影响/.test(plan.course) &&
    /距全成本盈亏平衡的学生差额/.test(plan.cmp));
 ok('the Manage break-even entry point is Chinese',
@@ -158,7 +158,7 @@ const tip = await p.evaluate(() => {
   const el=document.querySelector('.cb-tip.on');
   return el?el.innerText.replace(/\n/g,' | '):null; });
 ok('the chart tooltip field labels are Chinese while the figures are untouched',
-   !!tip && /学生人数/.test(tip) && /最低所需人数/.test(tip) && /扣除课程直接成本后/.test(tip) &&
+   !!tip && /学生人数/.test(tip) && /运营所需招生人数/.test(tip) && /扣除课程直接成本后/.test(tip) &&
    /全成本结果/.test(tip) && /覆盖率/.test(tip) && /\$[\d,]+/.test(tip), tip);
 await p.evaluate(() => { ST.cba.mode='analyse'; ST.cba.sub='portfolio'; render(); });
 const bars = await p.evaluate(() => document.getElementById('cbaContribChart').textContent);

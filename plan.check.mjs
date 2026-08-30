@@ -163,14 +163,14 @@ const leak = t => [...new Set((t.match(/[A-Za-z][A-Za-z' ]{3,}/g)||[])
   .forEach(([nm,t])=>ok(`CN ${nm} shows no untranslated English`, leak(t).length===0, leak(t).join(' · ')));
 /* the new Portfolio / Course / Compare additions, asserted by term */
 ok('CN the new Portfolio columns are translated',
-   /最低所需人数/.test(ZH.port) && /距全成本盈亏平衡的学生差额/.test(ZH.port) &&
-   /每月所需招生人数/.test(ZH.port) && /下一名学生的增量影响/.test(ZH.port) &&
+   /运营要求/.test(ZH.port) && /距全成本盈亏平衡的学生差额/.test(ZH.port) &&
+   /所需招生节奏|每月所需招生人数/.test(ZH.port) && /下一名学生的增量影响/.test(ZH.port) &&
    /全成本盈亏平衡/.test(ZH.port));
 ok('CN the Course view enrolment-economics strip is translated',
    /招生经济性/.test(ZH.course) && /下一名学生的增量影响/.test(ZH.course) &&
    /全成本盈亏平衡/.test(ZH.course));
 ok('CN the Compare view carries the same planning terms',
-   /全成本盈亏平衡/.test(ZH.cmp) && /最低所需人数|每月所需招生人数/.test(ZH.cmp));
+   /全成本盈亏平衡/.test(ZH.cmp) && /运营所需招生人数|所需招生节奏/.test(ZH.cmp));
 ok('CN the planner keeps its Chinese terminology',
    /UCC 盈亏平衡计划/.test(ZH.planner) && /盈亏平衡课程组合/.test(ZH.planner) &&
    /所需学生总人数/.test(ZH.solved) && /各课程目标/.test(ZH.solved));
