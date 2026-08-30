@@ -94,8 +94,17 @@ ok('the action matrix draws one focusable point per analysed course',
    mtx.n===C0.counts.both && mtx.focusable, `${mtx.n} points`);
 ok('some points are labelled by default, so no dot is anonymous', mtx.labelled>=1, `${mtx.labelled} labelled`);
 ok('the axes are in plain English with the break-even lines shown',
-   /losing money \| helping UCC/.test(mtx.axes) && /below minimum \| above/.test(mtx.axes) &&
+   /LOSING ON OWN COSTS.*HELPING UCC/.test(mtx.axes) &&
+   /BELOW MINIMUM.*ABOVE MINIMUM/.test(mtx.axes) &&
    /GROW/.test(mtx.axes) && /REVIEW/.test(mtx.axes));
+const overlap = await p.evaluate(() => {
+  const pts=[...document.querySelectorAll('#cbaMatrix g.pt')]
+    .map(g=>g.getAttribute('transform'));
+  return { n:pts.length, unique:new Set(pts).size,
+           titles:[...document.querySelectorAll('#cbaMatrix g.pt > title')].length }; });
+ok('overlapping courses are nudged apart so each stays selectable, each with a name',
+   overlap.unique===overlap.n && overlap.titles===overlap.n,
+   `${overlap.unique} distinct positions for ${overlap.n} points`);
 const hov = await p.evaluate(([ADIPAI]) => {
   const g=[...document.querySelectorAll('#cbaMatrix g.pt')]
     .find(x=>x.getAttribute('aria-label').startsWith(ADIPAI));
@@ -140,7 +149,7 @@ ok('Advanced reveals the finance columns and changes not one number',
 await go('analyse',{sub:'portfolio'});
 const port = await p.evaluate(([ADIPAI]) => {
   const d=cbaCompute(ST);
-  const rowNames=[...document.querySelectorAll('a[data-cbacourse]')].map(a=>a.innerText);
+  const rowNames=[...document.querySelectorAll('tr[data-cbarow] .cb-name')].map(a=>a.title||a.innerText);
   const dots=[...document.querySelectorAll('#cbaContribChart g.b')].map(g=>d.live.find(r=>g.getAttribute('aria-label').startsWith(r.name+',')).ci);
   return { rowNames, dots, live:d.live.map(r=>r.ci), hasADIPAI:rowNames.includes(ADIPAI) }; }, [ADIPAI]);
 ok('the portfolio chart and the single table use the same course population',
@@ -158,7 +167,7 @@ const linked = await p.evaluate(([ADIPAI]) => {
   bar.dispatchEvent(new MouseEvent('mouseleave',{bubbles:true}));
   const tr=document.querySelector(`tr[data-cbarow="${ci}"]`);
   tr.dispatchEvent(new MouseEvent('mouseenter',{bubbles:true}));
-  const dimmed=[...document.querySelectorAll('#cbaContribChart g.b rect')]
+  const dimmed=[...document.querySelectorAll('#cbaContribChart g.b rect.bar')]
     .filter(r=>+r.getAttribute('fill-opacity')<0.5).length;
   tr.dispatchEvent(new MouseEvent('mouseleave',{bubbles:true}));
   return { rowLit, dimmed }; }, [ADIPAI]);
@@ -169,15 +178,15 @@ ok('shared costs are one segmented bar plus one line, not a paragraph',
    /Shared UCC costs/i.test(shared) && /covers \d+% of shared costs/i.test(shared),
    (shared.match(/Course contribution currently covers[^.]*\./)||[''])[0]);
 const search = await p.evaluate(() => { ST.cba.q='Applied'; render();
-  return [...document.querySelectorAll('a[data-cbacourse]')].map(a=>a.innerText); });
+  return [...document.querySelectorAll('tr[data-cbarow] .cb-name')].map(a=>a.title||a.innerText); });
 ok('portfolio search filters the table and the visual together',
    search.length>0 && search.every(n=>/Applied/i.test(n)), search.join(' · '));
 await p.evaluate(() => { ST.cba.q=''; render(); });
 
 /* clicking a course anywhere lands on the same Course analysis */
 const fromTable = await p.evaluate(([ADIPAI]) => {
-  const a=[...document.querySelectorAll('a[data-cbacourse]')].find(x=>x.innerText===ADIPAI);
-  a.click(); return { mode:ST.cba.mode, sub:ST.cba.sub, ci:ST.cba.chartCi,
+  const a=[...document.querySelectorAll('tr[data-cbarow]')].find(x=>x.innerText.includes(ADIPAI));
+  a.dispatchEvent(new MouseEvent('click',{bubbles:true})); return { mode:ST.cba.mode, sub:ST.cba.sub, ci:ST.cba.chartCi,
                       heading:document.querySelector('#cbacontent .cb-sec div').innerText.split('\n')[0] }; }, [ADIPAI]);
 ok('clicking a course in the table opens Course analysis',
    fromTable.mode==='analyse' && fromTable.sub==='course' && fromTable.heading.includes(ADIPAI),
@@ -328,6 +337,73 @@ const C2 = await canon();
 ok('FINANCIAL RECONCILIATION — every canonical figure is unchanged after the redesign',
    JSON.stringify(C2)===JSON.stringify(C0),
    `students ${C2.students} · revenue ${Math.round(C2.revenue)} · cost ${Math.round(C2.cost)} · net ${Math.round(C2.net)} · BCR ${C2.bcr.toFixed(4)} · ADIPAI ${Math.round(C2.adipai.contribution)} · DIPAI ${Math.round(C2.dipai.contribution)}`);
+
+// ── polish pass: white workspace, fonts, precision, no page scroll ────────
+await go('manage',{view:'simple'});
+await p.evaluate(() => { const g=document.querySelector('#cbaMatrix g.pt');
+  if(g) g.dispatchEvent(new MouseEvent('mousemove',{bubbles:true,clientX:300,clientY:300})); });
+const look = await p.evaluate(() => {
+  const app=document.querySelector('.cb-app');
+  const panel=document.querySelector('.cb-panel');
+  const cs=getComputedStyle(app), ps=getComputedStyle(panel);
+  const tip=document.querySelector('.cb-tip');
+  const ts=getComputedStyle(tip), body=getComputedStyle(document.querySelector('.wrap'));
+  return { app:cs.backgroundColor, panel:ps.backgroundColor,
+           tipFont:ts.fontFamily, appFont:body.fontFamily,
+           tipSize:ts.fontSize, headSize:getComputedStyle(document.querySelector('.cb-h')).fontSize };
+});
+ok('the Cost-Benefit workspace and its panels are white',
+   look.app==='rgb(255, 255, 255)' && look.panel==='rgb(255, 255, 255)',
+   `app ${look.app} · panel ${look.panel}`);
+const fam=x=>String(x).split(',')[0].replace(/["']/g,'').trim().toLowerCase();
+ok('the chart tooltip uses the application font, not the browser serif default',
+   fam(look.tipFont)===fam(look.appFont) && !/(^|,)\s*serif/i.test(look.tipFont) &&
+   parseFloat(look.tipSize)>=12,
+   `${look.tipFont.split(',')[0]} ${look.tipSize}`);
+ok('the type scale is consistent (section headings 15px+)',
+   parseFloat(look.headSize)>=15, look.headSize);
+
+/* no raw float may reach the screen, in any mode */
+const floats = [];
+for (const [m,extra] of [['manage',{}],['analyse',{sub:'portfolio'}],['analyse',{sub:'course'}],
+                         ['analyse',{sub:'compare'}],['simulate',{scenSub:'course'}],
+                         ['simulate',{scenSub:'portfolio'}],['present',{presentSub:'report'}],
+                         ['present',{presentSub:'trends'}],['settings',{}]]) {
+  for (const view of ['simple','advanced']) {
+    await go(m, {...extra, view});
+    const t2 = await txt();
+    const bad = t2.match(/-?\d+\.\d{3,}/g);
+    if (bad) floats.push(`${m}/${view}: ${bad.slice(0,3).join(', ')}`);
+  }
+}
+await go('manage',{view:'simple'});
+ok('no raw floating-point value appears anywhere in Cost-Benefit',
+   floats.length===0, floats.join(' | ') || 'clean across 9 views × 2 modes');
+
+/* the page itself must never scroll sideways on desktop */
+const scrolls = [];
+for (const w of [1440,1280]) {
+  await p.setViewportSize({width:w,height:1000});
+  for (const [m,extra] of [['manage',{}],['analyse',{sub:'portfolio'}],['analyse',{sub:'course'}],
+                           ['simulate',{scenSub:'course'}],['present',{presentSub:'report'}]]) {
+    await go(m,extra);
+    const over = await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    if (over > 0) scrolls.push(`${w} ${m}${extra.sub?'/'+extra.sub:''} +${over}`);
+  }
+}
+await p.setViewportSize({width:1440,height:1100});
+ok('no horizontal page scroll at 1440 or 1280 in any mode',
+   scrolls.length===0, scrolls.join(' | ') || '1440 and 1280 clean');
+
+/* every bar carries a readable label and a full name */
+await go('analyse',{sub:'portfolio'});
+const labels = await p.evaluate(() => {
+  const bars=[...document.querySelectorAll('#cbaContribChart g.b')];
+  return bars.map(g=>({txt:g.querySelector('text').textContent,
+                       full:g.querySelector(':scope > title')?g.querySelector(':scope > title').textContent:null})); });
+ok('every contribution bar has a readable label and its full name on hover',
+   labels.length>0 && labels.every(l=>l.txt && l.txt.length>=4 && l.full && l.full.length>0),
+   labels.slice(0,3).map(l=>l.txt).join(' · '));
 
 if (errs.length) fails.push(...errs);
 console.log(errs.length ? '\nconsole errors: '+errs.join(' | ') : '\nno console errors');
