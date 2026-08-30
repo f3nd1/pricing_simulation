@@ -98,12 +98,40 @@ ok('every Cost-Benefit mode and sub-view translates, in Simple and Advanced',
 await p.evaluate(() => { ST.cba.mode='manage'; ST.cba.view='simple'; render(); });
 const key = await txt();
 ok('the standardised finance labels appear in Chinese',
-   /扣除课程直接成本后/.test(key) && /全成本结果/.test(key) && /对学院有正贡献的课程/.test(key) &&
+   /扣除课程直接成本后/.test(key) && /最低所需人数/.test(key) && /对学院有正贡献的课程/.test(key) &&
    /可持续性缺口/.test(key));
 const advKey = await p.evaluate(() => { ST.cba.view='advanced'; render();
   const t=document.getElementById('cbacontent').innerText; ST.cba.view='simple'; render(); return t; });
 ok('Advanced mode shows the technical labels in Chinese too',
-   /全成本覆盖率/.test(advKey) && /最低所需|分摊的/.test(advKey) && /生均成本/.test(advKey));
+   /全成本覆盖率/.test(advKey) && /收入减直接成本与分摊的间接费用/.test(advKey) && /生均成本/.test(advKey) &&
+   /每月所需招生人数/.test(advKey) && /下一名学生的增量影响/.test(advKey) &&
+   /全成本盈亏平衡/.test(advKey));
+/* every new planning term must exist in Chinese */
+const plan = await p.evaluate(() => {
+  ST.cba.mode='simulate'; ST.cba.scenSub='portfolio'; ST.cba.portScen='solve'; render();
+  const before=document.body.innerText;
+  document.querySelector('[data-cbasolve]').click();
+  const after=document.body.innerText;
+  ST.cba.mode='analyse'; ST.cba.sub='course'; ST.cba.view='advanced'; render();
+  const course=document.body.innerText;
+  ST.cba.sub='compare'; render(); const cmp=document.body.innerText;
+  ST.cba.mode='manage'; ST.cba.view='simple'; render();
+  return { before, after, course, cmp, manage:document.body.innerText }; });
+ok('the UCC break-even planner is fully Chinese',
+   /UCC 盈亏平衡计划/.test(plan.before) && /计算 UCC 盈亏平衡点/.test(plan.before) &&
+   /盈亏平衡课程组合/.test(plan.before) && /当前实际招生组合/.test(plan.before) &&
+   /仅正贡献课程/.test(plan.before) && /自定义课程组合/.test(plan.before) &&
+   /还需增加的贡献金额/.test(plan.before));
+ok('the solved plan and its course targets are Chinese',
+   /所需学生总人数/.test(plan.after) && /还需增加的学生人数/.test(plan.after) &&
+   /各课程目标/.test(plan.after) && /新增招生占比/.test(plan.after) &&
+   /按这些假设与此课程组合/.test(plan.after));
+ok('Course and Compare planning rows are Chinese',
+   /招生经济性/.test(plan.course) && /运营最低人数/.test(plan.course) &&
+   /全成本盈亏平衡/.test(plan.course) && /下一名学生的增量影响/.test(plan.course) &&
+   /距全成本盈亏平衡的学生差额/.test(plan.cmp));
+ok('the Manage break-even entry point is Chinese',
+   /UCC 盈亏平衡计划/.test(plan.manage) && /查看计划|计算目标/.test(plan.manage));
 ok('modes, basis and view controls are translated',
    /管理/.test(key) && /分析/.test(key) && /模拟/.test(key) && /汇报/.test(key) &&
    /预算/.test(key) && /实际/.test(key) && /简明/.test(key) && /专业/.test(key));
