@@ -93,7 +93,7 @@ ok('D · institution totals exclude it, and the count strip says so',
    `activity ${views.counts.activity} · analysed ${views.counts.both} · excluded-with-enrolment ${views.counts.excludedWithActivity}`);
 const shown = await p.evaluate(() => { cbaGo(ST,'status'); ST.module='cba'; render(); return document.body.innerText; });
 ok('D · the screen states the excluded course still has students',
-   /excluded from this analysis/i.test(shown) && /excluded/i.test(shown));
+   /excluded from the analysis/i.test(shown) && /excluded/i.test(shown));
 
 // ── Step E: re-include ─────────────────────────────────────────────────────
 await p.evaluate(([ci]) => { delete ST.cba.off[COURSES[ci].name]; saveToStorage(); render(); }, [ci]);

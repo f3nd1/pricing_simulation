@@ -62,12 +62,14 @@ const txt = () => p.evaluate(() => document.body.innerText);
 await go('cba','status','incl');
 let t = await txt();
 ok('§2 the header no longer calls only the analysed courses "running"',
-   !/\d+ running/i.test(t) && /8 with enrolment/i.test(t) && /6 analysed/i.test(t),
-   (t.match(/\d+ with enrolment · \d+ analysed · ratio [\d.—]+/)||['(not found)'])[0]);
+   !/\d+ running/i.test(t) && /6 analysed of 8 with actual enrolment/i.test(t.replace(/\n/g,' ')),
+   (t.match(/\d+ analysed of \d+ with actual enrolment[^\n]*/i)||['(not found)'])[0]);
+const whyT = await p.evaluate(() => { ST.cba.showWhy=true; render();
+  const s=document.body.innerText; ST.cba.showWhy=false; render(); return s; });
 ok('§3 no run-basis wording anywhere on the page',
    !/run basis/i.test(t) && !/\brecorded runs?\b/i.test(t) &&
-   /meet the enrolment pace their own economics require/i.test(t),
-   (t.match(/\d+ of \d+ meet the enrolment pace[^.]*\./i)||['(not found)'])[0]);
+   /meet the enrolment pace their own economics require/i.test(whyT),
+   (whyT.match(/\d+ of \d+ meet the enrolment pace[^.]*\./i)||['(not found)'])[0]);
 
 // ── §4/§5 view labels and the plain-English line ───────────────────────────
 ok('§4 the three views are named for what they contain, with live counts',

@@ -106,12 +106,12 @@ ok('§14 the simulator assumption and the Yearly Budget enrolment have distinct 
 // ── §8/§9 Course Status counts and the three views, in the DOM ─────────────
 await go('cba','status','actual','incl');
 let t = await text();
-ok('§8 counts are factual: the excluded course still raises "with Actual enrolment"',
-   /Excluded but actual enrolment[\s\S]{0,40}?1/i.test(t.replace(/\n/g,' ')) ||
-   /1[\s\S]{0,10}Excluded but/i.test(t.replace(/\n/g,' ')),
-   (t.match(/Configured courses[\s\S]{0,220}/i)||[''])[0].replace(/\n+/g,' · ').slice(0,220));
+ok('§8 counts are factual: the excluded course still raises "with actual enrolment"',
+   /1 excluded despite enrolment/i.test(t.replace(/\n/g,' ')) &&
+   /analysed of \d+ with actual enrolment/i.test(t.replace(/\n/g,' ')),
+   (t.match(/\d+ analysed of[\s\S]{0,90}/i)||[''])[0].replace(/\n+/g,' · '));
 ok('§7 the upgrade warning names the excluded course and its student count',
-   /excluded from this analysis/i.test(t) && t.includes(AI) && /\(15\)/.test(t));
+   /excluded from the analysis/i.test(t) && t.includes(AI) && /\(15\)/.test(t));
 
 const inView = () => p.evaluate(([AI]) => {
   const tbl = [...document.querySelectorAll('table')].find(x=>/Action/i.test(x.innerText));
