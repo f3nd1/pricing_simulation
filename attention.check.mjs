@@ -40,8 +40,7 @@ const panel = () => p.evaluate(() => {
       if(/^(needs attention|opportunities|dismissed)$/i.test(l)) break; if(l) out.push(l); }
     return out; };
   return { text:card.innerText, risk:sect('Needs attention'), opp:sect('Opportunities'),
-           dismissBtns:card.querySelectorAll('[data-cbadismiss]').length,
-           keys:[...card.querySelectorAll('[data-cbadismiss]')].map(b=>b.dataset.cbadismiss) };
+           rows:card.querySelectorAll('.cb-ins').length };
 });
 const showAll = () => p.evaluate(() => { ST.cba.showAllInsights=true; render(); });
 await showAll();
@@ -49,8 +48,7 @@ let P = await panel();
 
 // ── §1/§2 structure ────────────────────────────────────────────────────────
 ok('§2 the panel splits needs-attention from opportunities in compact rows',
-   !!P && /needs attention/i.test(P.text) && /opportunities/i.test(P.text) &&
-   P.keys.length>0);
+   !!P && /needs attention/i.test(P.text) && /opportunities/i.test(P.text) && P.rows>0);
 ok('§1 no course name appears in the source — every insight is generated',
    await p.evaluate(([DIPAI,ADIPAI]) => {
      const src = cbaInsights.toString() + cbaAttentionPanel.toString();
@@ -75,57 +73,13 @@ ok('§3 real risks are still surfaced separately',
    P.risk.length>0 && /behind budget|below minimum enrolment|central overhead/i.test(P.risk.join(' ')),
    P.risk[0]);
 
-// ── §5/§6 dismiss, restore ─────────────────────────────────────────────────
-const before = await p.evaluate(() => { const d=cbaCompute(ST,'actual');
-  return {rev:d.T.benefit,con:d.T.contribution,bcr:d.T.bcr,students:d.T.students,
-          intakes:JSON.stringify(ST.intakes),sim:JSON.stringify(ST.sim||{}),off:JSON.stringify(ST.cba.off)}; });
-const key = await p.evaluate(([ADIPAI]) => {
-  const btn=[...document.querySelectorAll('[data-cbadismiss]')]
-    .find(b=>b.parentElement.innerText.includes(ADIPAI));
-  if(!btn) return null; const k=btn.dataset.cbadismiss; btn.click(); return k; }, [ADIPAI]);
-ok('§6 the dismissal key is course : type : year : basis : state, not the sentence',
-   !!key && /^Advanced Diploma in Applied AI:growth-candidate:2026:actual:\d+$/.test(key), key);
-await showAll(); P = await panel();
-ok('§5 the dismissed insight disappears from the list, and only that one',
-   !P.keys.includes(key) && P.keys.some(k=>k.startsWith(key.split(':')[0]+':')),
-   `dismissed 1, ${P.keys.length} still shown`);
-const after = await p.evaluate(() => { const d=cbaCompute(ST,'actual');
-  return {rev:d.T.benefit,con:d.T.contribution,bcr:d.T.bcr,students:d.T.students,
-          intakes:JSON.stringify(ST.intakes),sim:JSON.stringify(ST.sim||{}),off:JSON.stringify(ST.cba.off)}; });
-ok('§5 dismissing changed no number and no record',
-   JSON.stringify(before)===JSON.stringify(after));
-const restored = await p.evaluate(() => {
-  document.querySelector('[data-cbashowdis]').click();
-  const btn=document.querySelector('[data-cbaundismiss]'); const had=!!btn; if(btn)btn.click();
-  ST.cba.showAllInsights=true; render();
-  return { had, none:Object.keys(cbaDismissed(ST)).length }; });
-ok('§6 a dismissed insight can be restored', restored.had && restored.none===0);
-
-// ── §7 dismissal expires when the number materially changes ────────────────
-const expiry = await p.evaluate(([ci]) => {
-  /* a course 40% under budget, dismissed; then improve it to on-budget */
-  const seen = () => { ST.cba.showAllInsights=true; render();
-    const card=[...document.querySelectorAll('.cb-panel')].find(c=>/what needs a decision/i.test(c.innerText));
-    return card.innerText; };
-  const nm = COURSES[0].name;
-  const has = () => { seen(); const d=cbaCompute(ST,'actual');
-    const dis=cbaDismissed(ST);
-    return cbaInsights(ST,d).risk.some(x=>x.course===nm&&x.type==='budget-shortfall'&&!dis[x.key]); };
-  const ik = ST.intakes.find(i=>i.ci===0&&i.kind==='actual'&&i.year===2026);
-  ik.students = 12; render();
-  const k1 = (()=>{ const d=cbaCompute(ST,'actual');
-    return cbaInsights(ST,d).risk.find(x=>x.course===nm&&x.type==='budget-shortfall').key; })();
-  ST.cba.dismissed={...cbaDismissed(ST),[k1]:true};
-  const hiddenNow = !has();
-  ik.students = 4;                       /* 40% short -> 80% short: new band */
-  const k2 = (()=>{ const d=cbaCompute(ST,'actual');
-    return cbaInsights(ST,d).risk.find(x=>x.course===nm&&x.type==='budget-shortfall').key; })();
-  const backAgain = has();
-  ik.students = 12; ST.cba.dismissed={}; render();
-  return { k1, k2, hiddenNow, backAgain }; }, [0]);
-ok('§7 dismissal is scoped to the severity band it was dismissed at',
-   expiry.hiddenNow && expiry.backAgain && expiry.k1!==expiry.k2,
-   `${expiry.k1} → ${expiry.k2}`);
+ok('§5/§6 insights can no longer be dismissed — a true issue stays on the dashboard',
+   await p.evaluate(() => document.querySelectorAll(
+     '[data-cbadismiss],[data-cbaundismiss],[data-cbashowdis],[data-cbarestoreall]').length===0));
+ok('§7 the insight identity still carries course, type, year, basis and severity band',
+   await p.evaluate(() => { const d=cbaCompute(ST,'actual');
+     const I=cbaInsights(ST,d);
+     return I.risk.concat(I.opp).every(x=>x.key.split(':').length===5); }));
 
 // ── §10 live reactivity ────────────────────────────────────────────────────
 const live = await p.evaluate(([DIPAI]) => {
@@ -144,7 +98,9 @@ const live = await p.evaluate(([DIPAI]) => {
   ST.cba.basis='actual'; const a2=body(); ST.ybYear=2027;
   out.yearChange = body()!==a2; ST.ybYear=2026;
   const a3=body(); ST.cba.off[DIPAI]=true;
-  out.inclusionChange = !body().includes(DIPAI) && a3.includes(DIPAI);
+  const a4=body();
+  /* excluding no longer hides the course — it changes what is said about it */
+  out.inclusionChange = a4!==a3 && a4.includes(DIPAI) && /Excluded from Cost-Benefit/i.test(a4);
   delete ST.cba.off[DIPAI];
   /* a brand-new course generates its own insight with no code change */
   document.getElementById('addCourse');
@@ -178,10 +134,7 @@ ok('§8 the list is capped with a Show all, and risks come out in rank order',
    `${cap.shown} of ${cap.total} shown`);
 
 // ── persistence ────────────────────────────────────────────────────────────
-await p.evaluate(() => { const d=cbaCompute(ST,'actual');
-  ST.cba.dismissed={[cbaInsights(ST,d).opp[0].key]:true}; saveToStorage(); });
 await p.reload(); await p.waitForTimeout(400);
-ok('dismissals survive a reload', await p.evaluate(() => Object.keys(cbaDismissed(ST)).length===1));
 
 if (errs.length) fails.push(...errs);
 console.log(errs.length ? '\nconsole errors: '+errs.join(' | ') : '\nno console errors');
