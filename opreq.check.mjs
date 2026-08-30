@@ -188,7 +188,16 @@ const worked = await p.evaluate(()=>{
       oneLine:cbaReqOneLine(ST,r)};
   });
   ST.module='cba'; ST.cba.mode='analyse'; ST.cba.sub='portfolio'; render();
-  return {out, header:cbaReqHeader(d),
+  const tip=cbaReqHeaderTip(ST,d);
+  const plain=tip.replace(/<[^>]+>/g,' ');
+  const ex=d.live.find(x=>x.reqPeriod!=null)||d.rows.find(x=>x.reqPeriod!=null);
+  const heads=[...document.querySelectorAll('th')];
+  const gapTh=heads.find(h=>/Gap to requirement/i.test(h.textContent));
+  return {out, header:cbaReqHeader(d), tip:plain,
+    tipMatchesTable: plain.includes(String(cbaReqShown(ex))) &&
+                     plain.includes(cbaRolling(ST,ex.c).pace.toFixed(2)),
+    tipCheck: `example ${courseLabel(ex.c)} -> ${cbaReqShown(ex)}/yr`,
+    gapHasIcon: !!(gapTh && gapTh.querySelector('.cb-i')),
     table:document.getElementById('cbacontent').innerText};});
 const [dbm,ielts]=worked.out;
 ok('DBM: exact break-even over its 8-month delivery gives the required pace',
@@ -211,24 +220,38 @@ ok('the derivation line uses the EXACT break-even, not the rounded headline',
    dbm.oneLine);
 ok('the derivation names the period rather than leaving it implicit',
    /needed in 2026/.test(dbm.oneLine) && /needed in 2026/.test(ielts.oneLine));
-ok('the column header carries the year and is not hardcoded',
-   worked.header==='2026 operating req.' && /2026 operating req/i.test(worked.table),
+ok('the column header states the period without repeating the year',
+   worked.header==='Operating req. / yr' && /operating req\. \/ yr/i.test(worked.table),
    worked.header);
+ok('the header tooltip is short, example-led and free of finance jargon',
+   worked.tip && /needs in one year to cover its own course costs/.test(worked.tip) &&
+   /Course break-even/.test(worked.tip) && /\/month/.test(worked.tip) && /\/year/.test(worked.tip) &&
+   /not the minimum class size/.test(worked.tip) &&
+   !/Finance term/.test(worked.tip) && !/allocat|rolling intake|recognised/i.test(worked.tip),
+   worked.tip.replace(/<[^>]+>/g,' ').slice(0,160));
+ok('the tooltip example uses live values that match the column',
+   worked.tipMatchesTable, worked.tipCheck);
+ok('the Gap column has no info icon',!worked.gapHasIcon);
 const hdr2028 = await p.evaluate(()=>{
   ST.intakes=ST.intakes.map(k=>({...k,year:2028})); ST.ybYear=2028;
   return cbaReqHeader(cbaCompute(ST,'budget',2028));});
-ok('the year in the header follows the selected year', hdr2028==='2028 operating req.', hdr2028);
+ok('a full 12-month period reads "/ yr" in any year', hdr2028==='Operating req. / yr', hdr2028);
 const zhHdr = await p.evaluate(()=>{
   setLang('zh');
-  const h=cbaReqHeader(cbaCompute(ST,'budget',2028));
+  const dz=cbaCompute(ST,'budget',2028);
+  const h=cbaReqHeader(dz), tipz=cbaReqHeaderTip(ST,dz).replace(/<[^>]+>/g,' ');
   ST.module='cba'; ST.cba.mode='analyse'; ST.cba.sub='portfolio'; render();
   const t=document.getElementById('cbacontent').innerText;
   const d=cbaCompute(ST,'budget',2028);
   const r=d.live[0]||d.rows.find(x=>x.reqPeriod!=null);
   const line=r?cbaReqOneLine(ST,r):'';
   setLang('en');
-  return {h,t,line};});
-ok('CN header carries the year too', /2028 年运营所需招生/.test(zhHdr.h), zhHdr.h);
+  return {h,t,line,tip:tipz};});
+ok('CN header reads 年度运营所需招生', zhHdr.h==='年度运营所需招生', zhHdr.h);
+ok('CN header tooltip is the short example-led version',
+   /该课程一年内为覆盖自身课程成本所需的招生人数/.test(zhHdr.tip) &&
+   /课程盈亏平衡/.test(zhHdr.tip) && /每月/.test(zhHdr.tip) && /每年/.test(zhHdr.tip) &&
+   /这不是最低开班人数/.test(zhHdr.tip) && !/财务术语/.test(zhHdr.tip));
 ok('CN derivation line is Chinese and keeps the live figures',
    /个月课程周期精确盈亏平衡为/.test(zhHdr.line) && /每月需/.test(zhHdr.line) && /人/.test(zhHdr.line),
    zhHdr.line);
