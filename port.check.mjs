@@ -19,7 +19,7 @@ await p.evaluate(()=>{
     ST.intakes.push({id:id++,kind:'actual',ci,month:0,year:y,students:14});
     ST.intakes.push({id:id++,kind:'budget',ci,month:0,year:y+1,students:26});});
   ST.cba.rates[COURSES[3].name]={comm:98,rate:400};      // negative contribution
-  ST.cba.basis='budget'; ST.module='cba'; ST.cba.tab='portfolio'; render(); cbaDrawPortfolio(ST);
+  ST.cba.basis='budget'; ST.module='cba'; cbaGo(ST,'portfolio'); render(); cbaDrawPortfolio(ST);
 });
 await p.waitForTimeout(300);
 
@@ -60,7 +60,7 @@ ok('cost-per-student ranks lowest cost first', !!rank.byCost);
 
 // ── year comparison ──────────────────────────────────────────────────────
 const yrs=await p.evaluate(()=>{
-  ST.cba.tab='years'; ST.cba.trendBasis='budget'; render(); cbaDrawTrend(ST);
+  cbaGo(ST,'years'); ST.cba.trendBasis='budget'; render(); cbaDrawTrend(ST);
   const y=cbaYear(ST);
   const b26=cbaYearRow(ST,y,'budget'), b27=cbaYearRow(ST,y+1,'budget'), b28=cbaYearRow(ST,y+2,'budget');
   const a26=cbaYearRow(ST,y,'actual'), a27=cbaYearRow(ST,y+1,'actual');
@@ -95,7 +95,7 @@ ok('basis switch limits to years with that basis', sw.actPts===1, `${sw.actPts} 
 for(const w of [1440,1300,768,375]){
   await p.setViewportSize({width:w,height:1100});
   for(const t of ['status','overview','portfolio','years','diag','courses','bycourse','charts']){
-    await p.evaluate(t=>{ST.cba.tab=t;render();
+    await p.evaluate(t=>{cbaGo(ST,t);render();
       if(t==='charts')cbaDrawCharts(ST); if(t==='portfolio')cbaDrawPortfolio(ST); if(t==='years')cbaDrawTrend(ST);},t);
     await p.waitForTimeout(160);
     const of=await p.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);

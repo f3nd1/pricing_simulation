@@ -73,10 +73,10 @@ const recon = await p.evaluate(IE => {
   const x = cbaCompute(ST,'actual').live.find(z=>z.ci===IE);
   const want = { contribution: fmt(x.contribution), revenue: fmt(x.revenue), direct: fmt(x.direct) };
   const seen = {};
-  ['diag','bycourse','status'].forEach(t => { ST.cba.tab=t; render();
+  ['diag','bycourse','status'].forEach(t => { cbaGo(ST,t); render();
     const txt = document.body.innerText;
     seen[t] = { contribution: txt.includes(want.contribution), revenue: txt.includes(want.revenue) }; });
-  ST.cba.tab='diag'; render();
+  cbaGo(ST,'diag'); render();
   const dtxt = document.body.innerText;
   return { want, seen,
     flowHasGross: dtxt.includes(fmt(x.gross)),
@@ -111,7 +111,7 @@ ok('Diagnostics reads the teacher rate from the saved per-course simulator state
 for (const w of [1440,1300,768,375]) {
   await p.setViewportSize({width:w,height:1100});
   for (const t of ['status','overview','diag','courses','bycourse','charts']) {
-    await p.evaluate(t => { ST.cba.tab=t; render(); if(t==='charts') cbaDrawCharts(ST); }, t);
+    await p.evaluate(t => { cbaGo(ST,t); render(); if(t==='charts') cbaDrawCharts(ST); }, t);
     await p.waitForTimeout(150);
     const of = await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     if (of>0) errs.push(`${w} ${t} overflow=${of}`);

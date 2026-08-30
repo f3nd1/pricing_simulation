@@ -19,7 +19,7 @@ const ci = await p.evaluate(() => {
   ST.intakes = []; ST.cba.off = {}; ST.cba.scope = 'all';
   COURSES.push({ name:'FLOWTEST Diploma', cat:'Diploma', fee:10000, mat:0, exam:0, admin:0,
                  app:0, hrs:300, mo:12 });
-  ST.module='cba'; ST.cba.tab='status'; render();
+  ST.module='cba'; cbaGo(ST,'status'); render();
   return COURSES.length - 1;
 });
 /* read straight out of live state, exactly as the UI does */

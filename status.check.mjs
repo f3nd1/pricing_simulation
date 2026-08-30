@@ -22,7 +22,7 @@ const seed = () => p.evaluate(() => {
   [1,2].forEach(ci => [0,6].forEach(m => {
     ST.intakes.push({id:id++,kind:'budget',ci,month:m,year:y,students:15});
     ST.intakes.push({id:id++,kind:'actual',ci,month:m,year:y,students:ci===1?16:3}); }));
-  ST.cba.basis='actual'; ST.module='cba'; ST.cba.tab='status'; render();
+  ST.cba.basis='actual'; ST.module='cba'; cbaGo(ST,'status'); render();
   return IE; });
 const IE = await seed();
 const row = (basis='actual') => p.evaluate(([IE,basis]) =>

@@ -76,7 +76,7 @@ ok('legacy state survives the upgrade intact', rec.ci>=0 && rec.act===15 && rec.
 const ci = rec.ci;
 const text = () => p.evaluate(() => document.body.innerText);
 const go = (mod,tab,basis,scope) => p.evaluate(([mod,tab,basis,scope]) => {
-  ST.module=mod; if(tab)ST.cba.tab=tab; if(basis)ST.cba.basis=basis; if(scope)ST.cba.scope=scope;
+  ST.module=mod; if(tab)cbaGo(ST,tab); if(basis)ST.cba.basis=basis; if(scope)ST.cba.scope=scope;
   saveToStorage(); render(); }, [mod,tab,basis,scope]);
 
 // ── §3 Simulator Inputs must SHOW the enrolment columns, by default ────────
@@ -114,7 +114,7 @@ ok('§7 the upgrade warning names the excluded course and its student count',
    /excluded from this analysis/i.test(t) && t.includes(AI) && /\(15\)/.test(t));
 
 const inView = () => p.evaluate(([AI]) => {
-  const tbl = [...document.querySelectorAll('table')].find(x=>/Operating/i.test(x.innerText));
+  const tbl = [...document.querySelectorAll('table')].find(x=>/Action/i.test(x.innerText));
   return !!(tbl && tbl.innerText.includes(AI)); }, [AI]);
 const v1 = await inView();
 await go('cba','status','actual','activity'); const v2 = await inView();

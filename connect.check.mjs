@@ -91,7 +91,7 @@ ok('D · excluded course is hidden from Included+activity but visible in the oth
 ok('D · institution totals exclude it, and the count strip says so',
    views.counts.excludedWithActivity===1 && views.counts.activity>views.counts.both,
    `activity ${views.counts.activity} · analysed ${views.counts.both} · excluded-with-enrolment ${views.counts.excludedWithActivity}`);
-const shown = await p.evaluate(() => { ST.cba.tab='status'; ST.module='cba'; render(); return document.body.innerText; });
+const shown = await p.evaluate(() => { cbaGo(ST,'status'); ST.module='cba'; render(); return document.body.innerText; });
 ok('D · the screen states the excluded course still has students',
    /excluded from this analysis/i.test(shown) && /excluded/i.test(shown));
 
@@ -114,7 +114,7 @@ const fresh = await p.evaluate(([nci,yr]) => {
            inSim: !!simFor(ST,courseKey(COURSES[nci])),
            inYb: (()=>{ST.module='yearlybudget';render();
                   return !!document.querySelector(`[data-addmonthsel] option[value="${nci}"]`);})(),
-           inDiag: (()=>{ST.module='cba';ST.cba.tab='diag';ST.cba.scope='all';render();
+           inDiag: (()=>{ST.module='cba';cbaGo(ST,'diag');ST.cba.scope='all';render();
                   return !!document.querySelector(`#cbaDiagCourse option[value="${nci}"]`);})() };
 }, [nci,yr]);
 ok('13 · a course added through the app appears everywhere with no source edit',
@@ -160,7 +160,7 @@ ok('14 · every consumer reads the restored values, no stale per-page copy',
 // ── no page refresh is ever required ───────────────────────────────────────
 const noRefresh = await p.evaluate(([ci,yr]) => {
   delete ST.cba.off[COURSES[ci].name];
-  ST.module='cba'; ST.cba.tab='status'; ST.cba.scope='incl'; render();
+  ST.module='cba'; cbaGo(ST,'status'); ST.cba.scope='incl'; render();
   const before = document.body.innerText;
   ST.intakes.push({id:99999,kind:'budget',ci,month:5,year:yr,students:44});
   render();                                     /* same path the edit handlers use */
