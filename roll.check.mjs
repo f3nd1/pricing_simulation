@@ -81,10 +81,10 @@ const gone = await p.evaluate(() => ({
   stateGone: ST.cba.runs===undefined && ST.cba.runBasis===undefined }));
 ok('run model fully removed from code and state', gone.fnGone && gone.stateGone);
 const dom = await p.evaluate(() => { const o={};
-  ['status','diag','portfolio','bycourse','years'].forEach(t=>{ ST.cba.tab=t; render();
+  ['status','diag','portfolio','bycourse','years'].forEach(t=>{ cbaGo(ST,t); render();
     o[t]={ runsInput:document.querySelectorAll('[data-cbaruns]').length,
            mentionsRuns:/runs \(recorded\)|course-run basis|per run ×/i.test(document.body.innerText) }; });
-  ST.cba.tab='status'; render(); return o; });
+  cbaGo(ST,'status'); render(); return o; });
 ok('no Runs field or run-basis wording on any tab',
    Object.values(dom).every(x=>x.runsInput===0 && !x.mentionsRuns),
    Object.entries(dom).map(([k,v])=>`${k}:${v.runsInput}`).join(' '));
@@ -103,7 +103,7 @@ for(const w of [1440,1300,768,375]){
   await p.setViewportSize({width:w,height:1100});
   for(const t of ['status','overview','portfolio','years','diag','courses','bycourse','charts']){
     for(const bs of ['budget','actual']){
-      await p.evaluate(([t,bs])=>{ST.cba.tab=t;ST.cba.basis=bs;render();
+      await p.evaluate(([t,bs])=>{cbaGo(ST,t);ST.cba.basis=bs;render();
         if(t==='charts')cbaDrawCharts(ST); if(t==='portfolio')cbaDrawPortfolio(ST); if(t==='years')cbaDrawTrend(ST);},[t,bs]);
       await p.waitForTimeout(120);
       const of=await p.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);

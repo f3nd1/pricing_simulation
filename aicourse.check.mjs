@@ -55,7 +55,7 @@ ok('§1 counts: 8 with actual enrolment, 6 analysed, 2 excluded with enrolment',
    `activity ${V.counts.activity} · analysed ${V.counts.both} · excluded ${V.counts.excludedWithActivity}`);
 
 const go = (mod,tab,scope) => p.evaluate(([mod,tab,scope]) => {
-  ST.module=mod; if(tab)ST.cba.tab=tab; if(scope)ST.cba.scope=scope; saveToStorage(); render(); }, [mod,tab,scope]);
+  ST.module=mod; if(tab)cbaGo(ST,tab); if(scope)ST.cba.scope=scope; saveToStorage(); render(); }, [mod,tab,scope]);
 const txt = () => p.evaluate(() => document.body.innerText);
 
 // ── §2/§3 header and KPI wording ───────────────────────────────────────────
@@ -65,8 +65,9 @@ ok('§2 the header no longer calls only the analysed courses "running"',
    !/\d+ running/i.test(t) && /8 with enrolment/i.test(t) && /6 analysed/i.test(t),
    (t.match(/\d+ with enrolment · \d+ analysed · ratio [\d.—]+/)||['(not found)'])[0]);
 ok('§3 no run-basis wording anywhere on the page',
-   !/run basis/i.test(t) && /Meeting operating requirement/i.test(t),
-   (t.match(/MEETING OPERATING REQUIREMENT[\s\S]{0,60}/i)||[''])[0].replace(/\n+/g,' · '));
+   !/run basis/i.test(t) && !/\brecorded runs?\b/i.test(t) &&
+   /meet the enrolment pace their own economics require/i.test(t),
+   (t.match(/\d+ of \d+ meet the enrolment pace[^.]*\./i)||['(not found)'])[0]);
 
 // ── §4/§5 view labels and the plain-English line ───────────────────────────
 ok('§4 the three views are named for what they contain, with live counts',
@@ -131,7 +132,7 @@ const everywhere = await p.evaluate(([DIPAI,ADIPAI]) => {
   const has = nm => document.body.innerText.includes(nm);
   [['status','activity'],['portfolio',null],['diag',null],['bycourse',null],['charts',null],['years',null]]
     .forEach(([tab])=>{ ST.cba.tab=tab; render(); out[tab]=has(DIPAI)&&has(ADIPAI); });
-  ST.cba.tab='status'; render();
+  cbaGo(ST,'status'); render();
   const d=cbaCompute(ST,'actual');
   out.inLive = ['d','a'].every((_,i)=>true) &&
     !!d.live.find(r=>r.name===DIPAI) && !!d.live.find(r=>r.name===ADIPAI);

@@ -19,7 +19,7 @@ const base = await p.evaluate(() => {
   [0,1,2].forEach(ci=>[0,6].forEach(m=>{
     ST.intakes.push({id:id++,kind:'budget',ci,month:m,year:y,students:12});
     ST.intakes.push({id:id++,kind:'actual',ci,month:m,year:y,students:9});}));
-  ST.cba.basis='actual'; ST.cba.scope='active'; ST.module='cba'; ST.cba.tab='status'; render();
+  ST.cba.basis='actual'; ST.cba.scope='active'; ST.module='cba'; cbaGo(ST,'status'); render();
   const d=cbaCompute(ST,'actual');
   return {configured:d.configured.length, live:d.live.length, total:COURSES.length}; });
 ok('configured and with-activity are different populations',
@@ -50,17 +50,17 @@ const seen = await p.evaluate(name => {
   const i = COURSES.findIndex(c=>c.name===name);
   out.yearlyBudget = [...document.querySelectorAll('[data-addmonthsel="0"] option')]
     .some(o => +o.value===i && o.textContent.trim()===name);   // labelled distinctly, not "NEW"
-  ST.module='cba'; ST.cba.tab='diag'; render();
+  ST.module='cba'; cbaGo(ST,'diag'); render();
   out.diagDropdown = has('#cbaDiagCourse');
-  ST.cba.tab='courses'; render();
+  cbaGo(ST,'courses'); render();
   out.activeCourses = document.body.innerText.includes(name);
-  ST.cba.tab='status'; ST.cba.scope='all'; render();
+  cbaGo(ST,'status'); ST.cba.scope='all'; render();
   out.statusAll = document.body.innerText.includes(name);
   ST.cba.scope='active'; render();
   out.statusActiveHidden = !document.body.innerText.includes(name);
-  ST.cba.tab='portfolio'; ST.cba.scope='all'; render();
+  cbaGo(ST,'portfolio'); ST.cba.scope='all'; render();
   out.portfolioAll = document.body.innerText.includes(name);
-  ST.cba.scope='active'; ST.cba.tab='status'; render();
+  ST.cba.scope='active'; cbaGo(ST,'status'); render();
   return out; }, added.name);
 ok('new course reaches Course Simulator, Simulator Inputs, Price List, Yearly Budget',
    seen.simulator&&seen.simInputs&&seen.priceList&&seen.yearlyBudget);
@@ -126,7 +126,7 @@ for(const w of [1440,1300,768,375]){
   await p.setViewportSize({width:w,height:1100});
   for(const sc of ['active','all']){
     for(const t of ['status','overview','portfolio','years','diag','courses','bycourse','charts']){
-      await p.evaluate(([t,sc])=>{ST.cba.tab=t;ST.cba.scope=sc;render();
+      await p.evaluate(([t,sc])=>{cbaGo(ST,t);ST.cba.scope=sc;render();
         if(t==='charts')cbaDrawCharts(ST); if(t==='portfolio')cbaDrawPortfolio(ST); if(t==='years')cbaDrawTrend(ST);},[t,sc]);
       await p.waitForTimeout(110);
       const of=await p.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);

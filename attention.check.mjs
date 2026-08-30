@@ -150,7 +150,7 @@ const live = await p.evaluate(([DIPAI]) => {
   document.getElementById('addCourse').click();
   const nci = COURSES.length-1; COURSES[nci].name='ZZ Fresh Course';
   ST.intakes.push({id:77778,kind:'actual',ci:nci,month:0,year:2026,students:40});
-  ST.module='cba'; ST.cba.tab='status';
+  ST.module='cba'; cbaGo(ST,'status');
   out.newCourse = /ZZ Fresh Course/.test(body());
   ST.intakes = ST.intakes.filter(i=>i.id!==77777&&i.id!==77778);
   ST.intakes.find(i=>i.ci===ci&&i.kind==='actual').students = 15;
