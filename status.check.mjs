@@ -75,7 +75,7 @@ const lbl = await p.evaluate(() => { ST.cba.basis='actual'; render();
   const a=document.body.innerText;
   ST.cba.basis='budget'; render();
   const b=document.body.innerText;
-  return { actualShown:/ACTUAL/.test(a), budgetShown:/BUDGET/.test(b),
+  return { actualShown:/\bActual\b/.test(a), budgetShown:/\bBudget\b/.test(b),
            noPlanned: !/\bPlanned\b/.test(a) }; });
 ok('Labels follow the selected basis, never "Planned" in Actual mode',
    lbl.actualShown && lbl.budgetShown && lbl.noPlanned);

@@ -53,17 +53,21 @@ let t = await txt();
 ok('Manage is the default landing mode, with four modes available',
    /Manage/.test(t) && /Analyse/.test(t) && /Simulate/.test(t) && /Present/.test(t) &&
    await p.evaluate(() => cbaMode(ST)==='manage'));
-ok('the context bar carries year, basis and the course counts',
-   /2026 · ACTUAL/.test(t) && /analysed/.test(t) && /configured/.test(t),
-   (t.match(/2026 · ACTUAL[\s\S]{0,80}/)||[''])[0].replace(/\n+/g,' · '));
+const sticky = await p.evaluate(() => {
+  const el=document.querySelector('.cb-sticky');
+  return el?{txt:el.innerText.replace(/\n+/g,' · '),pos:getComputedStyle(el).position}:null; });
+ok('a sticky context bar carries year, basis, view, modes and the counts',
+   !!sticky && sticky.pos==='sticky' && /2026/.test(sticky.txt) && /Actual/.test(sticky.txt) &&
+   /Simple/.test(sticky.txt) && /analysed/.test(sticky.txt) && /configured/.test(sticky.txt) &&
+   /Manage/.test(sticky.txt), sticky && sticky.txt.slice(0,120));
 ok('Simple is the default view and hides the finance columns',
    await p.evaluate(() => !cbaAdv(ST)) && !/\bBCR\b/.test(t) && /After own costs/.test(t));
 
 // ── Manage: four headline metrics reconcile ────────────────────────────────
 const head = await p.evaluate(() => {
-  const cards=[...document.querySelectorAll('.kpi-card')].slice(0,4)
-    .map(c=>({lbl:c.querySelector('.kpi-card-lbl').innerText.trim(),
-              val:c.querySelector('.kpi-card-val').innerText.trim()}));
+  const cards=[...document.querySelectorAll('.cb-strip > div')].slice(0,4)
+    .map(c=>({lbl:c.querySelector('.k').innerText.trim(),
+              val:c.querySelector('.v').innerText.trim()}));
   const H=cbaHeadline(ST,cbaCompute(ST));
   return {cards,H}; });
 ok('Manage shows exactly four headline cards: students, P&L, helping, gap',
@@ -71,15 +75,39 @@ ok('Manage shows exactly four headline cards: students, P&L, helping, gap',
    /(profit|loss)/i.test(head.cards[1].lbl) && /helping/i.test(head.cards[2].lbl) &&
    /gap/i.test(head.cards[3].lbl), head.cards.map(c=>`${c.lbl} ${c.val}`).join(' · '));
 ok('the headline numbers reconcile to the canonical totals',
-   head.cards[0].val===String(C0.students) &&
-   head.cards[1].val===await p.evaluate(n=>sgd(Math.abs(n)), C0.net),
+   head.cards[0].val===await p.evaluate(n=>cbaN(n), C0.students) &&
+   head.cards[1].val===await p.evaluate(n=>cbaK(Math.abs(n)), C0.net),
    `${head.cards[0].val} students · ${head.cards[1].val}`);
-ok('the management statement is deterministic and built from the live figures',
-   /below full-cost sustainability|covering its full cost base/i.test(t) &&
-   new RegExp(`${C0.counts.both} analysed course`).test(t.replace(/\s+/g,' ')),
-   (t.match(/UCC is [^]*?%\./)||[''])[0].slice(0,120));
-ok('the action matrix renders one dot per analysed course, each clickable',
-   await p.evaluate(() => document.querySelectorAll('svg circle[data-cbacourse]').length) === C0.counts.both);
+const whyTxt = await p.evaluate(() => { ST.cba.showWhy=true; render();
+  const s=document.body.innerText; ST.cba.showWhy=false; render(); return s; });
+ok('the long explanation is behind Why?, not on the page by default',
+   !/analysed course[s]? contribute/i.test(t) &&
+   new RegExp(`${C0.counts.both} analysed course`).test(whyTxt.replace(/\s+/g,' ')),
+   (whyTxt.match(/Income of [^]*?%[^.]*\./)||[''])[0].slice(0,110));
+const mtx = await p.evaluate(() => {
+  const pts=[...document.querySelectorAll('#cbaMatrix g.pt')];
+  return { n:pts.length, focusable:pts.every(g=>g.getAttribute('tabindex')==='0'),
+           labelled:[...document.querySelectorAll('#cbaMatrix text.lb')].filter(t=>+t.getAttribute('opacity')===1).length,
+           axes:document.getElementById('cbaMatrix').innerHTML };
+});
+ok('the action matrix draws one focusable point per analysed course',
+   mtx.n===C0.counts.both && mtx.focusable, `${mtx.n} points`);
+ok('some points are labelled by default, so no dot is anonymous', mtx.labelled>=1, `${mtx.labelled} labelled`);
+ok('the axes are in plain English with the break-even lines shown',
+   /losing money \| helping UCC/.test(mtx.axes) && /below minimum \| above/.test(mtx.axes) &&
+   /GROW/.test(mtx.axes) && /REVIEW/.test(mtx.axes));
+const hov = await p.evaluate(([ADIPAI]) => {
+  const g=[...document.querySelectorAll('#cbaMatrix g.pt')]
+    .find(x=>x.getAttribute('aria-label').startsWith(ADIPAI));
+  g.dispatchEvent(new MouseEvent('mousemove',{bubbles:true,clientX:400,clientY:400}));
+  const tip=document.querySelector('.cb-tip.on');
+  const dimmed=[...document.querySelectorAll('#cbaMatrix g.pt')].filter(x=>x.style.opacity&&+x.style.opacity<1).length;
+  return { text:tip?tip.innerText.replace(/\n/g,' | '):null, dimmed }; }, [ADIPAI]);
+ok('hovering a point shows the full tooltip and dims the others',
+   !!hov.text && /advanced diploma in applied ai/i.test(hov.text) &&
+   /Students/.test(hov.text) && /Minimum needed/.test(hov.text) &&
+   /After own costs/.test(hov.text) && /Full-cost result/.test(hov.text) &&
+   /Coverage/.test(hov.text) && hov.dimmed>0, `dimmed ${hov.dimmed} · `+hov.text);
 ok('Management attention still splits needs-attention from opportunities',
    /needs attention/i.test(t) && /opportunities/i.test(t));
 
@@ -113,11 +141,33 @@ await go('analyse',{sub:'portfolio'});
 const port = await p.evaluate(([ADIPAI]) => {
   const d=cbaCompute(ST);
   const rowNames=[...document.querySelectorAll('a[data-cbacourse]')].map(a=>a.innerText);
-  const dots=[...document.querySelectorAll('svg circle[data-cbacourse]')].map(c=>+c.dataset.cbacourse);
+  const dots=[...document.querySelectorAll('#cbaContribChart g.b')].map(g=>d.live.find(r=>g.getAttribute('aria-label').startsWith(r.name+',')).ci);
   return { rowNames, dots, live:d.live.map(r=>r.ci), hasADIPAI:rowNames.includes(ADIPAI) }; }, [ADIPAI]);
-ok('the portfolio table and the visual use the same course population',
+ok('the portfolio chart and the single table use the same course population',
    port.dots.every(ci=>port.live.includes(ci)) && port.dots.length===port.live.length &&
-   port.hasADIPAI, `${port.dots.length} dots · ${port.live.length} analysed`);
+   port.hasADIPAI, `${port.dots.length} bars · ${port.live.length} analysed`);
+const oneTable = await p.evaluate(() => document.querySelectorAll('#cbacontent table').length);
+ok('Portfolio shows exactly one course table, not two', oneTable===1, `${oneTable} tables`);
+const linked = await p.evaluate(([ADIPAI]) => {
+  const d=cbaCompute(ST);
+  const ci=d.live.find(r=>r.name===ADIPAI).ci;
+  const bar=[...document.querySelectorAll('#cbaContribChart g.b')]
+    .find(g=>g.getAttribute('aria-label').startsWith(ADIPAI));
+  bar.dispatchEvent(new MouseEvent('mouseenter',{bubbles:true}));
+  const rowLit=!!document.querySelector(`tr[data-cbarow="${ci}"].cb-row-on`);
+  bar.dispatchEvent(new MouseEvent('mouseleave',{bubbles:true}));
+  const tr=document.querySelector(`tr[data-cbarow="${ci}"]`);
+  tr.dispatchEvent(new MouseEvent('mouseenter',{bubbles:true}));
+  const dimmed=[...document.querySelectorAll('#cbaContribChart g.b rect')]
+    .filter(r=>+r.getAttribute('fill-opacity')<0.5).length;
+  tr.dispatchEvent(new MouseEvent('mouseleave',{bubbles:true}));
+  return { rowLit, dimmed }; }, [ADIPAI]);
+ok('hovering a bar highlights its row, and hovering a row highlights its bar',
+   linked.rowLit && linked.dimmed>0, JSON.stringify(linked));
+const shared = await p.evaluate(() => document.body.innerText);
+ok('shared costs are one segmented bar plus one line, not a paragraph',
+   /Shared UCC costs/i.test(shared) && /covers \d+% of shared costs/i.test(shared),
+   (shared.match(/Course contribution currently covers[^.]*\./)||[''])[0]);
 const search = await p.evaluate(() => { ST.cba.q='Applied'; render();
   return [...document.querySelectorAll('a[data-cbacourse]')].map(a=>a.innerText); });
 ok('portfolio search filters the table and the visual together',
@@ -128,28 +178,31 @@ await p.evaluate(() => { ST.cba.q=''; render(); });
 const fromTable = await p.evaluate(([ADIPAI]) => {
   const a=[...document.querySelectorAll('a[data-cbacourse]')].find(x=>x.innerText===ADIPAI);
   a.click(); return { mode:ST.cba.mode, sub:ST.cba.sub, ci:ST.cba.chartCi,
-                      heading:document.querySelector('#cbacontent .card').innerText.split('\n')[0] }; }, [ADIPAI]);
+                      heading:document.querySelector('#cbacontent .cb-sec div').innerText.split('\n')[0] }; }, [ADIPAI]);
 ok('clicking a course in the table opens Course analysis',
    fromTable.mode==='analyse' && fromTable.sub==='course' && fromTable.heading.includes(ADIPAI),
    fromTable.heading);
 await go('manage');
 const fromDot = await p.evaluate(([ADIPAI]) => {
-  const c=[...document.querySelectorAll('svg circle[data-cbacourse]')]
-    .find(x=>x.querySelector('title').textContent.startsWith(ADIPAI));
+  const c=[...document.querySelectorAll('#cbaMatrix g.pt')]
+    .find(x=>x.getAttribute('aria-label').startsWith(ADIPAI));
   c.dispatchEvent(new MouseEvent('click',{bubbles:true}));
   return { mode:ST.cba.mode, sub:ST.cba.sub,
-           heading:document.querySelector('#cbacontent .card').innerText.split('\n')[0] }; }, [ADIPAI]);
+           heading:document.querySelector('#cbacontent .cb-sec div').innerText.split('\n')[0] }; }, [ADIPAI]);
 ok('clicking the same course in the matrix opens the identical view',
    fromDot.mode==='analyse' && fromDot.sub==='course' && fromDot.heading===fromTable.heading,
    fromDot.heading);
 const cpage = await txt();
-ok('Course analysis shows enrolment, budget and cost coverage blocks',
+ok('Course analysis shows enrolment, budget and cost coverage blocks plus a waterfall',
    /Enrolment/i.test(cpage) && /Budget/i.test(cpage) && /Cost coverage/i.test(cpage) &&
-   /Why\?/i.test(cpage));
+   /Money flow/i.test(cpage) && /Why\?/i.test(cpage));
+ok('the drivers stay collapsed by default',
+   await p.evaluate(() => { const d=[...document.querySelectorAll('details')]
+     .find(x=>/drivers behind/i.test(x.innerText)); return !!d && !d.open; }));
 const cvals = await p.evaluate(([ADIPAI]) => {
   const r=cbaCompute(ST,'actual',2026).rows.find(x=>x.name===ADIPAI);
   const body=document.body.innerText;
-  return { inDom: body.includes(sgd(r.contribution)) && body.includes(sgd(r.revenue-r.total)),
+  return { inDom: body.includes(cbaK(r.contribution)) && body.includes(sgd(r.contribution)),
            students:r.students, shown: new RegExp(`\\b${r.students}\\b`).test(body) }; }, [ADIPAI]);
 ok('course students, contribution and full-cost result reconcile with the engine',
    cvals.inDom && cvals.shown);
@@ -176,10 +229,21 @@ ok('moving the student control changes the scenario result',
    `${sc.baseStu} → ${sc.scenStu} students · ${Math.round(sc.baseCon)} → ${Math.round(sc.scenCon)}`);
 ok('the live figure is untouched while the sandbox is in use', sc.liveStu===sc.baseStu);
 ok('canonical records are byte-identical after simulating', await snap()===S0);
-ok('the screen states scenario vs live and makes no demand claim',
-   /Scenario active/i.test(sc.text) && /Current vs scenario/i.test(sc.text) &&
-   /makes no claim that a fee change would leave demand unchanged/i.test(sc.text) &&
-   !/elasticity/i.test(sc.text));
+ok('a compact chip states the live/scenario state and no demand claim is made',
+   /Scenario active/i.test(sc.text) && /current vs scenario/i.test(sc.text) &&
+   /makes no claim about how demand would respond/i.test(sc.text) &&
+   !/elasticity|best case/i.test(sc.text));
+const impact = await p.evaluate(() => {
+  const el=[...document.querySelectorAll('.cb-panel')].find(x=>/Scenario impact/i.test(x.innerText));
+  return el?el.innerText.replace(/\n/g,' | '):null; });
+ok('a large impact banner states the change to the UCC full-cost result',
+   !!impact && /[+-]?\$/.test(impact), impact);
+const preset = await p.evaluate(() => {
+  const before=cbaCompute(ST,'actual',2026,cbaScenOverlay(ST)).T.students;
+  document.querySelector('[data-cbapreset="stu5"]').click();
+  return { before, after:cbaCompute(ST,'actual',2026,cbaScenOverlay(ST)).T.students }; });
+ok('presets apply a plain arithmetic step, nothing labelled best case',
+   preset.after===preset.before+5, `${preset.before} → ${preset.after}`);
 const C1 = await canon();
 ok('institution totals are unchanged by the sandbox',
    JSON.stringify(C1)===JSON.stringify(C0));
@@ -208,15 +272,22 @@ const rep = await p.evaluate(() => {
   const el=document.getElementById('cbaReport');
   return { text:el?el.innerText:'', hasControls: !!el.querySelector('[data-cbascen],[data-cbadriver],input[type=checkbox]') }; });
 ok('the board report reconciles to the canonical institution totals',
-   rep.text.includes(String(C0.students)) &&
-   rep.text.includes(await p.evaluate(n=>sgd(n), C0.revenue)) &&
-   rep.text.includes(await p.evaluate(n=>sgd(n), C0.cost)),
+   rep.text.includes(await p.evaluate(n=>cbaN(n), C0.students)) &&
+   rep.text.includes(await p.evaluate(n=>cbaK(n), C0.revenue)) &&
+   rep.text.includes(await p.evaluate(n=>cbaK(n), C0.cost)),
    rep.text.split('\n').slice(2,10).join(' · '));
 ok('the board report carries no operational controls', !rep.hasControls);
 await go('present',{presentSub:'trends'});
 const tr = await txt();
-ok('Trends explains itself rather than drawing an empty chart for one year',
-   /Additional years will appear as recorded data becomes available/i.test(tr));
+ok('Trends shows a compact baseline card, not an empty canvas',
+   /Trend data will appear here/i.test(tr) && /begin year-over-year comparison/i.test(tr) &&
+   !(await p.evaluate(() => !!document.querySelector('#cbacontent svg'))));
+ok('the methodology sits behind Notes, not on the board slide',
+   await p.evaluate(() => { ST.cba.presentSub='report'; render();
+     const d=[...document.querySelectorAll('details')].find(x=>/methodology/i.test(x.innerText));
+     return !!d && !d.open && !/recognised fee income after scholarship/i.test(
+       document.getElementById('cbaReport').innerText.split('Notes')[0]); }));
+await go('present',{presentSub:'trends'});
 const tr2 = await p.evaluate(() => {
   ST.intakes.push({id:99123,kind:'actual',ci:0,month:0,year:2027,students:9}); render();
   const drawn=!!document.querySelector('#cbaTrend svg, svg');

@@ -86,7 +86,7 @@ ok('an excluded course keeps its real Yearly Budget enrolment and stays visible'
    r.students===15 && r.act && !r.live && r.excluded===1,
    `students ${r.students} · activity ${r.act} · in analysis ${r.live}`);
 ok('excluding a course with enrolment is warned about on screen, never silent',
-   /excluded from this analysis/i.test(off) && /FLOWTEST/i.test(off));
+   /excluded from the analysis/i.test(off) && /FLOWTEST/i.test(off));
 
 // 9. clearing the exclusion brings the students straight back
 await p.evaluate(([ci]) => { delete ST.cba.off[COURSES[ci].name]; saveToStorage(); render(); }, [ci]);

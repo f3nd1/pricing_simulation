@@ -32,7 +32,7 @@ await p.evaluate(([DIPAI,ADIPAI]) => {
 await p.reload(); await p.waitForTimeout(500);
 
 const panel = () => p.evaluate(() => {
-  const card=[...document.querySelectorAll('.card')].find(c=>/management attention/i.test(c.innerText));
+  const card=[...document.querySelectorAll('.cb-panel')].find(c=>/what needs a decision/i.test(c.innerText));
   if(!card) return null;
   const sect = nm => { const t=card.innerText.split('\n'); const i=t.findIndex(x=>new RegExp('^'+nm+'$','i').test(x.trim()));
     if(i<0) return []; const out=[];
@@ -48,8 +48,9 @@ await showAll();
 let P = await panel();
 
 // ── §1/§2 structure ────────────────────────────────────────────────────────
-ok('§2 the panel is titled Management attention and splits risk from opportunity',
-   !!P && /needs attention/i.test(P.text) && /opportunities/i.test(P.text));
+ok('§2 the panel splits needs-attention from opportunities in compact rows',
+   !!P && /needs attention/i.test(P.text) && /opportunities/i.test(P.text) &&
+   P.keys.length>0);
 ok('§1 no course name appears in the source — every insight is generated',
    await p.evaluate(([DIPAI,ADIPAI]) => {
      const src = cbaInsights.toString() + cbaAttentionPanel.toString();
@@ -59,18 +60,19 @@ ok('§1 no course name appears in the source — every insight is generated',
 // ── §9 the two AI courses appear under Opportunities from live data ────────
 const oppTxt = P.opp.join(' ');
 ok('§9 ADIPAI appears under Opportunities with its contribution and headroom',
-   oppTxt.includes(ADIPAI) && /contributing \$/.test(oppTxt),
+   oppTxt.includes(ADIPAI) && /\+\$\d/.test(oppTxt),
    P.opp.find(x=>x.includes(ADIPAI)));
 ok('§9 DIPAI appears under Opportunities too',
    oppTxt.includes(DIPAI), P.opp.find(x=>x.includes(DIPAI)&&/growth|contributing/i.test(x)));
 ok('§9 DIPAI additionally raises the missing Budget target as a planning opportunity',
-   /15 Actual enrolments but no 2026 Budget target/i.test(oppTxt),
+   /No budget target set/i.test(oppTxt) && /15 actual/i.test(oppTxt),
    P.opp.find(x=>/no 2026 Budget target/i.test(x)));
-ok('§4 a viable course below full-cost recovery is explained, never called a closure',
-   /not yet recovering its allocated share of central costs/i.test(oppTxt) &&
-   !/close|shut|terminate/i.test(oppTxt));
+const covTip = await p.evaluate(() => document.body.innerHTML);
+ok('§4 a viable course below full-cost recovery is explained on hover, never called a closure',
+   /full-cost coverage 0\.\d\d/i.test(covTip.replace(/&[a-z]+;/g,' ')) &&
+   !/close|shut down|terminate/i.test(oppTxt));
 ok('§3 real risks are still surfaced separately',
-   P.risk.length>0 && /below budget|below the operating requirement|central overhead/i.test(P.risk.join(' ')),
+   P.risk.length>0 && /behind budget|below minimum enrolment|central overhead/i.test(P.risk.join(' ')),
    P.risk[0]);
 
 // ── §5/§6 dismiss, restore ─────────────────────────────────────────────────
@@ -103,7 +105,7 @@ ok('§6 a dismissed insight can be restored', restored.had && restored.none===0)
 const expiry = await p.evaluate(([ci]) => {
   /* a course 40% under budget, dismissed; then improve it to on-budget */
   const seen = () => { ST.cba.showAllInsights=true; render();
-    const card=[...document.querySelectorAll('.card')].find(c=>/management attention/i.test(c.innerText));
+    const card=[...document.querySelectorAll('.cb-panel')].find(c=>/what needs a decision/i.test(c.innerText));
     return card.innerText; };
   const nm = COURSES[0].name;
   const has = () => { seen(); const d=cbaCompute(ST,'actual');
@@ -127,8 +129,8 @@ ok('§7 dismissal is scoped to the severity band it was dismissed at',
 
 // ── §10 live reactivity ────────────────────────────────────────────────────
 const live = await p.evaluate(([DIPAI]) => {
-  const body = () => { render(); const c=[...document.querySelectorAll('.card')]
-    .find(x=>/management attention/i.test(x.innerText)); return c?c.innerText:''; };
+  const body = () => { render(); const c=[...document.querySelectorAll('.cb-panel')]
+    .find(x=>/what needs a decision/i.test(x.innerText)); return c?c.innerText:''; };
   ST.cba.showAllInsights=true;
   const out={};
   const a0 = body();
@@ -136,7 +138,7 @@ const live = await p.evaluate(([DIPAI]) => {
   ST.intakes.find(i=>i.ci===ci&&i.kind==='actual').students = 60;
   out.actualChange = body()!==a0;
   ST.intakes.push({id:77777,kind:'budget',ci,month:0,year:2026,students:50});
-  out.budgetChange = /no 2026 Budget target/i.test(a0) && !/no 2026 Budget target/i.test(body());
+  out.budgetChange = /no budget target set/i.test(a0) && !/no budget target set/i.test(body());
   const a1 = body(); ST.cba.basis='budget';
   out.basisChange = body()!==a1;
   ST.cba.basis='actual'; const a2=body(); ST.ybYear=2027;
@@ -164,7 +166,7 @@ ok('§10 a newly added course generates its own insight, with no code change', l
 // ── §8 ranking and the cap ─────────────────────────────────────────────────
 const cap = await p.evaluate(() => {
   ST.cba.showAllInsights=false; render();
-  const card=[...document.querySelectorAll('.card')].find(c=>/management attention/i.test(c.innerText));
+  const card=[...document.querySelectorAll('.cb-panel')].find(c=>/what needs a decision/i.test(c.innerText));
   const shown=card.querySelectorAll('[data-cbadismiss]').length;
   const d=cbaCompute(ST,'actual'), I=cbaInsights(ST,d);
   const total=I.risk.length+I.opp.length;

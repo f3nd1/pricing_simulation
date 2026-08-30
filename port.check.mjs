@@ -19,13 +19,13 @@ await p.evaluate(()=>{
     ST.intakes.push({id:id++,kind:'actual',ci,month:0,year:y,students:14});
     ST.intakes.push({id:id++,kind:'budget',ci,month:0,year:y+1,students:26});});
   ST.cba.rates[COURSES[3].name]={comm:98,rate:400};      // negative contribution
-  ST.cba.basis='budget'; ST.module='cba'; cbaGo(ST,'portfolio'); render(); cbaDrawPortfolio(ST);
+  ST.cba.basis='budget'; ST.module='cba'; cbaGo(ST,'portfolio'); render();
 });
 await p.waitForTimeout(300);
 
 const port=await p.evaluate(()=>{
   const d=cbaCompute(ST);
-  const bars=[...document.querySelectorAll('#cbaPortChart rect.c')];
+  const bars=[...document.querySelectorAll('#cbaContribChart g.b rect')];
   const fills=bars.map(b2=>b2.getAttribute('fill'));
   return {live:d.live.length, pos:d.live.filter(r=>r.contribution>=0).length,
     neg:d.live.filter(r=>r.contribution<0).length, bars:bars.length,
@@ -36,9 +36,10 @@ const port=await p.evaluate(()=>{
 ok('portfolio bar chart draws one bar per running course', port.bars===port.live, `${port.bars} bars / ${port.live} courses`);
 ok('positive contribution green, negative red', port.green===port.pos&&port.red===port.neg,
    `${port.green} green, ${port.red} red`);
-ok('uncovered overhead reported', /overhead still uncovered|overhead fully covered/i.test(port.txt),
+ok('shared-cost coverage is reported as one line',
+   /covers -?\d+% of shared costs/i.test(port.txt),
    `contribution ${Math.round(port.contribution)} vs pool ${Math.round(port.pool)}`);
-ok('overhead categories come from the expense groups', /what the central overhead is spent on/i.test(port.txt));
+ok('shared-cost categories come from the expense groups', /Shared UCC costs/i.test(port.txt));
 
 // ranking actually reorders, and default is contribution
 const rank=await p.evaluate(()=>{
