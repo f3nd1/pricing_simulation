@@ -169,6 +169,76 @@ ok('CN gap language is plain',
 ok('CN Portfolio uses the requirement wording',
    /运营要求/.test(words.zhPort) && /距运营要求差额/.test(words.zhPort));
 
+// ── the two worked examples, end to end through the UI ───────────────────
+const worked = await p.evaluate(()=>{
+  const pick=[['Diploma in Business Management',20],['IELTS Preparatory Course',24]];
+  const intakes=[]; let id=1;
+  pick.forEach(([nm,stu])=>{
+    const ci=COURSES.findIndex(c=>c.name===nm);
+    for(let m=0;m<12;m++) intakes.push({id:id++,kind:'budget',ci,month:m,year:2026,students:stu/12});
+  });
+  ST.intakes=intakes; ST.ybYear=2026; ST.cba.basis='budget';
+  const d=cbaCompute(ST,'budget',2026);
+  const out=pick.map(([nm,stu])=>{
+    const ci=COURSES.findIndex(c=>c.name===nm), c=COURSES[ci];
+    const R=cbaRolling(ST,c), r=d.rows.find(x=>x.ci===ci);
+    return {nm, mo:c.mo, beExact:R.beExact, beDisplay:R.beDisplay, pace:R.pace,
+      months:r.months, req:r.reqPeriod, shownReq:cbaReqShown(r),
+      students:r.students, gap:cbaGapShown(r), words:cbaGapWords(cbaGapShown(r)),
+      oneLine:cbaReqOneLine(ST,r)};
+  });
+  ST.module='cba'; ST.cba.mode='analyse'; ST.cba.sub='portfolio'; render();
+  return {out, header:cbaReqHeader(d),
+    table:document.getElementById('cbacontent').innerText};});
+const [dbm,ielts]=worked.out;
+ok('DBM: exact break-even over its 8-month delivery gives the required pace',
+   dbm.mo===8 && Math.abs(dbm.beExact-7.09)<0.02 && Math.abs(dbm.pace-0.886)<0.01,
+   `exact ${dbm.beExact.toFixed(3)} (headline ${dbm.beDisplay}) / ${dbm.mo} mo = ${dbm.pace.toFixed(3)}/mo`);
+ok('DBM: the 2026 requirement is 11, rounded up from 10.63',
+   dbm.months===12 && Math.abs(dbm.req-10.63)<0.02 && dbm.shownReq===11,
+   `${dbm.req.toFixed(2)} -> ${dbm.shownReq}`);
+ok('DBM: budget 20 against a requirement of 11 reads "9 above requirement"',
+   dbm.students===20 && dbm.gap===9 && /9 above requirement/.test(dbm.words), dbm.words);
+ok('IELTS: the same chain holds on its own live values',
+   ielts.mo===6 && Math.abs(ielts.pace-ielts.beExact/ielts.mo)<1e-9 &&
+   ielts.shownReq===Math.ceil(ielts.pace*ielts.months),
+   `exact ${ielts.beExact.toFixed(2)} / ${ielts.mo} mo = ${ielts.pace.toFixed(2)}/mo x ${ielts.months} = ${ielts.req.toFixed(2)} -> ${ielts.shownReq}`);
+ok('IELTS: budget 24 reconciles with the displayed requirement',
+   ielts.students===24 && ielts.gap===24-ielts.shownReq &&
+   new RegExp(`${Math.abs(ielts.gap)} (above|below) requirement`).test(ielts.words), ielts.words);
+ok('the derivation line uses the EXACT break-even, not the rounded headline',
+   dbm.oneLine.includes(dbm.beExact.toFixed(2)) && !dbm.oneLine.includes(`${dbm.beDisplay} break-even`),
+   dbm.oneLine);
+ok('the derivation names the period rather than leaving it implicit',
+   /needed in 2026/.test(dbm.oneLine) && /needed in 2026/.test(ielts.oneLine));
+ok('the column header carries the year and is not hardcoded',
+   worked.header==='2026 operating req.' && /2026 operating req/i.test(worked.table),
+   worked.header);
+const hdr2028 = await p.evaluate(()=>{
+  ST.intakes=ST.intakes.map(k=>({...k,year:2028})); ST.ybYear=2028;
+  return cbaReqHeader(cbaCompute(ST,'budget',2028));});
+ok('the year in the header follows the selected year', hdr2028==='2028 operating req.', hdr2028);
+const zhHdr = await p.evaluate(()=>{
+  setLang('zh');
+  const h=cbaReqHeader(cbaCompute(ST,'budget',2028));
+  ST.module='cba'; ST.cba.mode='analyse'; ST.cba.sub='portfolio'; render();
+  const t=document.getElementById('cbacontent').innerText;
+  const d=cbaCompute(ST,'budget',2028);
+  const r=d.live[0]||d.rows.find(x=>x.reqPeriod!=null);
+  const line=r?cbaReqOneLine(ST,r):'';
+  setLang('en');
+  return {h,t,line};});
+ok('CN header carries the year too', /2028 年运营所需招生/.test(zhHdr.h), zhHdr.h);
+ok('CN derivation line is Chinese and keeps the live figures',
+   /个月课程周期精确盈亏平衡为/.test(zhHdr.line) && /每月需/.test(zhHdr.line) && /人/.test(zhHdr.line),
+   zhHdr.line);
+ok('CN footer describes Advanced without the word minimum',
+   await p.evaluate(()=>{ setLang('zh'); ST.cba.view='simple';
+     ST.module='cba'; ST.cba.mode='analyse'; ST.cba.sub='portfolio'; render();
+     const t=document.getElementById('cbacontent').innerText; setLang('en');
+     return /所选期间的运营所需招生人数/.test(t) && !/最低/.test(t);}));
+await p.evaluate(()=>{ ST.intakes=ST.intakes.map(k=>({...k,year:2026})); ST.ybYear=2026; });
+
 // ── nothing financial moved ───────────────────────────────────────────────
 const fin = await p.evaluate(()=>{
   const d=cbaCompute(ST,'budget',2026);
