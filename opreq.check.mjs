@@ -99,13 +99,14 @@ const per = await p.evaluate(()=>{
   return { budMonths:rb.months, actMonths:ra.months,
     budReq:cbaReqShown(rb), actReq:cbaReqShown(ra),
     samePace:Math.abs(rb.paceReq-ra.paceReq)<1e-9,
-    budLabel:cbaReqLabel(rb), actLabel:cbaReqLabel(ra) };});
+    budLabel:cbaReqColLabel(bud), actLabel:cbaReqColLabel(act) };});
 ok('Budget uses the months its own data spans; Actual uses the elapsed months',
    per.budMonths===12 && per.actMonths===8, `budget ${per.budMonths} · actual ${per.actMonths}`);
 ok('both bases share one required pace — only the period differs',
    per.samePace && per.actReq<per.budReq, `${per.actReq} vs ${per.budReq}`);
-ok('the period is named in the label, never left implicit',
-   /2026/.test(per.budLabel) && /8/.test(per.actLabel) && /YTD|年初至今/.test(per.actLabel),
+ok('the label carries the selected year on both bases',
+   per.budLabel==='\u201926 Operating requirement / yr' &&
+   per.actLabel==='\u201926 Operating requirement / yr',
    `${per.budLabel} | ${per.actLabel}`);
 
 // ── Course Simulator assumptions reach Cost-Benefit, and what blocks them ──
@@ -156,18 +157,20 @@ ok('EN says which enrolment is compared with which period',
 ok('EN gap language is plain, with no bare minus signs',
    /(above|below) requirement|meets requirement/i.test(words.en) &&
    !/above minimum|below minimum/i.test(words.en+words.enPort));
-ok('EN Portfolio uses the requirement wording, not "minimum"',
-   /operating req/i.test(words.enPort) && /gap to requirement/i.test(words.enPort) &&
-   !/minimum needed/i.test(words.enPort));
+ok('EN Portfolio headers carry the short year and the / yr wording',
+   /\u201926 Operating requirement \/ yr/.test(words.enPort) &&
+   /Gap to \u201926 requirement/.test(words.enPort) &&
+   !/minimum needed/i.test(words.enPort) && !/2026 Operating requirement/.test(words.enPort));
 ok('CN Course view carries the same three concepts',
    /单个课程周期盈亏平衡/.test(words.zh) && /所需招生节奏/.test(words.zh) &&
    /运营所需招生人数/.test(words.zh) && /并不矛盾/.test(words.zh));
 ok('CN states the basis and period',
    /(预算|实际)招生人数与.*运营所需招生人数进行比较/.test(words.zh));
 ok('CN gap language is plain',
-   /(高于所需人数|低于所需人数|达到运营要求)/.test(words.zh));
-ok('CN Portfolio uses the requirement wording',
-   /运营要求/.test(words.zhPort) && /距运营要求差额/.test(words.zhPort));
+   /(高于要求|低于要求|达到要求)/.test(words.zh));
+ok('CN Portfolio headers carry the short year',
+   /\u201926 年运营所需招生人数 \/ 年/.test(words.zhPort) &&
+   /距 \u201926 年运营要求差额/.test(words.zhPort));
 
 // ── the two worked examples, end to end through the UI ───────────────────
 const worked = await p.evaluate(()=>{
@@ -188,16 +191,17 @@ const worked = await p.evaluate(()=>{
       oneLine:cbaReqOneLine(ST,r)};
   });
   ST.module='cba'; ST.cba.mode='analyse'; ST.cba.sub='portfolio'; render();
-  const tip=cbaReqHeaderTip(ST,d);
-  const plain=tip.replace(/<[^>]+>/g,' ');
   const ex=d.live.find(x=>x.reqPeriod!=null)||d.rows.find(x=>x.reqPeriod!=null);
   const heads=[...document.querySelectorAll('th')];
-  const gapTh=heads.find(h=>/Gap to requirement/i.test(h.textContent));
-  return {out, header:cbaReqHeader(d), tip:plain,
-    tipMatchesTable: plain.includes(String(cbaReqShown(ex))) &&
-                     plain.includes(cbaRolling(ST,ex.c).pace.toFixed(2)),
-    tipCheck: `example ${courseLabel(ex.c)} -> ${cbaReqShown(ex)}/yr`,
+  const gapTh=heads.find(h=>/Gap to/i.test(h.textContent));
+  const reqTh=heads.find(h=>/Operating requirement/i.test(h.textContent));
+  const tipOf=el=>{const i=el&&el.querySelector('.cb-i');
+    const v=i&&(i.getAttribute('data-tip')||i.getAttribute('title'))||'';
+    const box=document.createElement('div'); box.innerHTML=v; return box.textContent;};
+  return {out, header:cbaReqColLabel(d),
     gapHasIcon: !!(gapTh && gapTh.querySelector('.cb-i')),
+    reqHasIcon: !!(reqTh && reqTh.querySelector('.cb-i')),
+    gapHeader: cbaGapColLabel(d), reqTip: tipOf(reqTh), gapTip: tipOf(gapTh),
     table:document.getElementById('cbacontent').innerText};});
 const [dbm,ielts]=worked.out;
 ok('DBM: exact break-even over its 8-month delivery gives the required pace',
@@ -220,38 +224,38 @@ ok('the derivation line uses the EXACT break-even, not the rounded headline',
    dbm.oneLine);
 ok('the derivation names the period rather than leaving it implicit',
    /needed in 2026/.test(dbm.oneLine) && /needed in 2026/.test(ielts.oneLine));
-ok('the column header states the period without repeating the year',
-   worked.header==='Operating req. / yr' && /operating req\. \/ yr/i.test(worked.table),
-   worked.header);
-ok('the header tooltip is short, example-led and free of finance jargon',
-   worked.tip && /needs in one year to cover its own course costs/.test(worked.tip) &&
-   /Course break-even/.test(worked.tip) && /\/month/.test(worked.tip) && /\/year/.test(worked.tip) &&
-   /not the minimum class size/.test(worked.tip) &&
-   !/Finance term/.test(worked.tip) && !/allocat|rolling intake|recognised/i.test(worked.tip),
-   worked.tip.replace(/<[^>]+>/g,' ').slice(0,160));
-ok('the tooltip example uses live values that match the column',
-   worked.tipMatchesTable, worked.tipCheck);
-ok('the Gap column has no info icon',!worked.gapHasIcon);
+ok('the column header carries the short year and says per year',
+   worked.header==='\u201926 Operating requirement / yr' &&
+   worked.table.includes('\u201926 Operating requirement / yr'), worked.header);
+ok('the gap header carries the same short year',
+   worked.gapHeader==='Gap to \u201926 requirement' &&
+   worked.table.includes('Gap to \u201926 requirement'), worked.gapHeader);
+ok('both headers carry their own info icon',
+   worked.reqHasIcon && worked.gapHasIcon);
+ok('the requirement tooltip explains the annualised rolling method',
+   /annualised for the selected year/.test(worked.reqTip) &&
+   /rolling monthly enrolment pace/.test(worked.reqTip) &&
+   /not a minimum class size/.test(worked.reqTip));
+ok('the gap tooltip explains the subtraction with an example',
+   /Difference between the enrolment figure used in this view/.test(worked.gapTip) &&
+   /17 students against a requirement of 10 means 7 above/.test(worked.gapTip));
+
 const hdr2028 = await p.evaluate(()=>{
   ST.intakes=ST.intakes.map(k=>({...k,year:2028})); ST.ybYear=2028;
-  return cbaReqHeader(cbaCompute(ST,'budget',2028));});
-ok('a full 12-month period reads "/ yr" in any year', hdr2028==='Operating req. / yr', hdr2028);
+  return cbaReqColLabel(cbaCompute(ST,'budget',2028));});
+ok('the short year follows the selected year', hdr2028==='\u201928 Operating requirement / yr', hdr2028);
 const zhHdr = await p.evaluate(()=>{
   setLang('zh');
   const dz=cbaCompute(ST,'budget',2028);
-  const h=cbaReqHeader(dz), tipz=cbaReqHeaderTip(ST,dz).replace(/<[^>]+>/g,' ');
+  const h=cbaReqColLabel(dz);
   ST.module='cba'; ST.cba.mode='analyse'; ST.cba.sub='portfolio'; render();
   const t=document.getElementById('cbacontent').innerText;
   const d=cbaCompute(ST,'budget',2028);
   const r=d.live[0]||d.rows.find(x=>x.reqPeriod!=null);
   const line=r?cbaReqOneLine(ST,r):'';
   setLang('en');
-  return {h,t,line,tip:tipz};});
-ok('CN header reads 年度运营所需招生', zhHdr.h==='年度运营所需招生', zhHdr.h);
-ok('CN header tooltip is the short example-led version',
-   /该课程一年内为覆盖自身课程成本所需的招生人数/.test(zhHdr.tip) &&
-   /课程盈亏平衡/.test(zhHdr.tip) && /每月/.test(zhHdr.tip) && /每年/.test(zhHdr.tip) &&
-   /这不是最低开班人数/.test(zhHdr.tip) && !/财务术语/.test(zhHdr.tip));
+  return {h,t,line};});
+ok('CN header carries the same short year', zhHdr.h==='\u201928 年运营所需招生人数 / 年', zhHdr.h);
 ok('CN derivation line is Chinese and keeps the live figures',
    /个月课程周期精确盈亏平衡为/.test(zhHdr.line) && /每月需/.test(zhHdr.line) && /人/.test(zhHdr.line),
    zhHdr.line);
