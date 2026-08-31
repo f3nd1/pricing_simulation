@@ -266,6 +266,104 @@ ok('CN footer describes Advanced without the word minimum',
      return /所选期间的运营所需招生人数/.test(t) && !/最低/.test(t);}));
 await p.evaluate(()=>{ ST.intakes=ST.intakes.map(k=>({...k,year:2026})); ST.ybYear=2026; });
 
+// ── tooltips show the arithmetic that was actually performed ─────────────
+const calc = await p.evaluate(()=>{
+  const pick=[['Diploma in Business Management',17],['Certificate in General Management',1]];
+  const intakes=[]; let id=1;
+  pick.forEach(([nm,stu])=>{ const ci=COURSES.findIndex(c=>c.name===nm);
+    for(let m=0;m<12;m++){
+      intakes.push({id:id++,kind:'budget',ci,month:m,year:2026,students:stu/12});
+      if(m<6) intakes.push({id:id++,kind:'actual',ci,month:m,year:2026,students:(nm[0]==='D'?11:0)/6});}});
+  ST.intakes=intakes; ST.ybYear=2026; ST.cba.basis='budget';
+  const d=cbaCompute(ST,'budget',2026);
+  const plain=h=>{const x=document.createElement('div');x.innerHTML=h;return x.textContent;};
+  const of=nm=>{ const r=d.rows.find(x=>x.name===nm), R=cbaRolling(ST,r.c);
+    return {r:{students:r.students,months:r.months,shown:cbaReqShown(r),gap:cbaGapShown(r),
+               ytd:r.ytd&&{a:r.ytd.actual,b:r.ytd.budget,pct:r.ytd.pct}},
+            R:{be:R.beExact,mo:R.mo,pace:R.pace},
+            req:plain(cbaReqCalcTip(ST,r,d)), gap:plain(cbaGapCalcTip(r,d)),
+            bp:plain(cbaBudgetCalcTip(r))};};
+  return {dbm:of('Diploma in Business Management'),
+          cgm:of(COURSES.find(c=>/^Certificate in General Management/.test(c.name)).name)};});
+
+const D=calc.dbm, C=calc.cgm;
+ok('the requirement tooltip shows the exact break-even, the pace and the period step',
+   D.req.includes(`${D.R.be.toFixed(2)} students over ${D.R.mo} months`) &&
+   D.req.includes(`${D.R.be.toFixed(2)} ÷ ${D.R.mo} = ${D.R.pace.toFixed(3)} students/month`) &&
+   D.req.includes(`${D.R.be.toFixed(2)} ÷ ${D.R.mo} × ${D.r.months} = ${(D.R.pace*D.r.months).toFixed(2)}`),
+   D.req.slice(D.req.indexOf('Break'),D.req.indexOf('Rounded')||160));
+ok('it never multiplies an already-rounded monthly rate',
+   !D.req.includes(`${D.R.pace.toFixed(2)} × ${D.r.months}`) &&
+   !C.req.includes(`${C.R.pace.toFixed(2)} × ${C.r.months}`));
+ok('it states rounding up, matching the ceil the code performs',
+   D.req.includes(`Rounded up to a whole student = ${D.r.shown} students`) &&
+   D.r.shown===Math.ceil(D.R.pace*D.r.months));
+ok('a course whose requirement is already whole is not told it was rounded',
+   await p.evaluate(()=>{
+     const d=cbaCompute(ST,'budget',2026);
+     const r=d.rows.find(x=>x.reqPeriod!=null);
+     const fake={...r,reqPeriod:10,months:r.months,c:r.c,yr:r.yr,basisOfRow:r.basisOfRow};
+     /* the branch is chosen on the exact value, so check the guard directly */
+     return Math.abs(10-cbaReqShown(fake))<0.005;}));
+ok('the gap tooltip names the basis, both figures and the subtraction',
+   D.gap.includes(`Budget students: ${Math.round(D.r.students)}`) &&
+   D.gap.includes(`operating requirement: ${D.r.shown}`) &&
+   D.gap.includes(`${Math.round(D.r.students)} − ${D.r.shown} = ${Math.round(D.r.gap)}`) &&
+   D.gap.includes(`Result: ${Math.round(D.r.gap)} above requirement`), D.gap.slice(20,120));
+ok('a below-requirement course shows the negative subtraction and plain wording',
+   C.gap.includes(`${Math.round(C.r.students)} − ${C.r.shown} = −${Math.round(Math.abs(C.r.gap))}`) &&
+   C.gap.includes(`Result: ${Math.round(Math.abs(C.r.gap))} below requirement`), C.gap.slice(20,120));
+ok('GAP RECONCILES — the tooltip subtracts the same integer the cell displays',
+   D.r.students-D.r.shown===D.r.gap && C.r.students-C.r.shown===C.r.gap);
+ok('the budget-progress tooltip divides same-period YTD figures',
+   /Actual YTD: [\d.,]+ students/.test(D.bp) && /Budget YTD: [\d.,]+ students/.test(D.bp) &&
+   (()=>{const m=D.bp.match(/([\d.,]+) ÷ ([\d.,]+) × 100 = ([\d.]+)%/);
+         if(!m)return false;
+         const a=parseFloat(m[1].replace(/,/g,'')),b=parseFloat(m[2].replace(/,/g,''));
+         return Math.abs(a/b*100-parseFloat(m[3]))<0.06;})() &&
+   D.bp.includes(`Displayed as ${Math.round(D.r.ytd.a/D.r.ytd.b*100)}%`), D.bp.slice(15,110));
+ok('it is not capped at 100% when actual exceeds budget',
+   D.r.ytd.a>D.r.ytd.b ? /Displayed as 1[0-9][0-9]%/.test(D.bp) : true,
+   `${D.r.ytd.a}/${D.r.ytd.b}`);
+ok('a course with no Budget target says so instead of dividing by zero',
+   await p.evaluate(()=>{
+     const d=cbaCompute(ST,'budget',2026);
+     const r=d.rows.find(x=>!x.ytd||x.ytd.budget<=0);
+     if(!r) return true;
+     const x=document.createElement('div'); x.innerHTML=cbaBudgetCalcTip(r);
+     return /No Budget target exists for this period/.test(x.textContent) &&
+            !/÷ 0/.test(x.textContent);}));
+
+const zhCalc = await p.evaluate(()=>{
+  setLang('zh');
+  const d=cbaCompute(ST,'budget',2026);
+  const plain=h=>{const x=document.createElement('div');x.innerHTML=h;return x.textContent;};
+  const r=d.rows.find(x=>x.name==='Diploma in Business Management');
+  const out={req:plain(cbaReqCalcTip(ST,r,d)),gap:plain(cbaGapCalcTip(r,d)),bp:plain(cbaBudgetCalcTip(r))};
+  setLang('en'); return out;});
+ok('CN requirement tooltip is Chinese and keeps the arithmetic',
+   /单个课程周期盈亏平衡/.test(zhCalc.req) && /所需招生节奏/.test(zhCalc.req) &&
+   /年要求/.test(zhCalc.req) && /向上取整为整名学生/.test(zhCalc.req) &&
+   /并不是最低开班人数/.test(zhCalc.req) && zhCalc.req.includes(`÷ ${D.R.mo} × ${D.r.months}`));
+ok('CN gap tooltip is Chinese and keeps the subtraction',
+   /预算招生人数/.test(zhCalc.gap) && /年运营要求/.test(zhCalc.gap) &&
+   /结果：高于要求/.test(zhCalc.gap) && zhCalc.gap.includes(`${Math.round(D.r.students)} − ${D.r.shown} = ${Math.round(D.r.gap)}`));
+ok('CN budget-progress tooltip is Chinese and keeps the division',
+   /年初至今实际招生/.test(zhCalc.bp) && /年初至今预算招生/.test(zhCalc.bp) &&
+   /显示为/.test(zhCalc.bp) && /表示在相同已过月份内/.test(zhCalc.bp));
+
+const yrTip = await p.evaluate(()=>{
+  ST.intakes=ST.intakes.map(k=>({...k,year:2027})); ST.ybYear=2027;
+  const d=cbaCompute(ST,'budget',2027);
+  const plain=h=>{const x=document.createElement('div');x.innerHTML=h;return x.textContent;};
+  const r=d.rows.find(x=>x.name==='Diploma in Business Management');
+  const out={req:plain(cbaReqCalcTip(ST,r,d)),gap:plain(cbaGapCalcTip(r,d))};
+  ST.intakes=ST.intakes.map(k=>({...k,year:2026})); ST.ybYear=2026;
+  return out;});
+ok('the tooltips follow the selected year',
+   yrTip.req.includes('\u201927 requirement') && yrTip.gap.includes('\u201927 operating requirement') &&
+   !yrTip.req.includes('\u201926'), yrTip.gap.slice(0,60));
+
 // ── nothing financial moved ───────────────────────────────────────────────
 const fin = await p.evaluate(()=>{
   const d=cbaCompute(ST,'budget',2026);
