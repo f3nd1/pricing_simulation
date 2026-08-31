@@ -125,6 +125,14 @@ await p.evaluate(()=>{ ST.module='cba'; ST.cba.mode='manage'; ST.cba.view='advan
   const e=document.querySelector('[data-cbagobe]'); if(e)e.click();
   const s=document.querySelector('[data-cbasolve]'); if(s)s.click(); });
 await p.waitForTimeout(80);
+await record('Cost-Benefit · UCC Break-even (solved)');
+/* and again on the actual basis, where the strip wording differs */
+await p.evaluate(()=>{ ST.cba.mode='breakeven'; ST.cba.basis='actual'; ST.cba.bePlan=null; render();
+  const s=document.querySelector('[data-cbasolve]'); if(s)s.click(); });
+await p.waitForTimeout(80);
+await record('Cost-Benefit · UCC Break-even (actual)');
+await p.evaluate(()=>{ ST.cba.basis='budget'; render(); });
+await p.waitForTimeout(80);
 await record('Cost-Benefit · break-even planner');
 
 /* the exact untranslated source strings, straight from the i18n fallback path */

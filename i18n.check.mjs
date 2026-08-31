@@ -108,7 +108,7 @@ ok('Advanced mode shows the technical labels in Chinese too',
    /全成本盈亏平衡/.test(advKey));
 /* every new planning term must exist in Chinese */
 const plan = await p.evaluate(() => {
-  ST.cba.mode='simulate'; ST.cba.scenSub='portfolio'; ST.cba.portScen='solve'; render();
+  ST.cba.mode='breakeven'; render();
   const before=document.body.innerText;
   document.querySelector('[data-cbasolve]').click();
   const after=document.body.innerText;
@@ -117,14 +117,19 @@ const plan = await p.evaluate(() => {
   ST.cba.sub='compare'; render(); const cmp=document.body.innerText;
   ST.cba.mode='manage'; ST.cba.view='simple'; render();
   return { before, after, course, cmp, manage:document.body.innerText }; });
-ok('the UCC break-even planner is fully Chinese',
-   /UCC 盈亏平衡计划/.test(plan.before) && /计算 UCC 盈亏平衡点/.test(plan.before) &&
-   /盈亏平衡课程组合/.test(plan.before) && /当前实际招生组合/.test(plan.before) &&
-   /仅正贡献课程/.test(plan.before) && /自定义课程组合/.test(plan.before) &&
-   /还需增加的贡献金额/.test(plan.before));
-ok('the solved plan and its course targets are Chinese',
-   /所需学生总人数/.test(plan.after) && /还需增加的学生人数/.test(plan.after) &&
-   /各课程目标/.test(plan.after) && /新增招生占比/.test(plan.after) &&
+ok('the UCC Break-even view is fully Chinese',
+   /UCC 整体盈亏平衡/.test(plan.before) && /当前状况/.test(plan.before) &&
+   /UCC 达到盈亏平衡所需条件/.test(plan.before) && /盈亏平衡课程组合/.test(plan.before) &&
+   /当前实际招生组合|当前预算招生组合/.test(plan.before) &&
+   /仅正贡献课程/.test(plan.before) && /自定义组合/.test(plan.before) &&
+   /尚需增加的贡献额/.test(plan.before) && /计算范围/.test(plan.before) &&
+   /课程经济性：课程模拟器/.test(plan.before));
+ok('the solved plan, its pace strip and course targets are Chinese',
+   /所需学生总人数/.test(plan.after) && /尚需新增学生/.test(plan.after) &&
+   /盈亏平衡组合中的课程数/.test(plan.after) && /各课程目标/.test(plan.after) &&
+   /所需招生节奏/.test(plan.after) && /当前招生节奏/.test(plan.after) &&
+   /尚需增加的招生节奏/.test(plan.after) && /每月目标/.test(plan.after) &&
+   /下一名学生的贡献额/.test(plan.after) && /组合占比/.test(plan.after) &&
    /按这些假设与此课程组合/.test(plan.after));
 ok('Course and Compare planning rows are Chinese',
    /招生经济性/.test(plan.course) && /运营所需招生人数/.test(plan.course) &&

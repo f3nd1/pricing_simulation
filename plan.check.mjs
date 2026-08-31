@@ -172,8 +172,80 @@ ok('CN the Course view enrolment-economics strip is translated',
 ok('CN the Compare view carries the same planning terms',
    /全成本盈亏平衡/.test(ZH.cmp) && /运营所需招生人数|所需招生节奏/.test(ZH.cmp));
 ok('CN the planner keeps its Chinese terminology',
-   /UCC 盈亏平衡计划/.test(ZH.planner) && /盈亏平衡课程组合/.test(ZH.planner) &&
+   /UCC 整体盈亏平衡/.test(ZH.planner) && /盈亏平衡课程组合/.test(ZH.planner) &&
    /所需学生总人数/.test(ZH.solved) && /各课程目标/.test(ZH.solved));
+
+/* ── the UCC Break-even management view ─────────────────────────────────── */
+const V = await p.evaluate(()=>{
+  ST.module='cba'; ST.cba.mode='breakeven'; ST.cba.basis='budget';
+  ST.cba.mixKind=null; ST.cba.bePlan=null; render();
+  const before=JSON.stringify({intakes:ST.intakes,prices:ST.prices,fx:ST.fx,off:ST.cba.off});
+  const d0=cbaCompute(ST);
+  const head=document.getElementById('cbacontent').innerText;
+  const defaultMix=document.querySelector('[data-cbamix].on').dataset.cbamix;
+  document.querySelector('[data-cbasolve]').click();
+  const solved=document.getElementById('cbacontent').innerText;
+  const plan=ST.cba.bePlan;
+  /* the population every other screen reports */
+  ST.cba.mode='manage'; render();
+  const manage=cbaCompute(ST).T.students;
+  ST.cba.mode='analyse'; ST.cba.sub='portfolio'; render();
+  const analyse=cbaCompute(ST).T.students;
+  ST.cba.mode='breakeven'; render();
+  const after=JSON.stringify({intakes:ST.intakes,prices:ST.prices,fx:ST.fx,off:ST.cba.off});
+  const mo=cbaBeMonths(d0);
+  return {head, solved, plan, defaultMix, manage, analyse, mo,
+    live:d0.T.students, unchanged:before===after,
+    targetSum:plan.targets.reduce((a,t)=>a+t.target,0),
+    currentSum:plan.targets.reduce((a,t)=>a+t.current,0),
+    hasApply:!!document.querySelector('[data-cbabeapply]'),
+    courseLinks:document.querySelectorAll('[data-cbagocourse]').length};});
+ok('the view lives under Cost-Benefit as its own mode, not a new module',
+   /UCC Break-even/i.test(V.head) && await p.evaluate(()=>CBA_MODES.some(m=>m[0]==='breakeven')));
+ok('it answers the nine management questions on one screen',
+   /current position/i.test(V.head) && /students/i.test(V.head) && /revenue/i.test(V.head) &&
+   /course contribution/i.test(V.head) && /ucc full cost/i.test(V.head) &&
+   /deficit|surplus/i.test(V.head) && /full-cost coverage|bcr/i.test(V.head) &&
+   /what ucc needs to break even/i.test(V.head));
+ok('the solved result reports total, current, additional and the mix size',
+   /total students required/i.test(V.solved) && /current students/i.test(V.solved) &&
+   /additional students needed/i.test(V.solved) && /courses in break-even mix/i.test(V.solved));
+ok('the two monthly concepts are shown separately, never blended',
+   /required enrolment pace/i.test(V.solved) && /current enrolment pace/i.test(V.solved) &&
+   /additional pace needed/i.test(V.solved));
+ok('the pace figures follow from the target and the period',
+   V.mo>0 &&
+   V.solved.includes((V.plan.total/V.mo).toFixed(1)) &&
+   V.solved.includes((Math.max(0,V.plan.total-V.plan.current)/V.mo).toFixed(1)),
+   `${V.plan.total} over ${V.mo} months = ${(V.plan.total/V.mo).toFixed(1)}/month`);
+ok('POPULATION RECONCILIATION — Manage, Analyse and the solver all start from the same students',
+   V.manage===V.analyse && V.analyse===V.live && V.live===V.plan.current,
+   `manage ${V.manage} · analyse ${V.analyse} · view ${V.live} · solver start ${V.plan.current}`);
+ok('the view states its scope explicitly',
+   /scope: the \d+ courses included in this analysis/i.test(V.head));
+ok('course targets add back to the headline total exactly',
+   V.targetSum===V.plan.total && V.currentSum===V.plan.current,
+   `${V.targetSum} = ${V.plan.total}`);
+ok('the default mix follows the selected basis', V.defaultMix==='budget', V.defaultMix);
+ok('every course target links to its course analysis',
+   V.courseLinks===V.plan.targets.length, `${V.courseLinks} links`);
+ok('the view names its three data sources without duplicating any input',
+   /course simulator/i.test(V.solved) && /yearly budget/i.test(V.solved) &&
+   /forecast/i.test(V.solved) &&
+   !/<input/i.test(V.solved.slice(0,0)+''));
+ok('SANDBOX — solving changed no live record and offers no Apply',
+   V.unchanged && !V.hasApply);
+const feas = await p.evaluate(()=>{
+  /* a mix that cannot reach break-even must say so rather than invent a target */
+  const w=cbaMixWeights(ST,cbaCompute(ST),'custom');
+  ST.cba.mixKind='custom'; ST.cba.mixCustom={}; ST.cba.bePlan=null; render();
+  const btn=document.querySelector('[data-cbasolve]'); btn.click();
+  const txt=document.getElementById('cbacontent').innerText;
+  const err=ST.cba.bePlan&&ST.cba.bePlan.err;
+  ST.cba.mixKind=null; ST.cba.mixCustom={}; ST.cba.bePlan=null; render();
+  return {err, txt, hadCustomErr:w.err};});
+ok('an unusable mix reports no feasible break-even instead of fabricating one',
+   !!feas.err && !/total students required/i.test(feas.txt), feas.err);
 
 if (errs.length) fails.push(...errs);
 console.log(errs.length ? '\nconsole errors: '+errs.join(' | ') : '\nno console errors');
