@@ -735,7 +735,7 @@ const ST={
   module:"simulator",navOpen:false,
   audit:[],logTab:"edits",logSearch:"",
   smaster:{q:"",cat:"All",onlyActive:false,groups:{enrol:true,sim:true,oh:true,act:true,sub:true,price:true}},
-  cba:{tab:"status",mode:"manage",view:"simple",showWhy:false,scope:"relevant",filter:"all",fAnalysis:"all",fActivity:"any",portScen:"manual",mixKind:"actual",mixCustom:{},bePlan:null,sortBy:"contribution",sortDir:"desc",compare:[],sub:"portfolio",scenSub:"course",presentSub:"report",
+  cba:{tab:"status",mode:"manage",view:"simple",showWhy:false,scope:"relevant",filter:"all",fAnalysis:"all",fActivity:"any",portScen:"manual",mixKind:null,mixCustom:{},bePlan:null,sortBy:"contribution",sortDir:"desc",compare:[],sub:"portfolio",scenSub:"course",presentSub:"report",
        q:"",scen:{rows:{}},showAllInsights:false,rankBy:"contribution",trendMetric:"bcr",trendBasis:"budget",driver:"hours",off:{},rates:{},def:{},acadPct:0,chartCi:0,chartMode:"full",
        basis:"budget",otherRev:[],showRates:false},
   intakes:[],ybView:"monthly",ybYear:new Date().getFullYear(),ybCat:"All",
@@ -2662,7 +2662,10 @@ Object.assign(I18N.zh, {"Full cost": "全成本", "Full cost = direct course cos
 Object.assign(I18N.zh, {"Finance term: Full cost": "财务术语：全成本", "Where full cost comes from": "全成本的数据来源", "Direct course costs": "课程直接成本", "Central UCC overhead": "UCC 中央间接费用", "University commission": "大学佣金", "Total UCC cost": "UCC 总成本"});
 Object.assign(I18N.zh, {"Operating requirement": "运营所需招生人数", "Operating requirement (rolling intake)": "运营所需招生人数（滚动招生）", "Finance term: Operating requirement": "财务术语：运营所需招生人数", "Estimated enrolments required over the selected period for this course to cover its own running economics. It is derived from the Course Simulator's break-even requirement and converted into a rolling monthly enrolment pace. It does not include UCC central overhead and is not a minimum class size.": "该课程在所选期间内为覆盖自身运营成本所需的预计招生人数。此数值根据课程模拟器的盈亏平衡要求换算为滚动的每月招生节奏。它不包括 UCC 中央间接费用，也不是最低开班人数。"});
 Object.assign(I18N.zh, {"Estimated enrolments needed during the selected period for this course to cover its own running costs. It starts from the exact Course Simulator break-even, converts it to a monthly enrolment pace, then multiplies it by the number of months in this period. Rounded up to a whole student. It excludes UCC central overhead and is not a minimum class size.": "该课程在所选期间内为覆盖自身运营成本所需的预计招生人数。系统从课程模拟器的精确盈亏平衡人数开始，换算为每月所需招生节奏，再乘以所选期间的月份数，并向上取整为完整学生人数。此数值不包括 UCC 中央间接费用，也不是最低开班人数。", "Rounded up to a whole student.": "向上取整为完整学生人数。"});
+Object.assign(I18N.zh, {"UCC Break-even": "UCC 整体盈亏平衡"});
 I18N.pat=[
+  [/^Full-cost coverage ([\d.]+)×$/, "全成本覆盖率 $1×"],
+  [/^Coverage ([\d.]+)×$/, "覆盖率 $1×"],
   [/^(\$[\d,.]+[km]?)\/mo$/, "$1/月"],
   [/^(\$[\d,.]+[km]?)\/hr$/, "$1/小时"],
   [/^(\$[\d,.]+[km]?)\/mo × (\d+) mo$/, "$1/月 × $2 个月"],
@@ -3127,9 +3130,9 @@ function fcPnl(st){
 
 /* Build stamp. APP_VERSION is what the Change Log shows so you can tell at a
    glance whether a machine is running the latest file. Regenerate with mkver.py. */
-const APP_VERSION="v1.81.0";
-const APP_BUILD="2026-08-30";
-const APP_CHANGELOG=[{"h": "847fea4", "d": "2026-08-30", "t": "23:16", "s": "Name the period and show the exact derivation for the operating requirement (v1.80.0)"}, {"h": "d97baaa", "d": "2026-08-30", "t": "10:54", "s": "Explain the operating requirement, and fix its display arithmetic (v1.79.0)"}, {"h": "0f2d05e", "d": "2026-08-30", "t": "10:07", "s": "Make the Cost-Benefit full-cost source auditable on screen (v1.78.0)"}, {"h": "827a17b", "d": "2026-08-30", "t": "09:49", "s": "Complete the CN translation across the whole Planning Suite (v1.77.0)"}, {"h": "8680498", "d": "2026-08-30", "t": "09:19", "s": "Add management break-even planning to Cost-Benefit (v1.76.0)"}, {"h": "14e28e6", "d": "2026-08-30", "t": "09:03", "s": "Add an application-wide EN / 简体中文 translation layer"}, {"h": "ca9f669", "d": "2026-08-30", "t": "08:38", "s": "Fix the dead Compare tab, matrix identification, terminology and print"}, {"h": "f25545b", "d": "2026-08-30", "t": "08:27", "s": "Cost-Benefit: one visible course population, and no dismissable insights"}, {"h": "0ac9314", "d": "2026-08-30", "t": "07:58", "s": "Cost-Benefit polish: white workspace, readable charts, no page scroll"}, {"h": "b684cda", "d": "2026-08-30", "t": "07:32", "s": "Cost-Benefit second pass: scan instead of read"}, {"h": "b1dde77", "d": "2026-08-30", "t": "06:59", "s": "Cost-Benefit: four management modes replacing eight finance tabs"}, {"h": "c4b2020", "d": "2026-08-30", "t": "06:41", "s": "Replace What to look at with a Management attention panel"}, {"h": "82189f1", "d": "2026-08-29", "t": "11:08", "s": "Cost-Benefit wording: stop calling only the analysed courses running"}, {"h": "487bb44", "d": "2026-08-29", "t": "10:58", "s": "Upgrade-path fixes: distinguish the two Actual columns, make legacy exclusions reviewable"}, {"h": "b365285", "d": "2026-08-29", "t": "10:33", "s": "Separate factual course activity from Cost-Benefit inclusion; wire Yearly Budget enrolment into Simulator Inputs"}, {"h": "94bddc8", "d": "2026-08-29", "t": "10:14", "s": "Fix Yearly Budget → Cost-Benefit data flow: never swallow an intake edit silently"}, {"h": "b2b43f5", "d": "2026-08-29", "t": "10:05", "s": "Cost-Benefit: separate configured courses from courses with activity"}, {"h": "4b5c1a0", "d": "2026-08-29", "t": "09:45", "s": "Replace discrete-run operating model with rolling intake"}, {"h": "f7edaed", "d": "2026-08-29", "t": "09:11", "s": "Cost-Benefit: portfolio ranking, overhead burden, year-over-year trends"}, {"h": "6c37f64", "d": "2026-08-29", "t": "09:04", "s": "Cost-Benefit: net-revenue accounting, recorded runs, rebuilt diagnostics"}, {"h": "569da30", "d": "2026-08-29", "t": "08:44", "s": "Cost-Benefit diagnostics: fee, commission and cost-driver analysis"}, {"h": "ab9a994", "d": "2026-08-29", "t": "08:34", "s": "Cost-Benefit: canonical Operating BE, run-aware status, YTD attainment"}, {"h": "ae0da18", "d": "2026-08-29", "t": "07:59", "s": "Add Simulator Inputs master sheet; confirm Price List is canonical"}, {"h": "ddcf1f0", "d": "2026-08-29", "t": "07:44", "s": "Course Simulator: give every course its own remembered assumptions"}, {"h": "46ce818", "d": "2026-08-29", "t": "07:22", "s": "Cost-Benefit: separate Operating and Full-Cost break-even, audit metrics, add explanatory diagrams"}, {"h": "b92e23b", "d": "2026-08-29", "t": "06:58", "s": "Yearly Budget: copy a year's intake plan to another year"}, {"h": "dae4d5f", "d": "2026-08-29", "t": "06:53", "s": "Collapse the per-course rate columns on the Active courses tab"}, {"h": "10c1379", "d": "2026-08-29", "t": "06:47", "s": "Cost-Benefit: pass rates, budget vs actual, and other income"}, {"h": "94b1772", "d": "2026-08-29", "t": "06:43", "s": "Fix false positive in the mkver duplicate guard"}, {"h": "07ae6ba", "d": "2026-08-29", "t": "06:42", "s": "Add Cost-Benefit charts tab (D3), ROI, and the do-not-average principle"}, {"h": "593b609", "d": "2026-08-29", "t": "06:21", "s": "Fix fatal duplicate const APP_VERSION that blanked the app"}, {"h": "c180693", "d": "2026-08-29", "t": "06:00", "s": "Explain why the two per-course views give different numbers"}, {"h": "322e4f0", "d": "2026-08-29", "t": "05:57", "s": "Add version stamp and rebuild the changelog from real git history"}, {"h": "dbfd3f0", "d": "2026-08-29", "t": "05:43", "s": "Cost-Benefit: per-course action verdicts and institution sustainability call"}, {"h": "cf96ca6", "d": "2026-08-29", "t": "05:35", "s": "Cost-Benefit: split the blended permanent-salary line out of the overhead pool"}, {"h": "5ddbb02", "d": "2026-08-29", "t": "05:32", "s": "Cost-Benefit rates inherit from Course Simulator instead of own defaults"}, {"h": "3d14a7e", "d": "2026-08-29", "t": "05:21", "s": "Add Cost-Benefit module (school + per-course) and a passcode gate"}, {"h": "360af5b", "d": "2026-08-12", "t": "10:21", "s": "Rename ULEC to Contractor in UI; set AEIS course fee to 11,500"}, {"h": "b568fb8", "d": "2026-07-07", "t": "14:45", "s": "Show comma-separated numbers in editable money fields (24,000 not 24000)"}, {"h": "2180e03", "d": "2026-07-07", "t": "14:37", "s": "Make budget period dynamic: 5-year window, choose start year, save named periods"}, {"h": "c02c902", "d": "2026-07-07", "t": "14:29", "s": "Extend forecast to 2026-2040 (15 years) + add Change Log module"}, {"h": "056a4ef", "d": "2026-07-07", "t": "14:10", "s": "Add yearly expense growth model + budget period selector"}, {"h": "93407a4", "d": "2026-07-07", "t": "13:54", "s": "Add monthly expense breakdown (base-year drill-down) + bake in Supabase config"}, {"h": "b9c34e3", "d": "2026-07-07", "t": "13:20", "s": "Add fixed Supabase config option that locks the Cloud Save fields"}, {"h": "bdd773b", "d": "2026-07-07", "t": "09:27", "s": "Link all modules to live data: revenue from Price List × Yearly Budget, Excel expense sub-items, dynamic course catalog"}, {"h": "e324f9e", "d": "2026-07-07", "t": "09:07", "s": "Add Strategy & Governance module (Phase D): growth initiatives NPV/payback, compliance tracker, funding register; fix mobile overflow"}, {"h": "9d069c9", "d": "2026-07-07", "t": "09:00", "s": "Add Valuation & Statements module (Phase C of Excel master-budget port)"}, {"h": "e209b5e", "d": "2026-07-07", "t": "08:56", "s": "Add Operating Detail module (Phase B of Excel master-budget port)"}, {"h": "f76ed77", "d": "2026-07-07", "t": "08:47", "s": "Add Forecast & P&L module (Phase A of Excel master-budget port)"}, {"h": "352f494", "d": "2026-07-07", "t": "07:47", "s": "Re-add drag-to-move to Yearly Budget nodes with a grip handle"}, {"h": "674ded3", "d": "2026-07-07", "t": "07:25", "s": "Yearly Budget planner: back to vertical month rows, add per-month duplicate + price"}, {"h": "0278c90", "d": "2026-07-07", "t": "07:16", "s": "Yearly Budget planner: horizontal month columns with drag, duplicate, copy"}, {"h": "1a8a09a", "d": "2026-07-07", "t": "07:08", "s": "Redesign Yearly Budget intake area as a month-by-month planner grid"}, {"h": "ff7957c", "d": "2026-07-07", "t": "06:56", "s": "Add duplicate + month-shift controls to Yearly Budget intakes"}, {"h": "c97000b", "d": "2026-07-07", "t": "06:52", "s": "Add \"Save over\" (overwrite) to cloud-saved scenarios"}, {"h": "5c6ff65", "d": "2026-07-07", "t": "02:49", "s": "Add cloud save/load via Supabase"}, {"h": "66c8c12", "d": "2026-07-07", "t": "02:16", "s": "Fix Yearly Budget responsiveness across tablet and small-phone widths"}, {"h": "486dc2b", "d": "2026-07-07", "t": "02:10", "s": "Replace top nav bar with hamburger drawer menu"}, {"h": "2e80831", "d": "2026-07-07", "t": "02:00", "s": "Redesign Yearly Budget module — teal hero banner + attainment strip"}, {"h": "efda20c", "d": "2026-07-07", "t": "01:37", "s": "Add readable TypeScript/React version of the Yearly Budget module"}, {"h": "9c742f7", "d": "2026-07-07", "t": "01:32", "s": "Split into two top-level modules: Course Simulator + Yearly Budget"}, {"h": "35123f6", "d": "2026-07-07", "t": "01:14", "s": "Add Portfolio tab: multi-course Monthly/Quarterly/Yearly/Total menu"}, {"h": "3501c6d", "d": "2026-07-07", "t": "00:51", "s": "Add portfolio performance React prototype"}, {"h": "b716e62", "d": "2026-07-06", "t": "23:55", "s": "Add legends to all D3 chart views"}, {"h": "f2fd130", "d": "2026-07-06", "t": "23:47", "s": "Add D3.js charts to all remaining tabs (6 new chart views)"}, {"h": "b915c0d", "d": "2026-07-06", "t": "23:25", "s": "Add D3.js chart view for What-if profit-by-students, alongside existing table"}, {"h": "13776d3", "d": "2026-06-30", "t": "03:37", "s": "Clarify breakeven is total enrolment for one run, not per month"}, {"h": "2efacb5", "d": "2026-06-30", "t": "02:04", "s": "Widen left panel and redesign ULEC subcontract tab"}, {"h": "64fcb77", "d": "2026-06-30", "t": "01:50", "s": "Rename student inputs to 'Planned/Actual students (total)' with per-month sub-label"}, {"h": "2b2b1a7", "d": "2026-06-30", "t": "01:48", "s": "Clarify Planned/Actual students labels: show total cohort + per-month sub-label"}, {"h": "ebf05c9", "d": "2026-06-30", "t": "01:46", "s": "Split what-if table: separate Students (total) and Per month columns"}, {"h": "8418481", "d": "2026-06-30", "t": "01:42", "s": "Add what-if enrolment table and per-month student figures to Overview"}, {"h": "ae816dd", "d": "2026-06-30", "t": "01:32", "s": "Redesign layout, add AI chatbot, price list with hours/months, and finance advisor skill"}, {"h": "274a2b1", "d": "2026-06-30", "t": "01:10", "s": "Add localStorage persistence + JSON export/import"}, {"h": "b8c60d6", "d": "2026-06-29", "t": "23:29", "s": "Add QuickLook fallback message and DOMContentLoaded guard"}, {"h": "05a4e6d", "d": "2026-06-29", "t": "23:27", "s": "Fix blank page: add proper HTML5 document structure"}, {"h": "b1afa6b", "d": "2026-06-29", "t": "23:26", "s": "Make layout fully responsive for mobile and tablet"}, {"h": "d72fc86", "d": "2026-06-29", "t": "23:08", "s": "Fix visual design: card depth, blue header, active tab, sr-only"}, {"h": "e451348", "d": "2026-06-29", "t": "23:04", "s": "Add CSS variable definitions and form element styling"}, {"h": "8730024", "d": "2026-06-29", "t": "21:19", "s": "Add Fee Calculator tab to UCC budget simulator"}];
+const APP_VERSION="v1.82.0";
+const APP_BUILD="2026-08-31";
+const APP_CHANGELOG=[{"h": "4f5e9fd", "d": "2026-08-30", "t": "23:22", "s": "Simplify the operating-requirement column heading and tooltip (v1.81.0)"}, {"h": "847fea4", "d": "2026-08-30", "t": "23:16", "s": "Name the period and show the exact derivation for the operating requirement (v1.80.0)"}, {"h": "d97baaa", "d": "2026-08-30", "t": "10:54", "s": "Explain the operating requirement, and fix its display arithmetic (v1.79.0)"}, {"h": "0f2d05e", "d": "2026-08-30", "t": "10:07", "s": "Make the Cost-Benefit full-cost source auditable on screen (v1.78.0)"}, {"h": "827a17b", "d": "2026-08-30", "t": "09:49", "s": "Complete the CN translation across the whole Planning Suite (v1.77.0)"}, {"h": "8680498", "d": "2026-08-30", "t": "09:19", "s": "Add management break-even planning to Cost-Benefit (v1.76.0)"}, {"h": "14e28e6", "d": "2026-08-30", "t": "09:03", "s": "Add an application-wide EN / 简体中文 translation layer"}, {"h": "ca9f669", "d": "2026-08-30", "t": "08:38", "s": "Fix the dead Compare tab, matrix identification, terminology and print"}, {"h": "f25545b", "d": "2026-08-30", "t": "08:27", "s": "Cost-Benefit: one visible course population, and no dismissable insights"}, {"h": "0ac9314", "d": "2026-08-30", "t": "07:58", "s": "Cost-Benefit polish: white workspace, readable charts, no page scroll"}, {"h": "b684cda", "d": "2026-08-30", "t": "07:32", "s": "Cost-Benefit second pass: scan instead of read"}, {"h": "b1dde77", "d": "2026-08-30", "t": "06:59", "s": "Cost-Benefit: four management modes replacing eight finance tabs"}, {"h": "c4b2020", "d": "2026-08-30", "t": "06:41", "s": "Replace What to look at with a Management attention panel"}, {"h": "82189f1", "d": "2026-08-29", "t": "11:08", "s": "Cost-Benefit wording: stop calling only the analysed courses running"}, {"h": "487bb44", "d": "2026-08-29", "t": "10:58", "s": "Upgrade-path fixes: distinguish the two Actual columns, make legacy exclusions reviewable"}, {"h": "b365285", "d": "2026-08-29", "t": "10:33", "s": "Separate factual course activity from Cost-Benefit inclusion; wire Yearly Budget enrolment into Simulator Inputs"}, {"h": "94bddc8", "d": "2026-08-29", "t": "10:14", "s": "Fix Yearly Budget → Cost-Benefit data flow: never swallow an intake edit silently"}, {"h": "b2b43f5", "d": "2026-08-29", "t": "10:05", "s": "Cost-Benefit: separate configured courses from courses with activity"}, {"h": "4b5c1a0", "d": "2026-08-29", "t": "09:45", "s": "Replace discrete-run operating model with rolling intake"}, {"h": "f7edaed", "d": "2026-08-29", "t": "09:11", "s": "Cost-Benefit: portfolio ranking, overhead burden, year-over-year trends"}, {"h": "6c37f64", "d": "2026-08-29", "t": "09:04", "s": "Cost-Benefit: net-revenue accounting, recorded runs, rebuilt diagnostics"}, {"h": "569da30", "d": "2026-08-29", "t": "08:44", "s": "Cost-Benefit diagnostics: fee, commission and cost-driver analysis"}, {"h": "ab9a994", "d": "2026-08-29", "t": "08:34", "s": "Cost-Benefit: canonical Operating BE, run-aware status, YTD attainment"}, {"h": "ae0da18", "d": "2026-08-29", "t": "07:59", "s": "Add Simulator Inputs master sheet; confirm Price List is canonical"}, {"h": "ddcf1f0", "d": "2026-08-29", "t": "07:44", "s": "Course Simulator: give every course its own remembered assumptions"}, {"h": "46ce818", "d": "2026-08-29", "t": "07:22", "s": "Cost-Benefit: separate Operating and Full-Cost break-even, audit metrics, add explanatory diagrams"}, {"h": "b92e23b", "d": "2026-08-29", "t": "06:58", "s": "Yearly Budget: copy a year's intake plan to another year"}, {"h": "dae4d5f", "d": "2026-08-29", "t": "06:53", "s": "Collapse the per-course rate columns on the Active courses tab"}, {"h": "10c1379", "d": "2026-08-29", "t": "06:47", "s": "Cost-Benefit: pass rates, budget vs actual, and other income"}, {"h": "94b1772", "d": "2026-08-29", "t": "06:43", "s": "Fix false positive in the mkver duplicate guard"}, {"h": "07ae6ba", "d": "2026-08-29", "t": "06:42", "s": "Add Cost-Benefit charts tab (D3), ROI, and the do-not-average principle"}, {"h": "593b609", "d": "2026-08-29", "t": "06:21", "s": "Fix fatal duplicate const APP_VERSION that blanked the app"}, {"h": "c180693", "d": "2026-08-29", "t": "06:00", "s": "Explain why the two per-course views give different numbers"}, {"h": "322e4f0", "d": "2026-08-29", "t": "05:57", "s": "Add version stamp and rebuild the changelog from real git history"}, {"h": "dbfd3f0", "d": "2026-08-29", "t": "05:43", "s": "Cost-Benefit: per-course action verdicts and institution sustainability call"}, {"h": "cf96ca6", "d": "2026-08-29", "t": "05:35", "s": "Cost-Benefit: split the blended permanent-salary line out of the overhead pool"}, {"h": "5ddbb02", "d": "2026-08-29", "t": "05:32", "s": "Cost-Benefit rates inherit from Course Simulator instead of own defaults"}, {"h": "3d14a7e", "d": "2026-08-29", "t": "05:21", "s": "Add Cost-Benefit module (school + per-course) and a passcode gate"}, {"h": "360af5b", "d": "2026-08-12", "t": "10:21", "s": "Rename ULEC to Contractor in UI; set AEIS course fee to 11,500"}, {"h": "b568fb8", "d": "2026-07-07", "t": "14:45", "s": "Show comma-separated numbers in editable money fields (24,000 not 24000)"}, {"h": "2180e03", "d": "2026-07-07", "t": "14:37", "s": "Make budget period dynamic: 5-year window, choose start year, save named periods"}, {"h": "c02c902", "d": "2026-07-07", "t": "14:29", "s": "Extend forecast to 2026-2040 (15 years) + add Change Log module"}, {"h": "056a4ef", "d": "2026-07-07", "t": "14:10", "s": "Add yearly expense growth model + budget period selector"}, {"h": "93407a4", "d": "2026-07-07", "t": "13:54", "s": "Add monthly expense breakdown (base-year drill-down) + bake in Supabase config"}, {"h": "b9c34e3", "d": "2026-07-07", "t": "13:20", "s": "Add fixed Supabase config option that locks the Cloud Save fields"}, {"h": "bdd773b", "d": "2026-07-07", "t": "09:27", "s": "Link all modules to live data: revenue from Price List × Yearly Budget, Excel expense sub-items, dynamic course catalog"}, {"h": "e324f9e", "d": "2026-07-07", "t": "09:07", "s": "Add Strategy & Governance module (Phase D): growth initiatives NPV/payback, compliance tracker, funding register; fix mobile overflow"}, {"h": "9d069c9", "d": "2026-07-07", "t": "09:00", "s": "Add Valuation & Statements module (Phase C of Excel master-budget port)"}, {"h": "e209b5e", "d": "2026-07-07", "t": "08:56", "s": "Add Operating Detail module (Phase B of Excel master-budget port)"}, {"h": "f76ed77", "d": "2026-07-07", "t": "08:47", "s": "Add Forecast & P&L module (Phase A of Excel master-budget port)"}, {"h": "352f494", "d": "2026-07-07", "t": "07:47", "s": "Re-add drag-to-move to Yearly Budget nodes with a grip handle"}, {"h": "674ded3", "d": "2026-07-07", "t": "07:25", "s": "Yearly Budget planner: back to vertical month rows, add per-month duplicate + price"}, {"h": "0278c90", "d": "2026-07-07", "t": "07:16", "s": "Yearly Budget planner: horizontal month columns with drag, duplicate, copy"}, {"h": "1a8a09a", "d": "2026-07-07", "t": "07:08", "s": "Redesign Yearly Budget intake area as a month-by-month planner grid"}, {"h": "ff7957c", "d": "2026-07-07", "t": "06:56", "s": "Add duplicate + month-shift controls to Yearly Budget intakes"}, {"h": "c97000b", "d": "2026-07-07", "t": "06:52", "s": "Add \"Save over\" (overwrite) to cloud-saved scenarios"}, {"h": "5c6ff65", "d": "2026-07-07", "t": "02:49", "s": "Add cloud save/load via Supabase"}, {"h": "66c8c12", "d": "2026-07-07", "t": "02:16", "s": "Fix Yearly Budget responsiveness across tablet and small-phone widths"}, {"h": "486dc2b", "d": "2026-07-07", "t": "02:10", "s": "Replace top nav bar with hamburger drawer menu"}, {"h": "2e80831", "d": "2026-07-07", "t": "02:00", "s": "Redesign Yearly Budget module — teal hero banner + attainment strip"}, {"h": "efda20c", "d": "2026-07-07", "t": "01:37", "s": "Add readable TypeScript/React version of the Yearly Budget module"}, {"h": "9c742f7", "d": "2026-07-07", "t": "01:32", "s": "Split into two top-level modules: Course Simulator + Yearly Budget"}, {"h": "35123f6", "d": "2026-07-07", "t": "01:14", "s": "Add Portfolio tab: multi-course Monthly/Quarterly/Yearly/Total menu"}, {"h": "3501c6d", "d": "2026-07-07", "t": "00:51", "s": "Add portfolio performance React prototype"}, {"h": "b716e62", "d": "2026-07-06", "t": "23:55", "s": "Add legends to all D3 chart views"}, {"h": "f2fd130", "d": "2026-07-06", "t": "23:47", "s": "Add D3.js charts to all remaining tabs (6 new chart views)"}, {"h": "b915c0d", "d": "2026-07-06", "t": "23:25", "s": "Add D3.js chart view for What-if profit-by-students, alongside existing table"}, {"h": "13776d3", "d": "2026-06-30", "t": "03:37", "s": "Clarify breakeven is total enrolment for one run, not per month"}, {"h": "2efacb5", "d": "2026-06-30", "t": "02:04", "s": "Widen left panel and redesign ULEC subcontract tab"}, {"h": "64fcb77", "d": "2026-06-30", "t": "01:50", "s": "Rename student inputs to 'Planned/Actual students (total)' with per-month sub-label"}, {"h": "2b2b1a7", "d": "2026-06-30", "t": "01:48", "s": "Clarify Planned/Actual students labels: show total cohort + per-month sub-label"}, {"h": "ebf05c9", "d": "2026-06-30", "t": "01:46", "s": "Split what-if table: separate Students (total) and Per month columns"}, {"h": "8418481", "d": "2026-06-30", "t": "01:42", "s": "Add what-if enrolment table and per-month student figures to Overview"}, {"h": "ae816dd", "d": "2026-06-30", "t": "01:32", "s": "Redesign layout, add AI chatbot, price list with hours/months, and finance advisor skill"}, {"h": "274a2b1", "d": "2026-06-30", "t": "01:10", "s": "Add localStorage persistence + JSON export/import"}, {"h": "b8c60d6", "d": "2026-06-29", "t": "23:29", "s": "Add QuickLook fallback message and DOMContentLoaded guard"}, {"h": "05a4e6d", "d": "2026-06-29", "t": "23:27", "s": "Fix blank page: add proper HTML5 document structure"}, {"h": "b1afa6b", "d": "2026-06-29", "t": "23:26", "s": "Make layout fully responsive for mobile and tablet"}, {"h": "d72fc86", "d": "2026-06-29", "t": "23:08", "s": "Fix visual design: card depth, blue header, active tab, sr-only"}, {"h": "e451348", "d": "2026-06-29", "t": "23:04", "s": "Add CSS variable definitions and form element styling"}, {"h": "8730024", "d": "2026-06-29", "t": "21:19", "s": "Add Fee Calculator tab to UCC budget simulator"}];
 function fmtLogDate(iso){
   const d=new Date(iso);
   if(isNaN(d))return iso||"";
@@ -4570,7 +4573,7 @@ function cbaX(v){return v==null?"—":v.toFixed(2)+"×";}
 function tipAttr(title,body){
   return ` data-tip="${esc(`<div class="t">${title}</div>${body}`)}" tabindex="0"`;
 }
-const CBA_MODES=[["manage","Manage"],["analyse","Analyse"],["simulate","Simulate"],["present","Present"]];
+const CBA_MODES=[["manage","Manage"],["analyse","Analyse"],["breakeven","UCC Break-even"],["simulate","Simulate"],["present","Present"]];
 function cbaMode(st){
   const m=st.cba.mode||"manage";
   return (m==="settings"||CBA_MODES.some(x=>x[0]===m))?m:"manage";
@@ -4685,6 +4688,7 @@ function renderCbaModule(st){
   const mode=cbaMode(st);
   const body=
     mode==="analyse"?cbaRenderAnalyse(st,d):
+    mode==="breakeven"?cbaBreakevenPlan(st,d):
     mode==="simulate"?cbaRenderSimulate(st,d):
     mode==="present"?cbaRenderPresent(st,d):
     mode==="settings"?cbaRenderSettings(st,d):
@@ -5006,8 +5010,8 @@ function cbaMarginal_(st,ci,basis,yr){
 /* ── UCC BREAK-EVEN ─────────────────────────────────────────────────────────
    There is no single UCC student number: it depends where the students enrol.
    Every result therefore carries its mix. */
-const CBA_MIXES=[["actual","Current Actual mix"],["budget","Current Budget mix"],
-  ["positive","Positive-contribution courses only"],["custom","Custom mix"]];
+const CBA_MIXES=[["actual","Current Actual mix","当前实际招生组合"],["budget","Current Budget mix","当前预算招生组合"],
+  ["positive","Positive-contribution courses only","仅正贡献课程"],["custom","Custom mix","自定义组合"]];
 function cbaMixWeights(st,d,kind){
   const rows=d.relevant.filter(r=>r.included);
   const weightBy=key=>{
@@ -5785,6 +5789,26 @@ function cbaScenBridge(d,sd){
    A planning scenario, not a forecast: it says what enrolment WOULD be required
    under a stated course mix, and makes no claim about demand. Nothing here
    writes to the Yearly Budget, the Price List or the Course Simulator. */
+/* Two different monthly numbers, never blended: the pace the whole target
+   implies across the period, and the extra pace still to be found. */
+function cbaBePace(plan,mo){
+  if(!mo)return "";
+  const extra=Math.max(0,plan.total-plan.current);
+  const cell=(k,v,sub,col)=>`<div><div class="k">${k}</div>
+    <div class="v"${col?` style="color:${col}"`:""}>${v}</div>
+    ${sub?`<div class="cb-sub" style="margin-top:2px">${sub}</div>`:""}</div>`;
+  return `<div class="cb-strip" style="margin-top:10px">
+    ${cell(tf("Required enrolment pace","所需招生节奏"),tf("{n} / month","每月 {n} 名",{n:(plan.total/mo).toFixed(1)}),
+           tf("total target ÷ {m} months","目标总人数 ÷ {m} 个月",{m:mo}))}
+    ${cell(tf("Current enrolment pace","当前招生节奏"),tf("{n} / month","每月 {n} 名",{n:(plan.current/mo).toFixed(1)}))}
+    ${cell(tf("Additional pace needed","尚需增加的招生节奏"),tf("+{n} / month","每月 +{n} 名",{n:(extra/mo).toFixed(1)}),
+           tf("additional students ÷ {m} months","新增学生 ÷ {m} 个月",{m:mo}),extra>0?CBA_TONE.warn[0]:CBA_TONE.good[0])}
+  </div>`;
+}
+function cbaMixName(k){
+  const M=CBA_MIXES.find(m=>m[0]===k);
+  return M?tf(M[1],M[2]):"";
+}
 function cbaMixErr(k){
   return {noActual:"Actual mix unavailable — no course has Actual enrolment.",
           noBudget:"Budget mix unavailable — no course has Budget enrolment.",
@@ -5793,14 +5817,14 @@ function cbaMixErr(k){
           range:"Break-even not reached within the tested range."}[k]||"N/A";
 }
 function cbaBreakevenPlan(st,d){
-  const kind=st.cba.mixKind||"actual";
+  const kind=st.cba.mixKind||((d.basis||"budget")==="actual"?"actual":"budget");
   const plan=st.cba.bePlan&&st.cba.bePlan.mix===kind&&st.cba.bePlan.yr===d.yr&&
              st.cba.bePlan.basis===d.basis?st.cba.bePlan:null;
   const need=Math.max(0,d.pool-d.T.contribution);
   const cell=(k,v,sub,col)=>`<div><div class="k">${k}</div>
     <div class="v"${col?` style="color:${col}"`:""}>${v}</div>
     ${sub?`<div class="cb-sub" style="margin-top:2px">${sub}</div>`:""}</div>`;
-  const mixBtn=([k,l])=>`<button data-cbamix="${k}" class="${kind===k?"on":""}">${l}</button>`;
+  const mixBtn=([k,l,z])=>`<button data-cbamix="${k}" class="${kind===k?"on":""}">${tf(l,z)}</button>`;
   const rows=d.relevant.filter(r=>r.included);
   const custom=st.cba.mixCustom||{};
   const customTotal=Object.keys(custom).reduce((a,k)=>a+(Number(custom[k])||0),0);
@@ -5820,58 +5844,109 @@ function cbaBreakevenPlan(st,d){
   if(plan&&plan.err){
     result=`<div class="cb-sub" style="margin-top:12px;color:${CBA_TONE.warn[0]}">${cbaMixErr(plan.err)}${plan.max?` Tested up to ${cbaN(plan.max)} students.`:""}</div>`;
   }else if(plan){
-    const T=plan.T,extra=plan.total-plan.current;
+    const T=plan.T,extra=plan.total-plan.current,mo=cbaBeMonths(d);
     result=`
     <div class="cb-strip" style="margin-top:14px">
-      ${cell("Total students required",cbaN(plan.total),tf(`under the ${CBA_MIXES.find(m=>m[0]===kind)[1].toLowerCase()}`,`按${CBA_MIXES.find(m=>m[0]===kind)[1]}`,{}))}
-      ${cell("Current students",cbaN(plan.current))}
-      ${cell("Additional students needed",`+${cbaN(Math.max(0,extra))}`,null,extra>0?CBA_TONE.warn[0]:CBA_TONE.good[0])}
-      ${cell("Scenario full-cost result",sgd(T.net),`${cbaLbl(st,"bcr")} ${cbaX(T.bcr)}`,T.net>=0?CBA_TONE.good[0]:CBA_TONE.bad[0])}
+      ${cell(tf("Total students required","所需学生总人数"),cbaN(plan.total),cbaMixName(kind))}
+      ${cell(tf("Current students","当前学生人数"),cbaN(plan.current))}
+      ${cell(tf("Additional students needed","尚需新增学生"),`+${cbaN(Math.max(0,extra))}`,null,extra>0?CBA_TONE.warn[0]:CBA_TONE.good[0])}
+      ${cell(tf("Courses in break-even mix","盈亏平衡组合中的课程数"),cbaN(plan.targets.length),tf("not a fixed minimum","并非固定的最低课程数"))}
+      ${cell(tf("Scenario full-cost result","情景全成本结果"),sgd(T.net),`${cbaLbl(st,"bcr")} ${cbaX(T.bcr)}`,T.net>=0?CBA_TONE.good[0]:CBA_TONE.bad[0])}
     </div>
+    ${cbaBePace(plan,mo)}
     <div class="cb-sub" style="margin-top:8px">${tf(
       `Under these assumptions and this course mix, UCC reaches full-cost break-even at ${cbaN(plan.total)} students. Scenario revenue ${sgd(T.benefit)} against total cost ${sgd(T.cost)}. Assumes current fees, commissions, teaching-cost rules, scholarships and central overhead unless changed in Scenario.`,
       `按这些假设与此课程组合，UCC 在 {n} 名学生时达到全成本盈亏平衡。情景收入 {rev}，总成本 {cost}。假设学费、佣金、教学成本规则、奖学金与中央间接费用维持现状，除非在情景中另行更改。`,
       {n:cbaN(plan.total),rev:sgd(T.benefit),cost:sgd(T.cost)})}</div>
-    <div class="cb-h" style="margin:16px 0 8px;font-size:13px">Course targets</div>
-    <div style="overflow-x:auto"><table class="tbl" style="width:100%;min-width:560px">
-      <thead><tr><th style="text-align:left;padding:6px 9px">Course</th>
-        <th style="text-align:right;padding:6px 9px">Current</th>
-        <th style="text-align:right;padding:6px 9px">Break-even target</th>
-        <th style="text-align:right;padding:6px 9px">Additional</th>
-        <th style="text-align:right;padding:6px 9px">Share of new enrolment</th></tr></thead>
+    <div class="cb-h" style="margin:16px 0 8px;font-size:13px">${tf("Course targets","各课程目标")}</div>
+    <div style="overflow-x:auto"><table class="tbl" style="width:100%;min-width:640px">
+      <thead><tr><th style="text-align:left;padding:6px 9px">${tf("Course","课程")}</th>
+        <th style="text-align:right;padding:6px 9px">${tf("Current","当前")}</th>
+        <th style="text-align:right;padding:6px 9px">${tf("Target","目标")}</th>
+        <th style="text-align:right;padding:6px 9px">${tf("Additional","新增")}</th>
+        ${mo?`<th style="text-align:right;padding:6px 9px">${tf("Target / month","每月目标")}</th>`:""}
+        <th style="text-align:right;padding:6px 9px">${tf("Contribution / next student","下一名学生的贡献额")}</th>
+        <th style="text-align:right;padding:6px 9px">${tf("Share of mix","组合占比")}</th></tr></thead>
       <tbody>${plan.targets.map(t=>`<tr>
-        <td style="padding:6px 9px"><span class="cb-name" title="${esc(t.name)}">${esc(t.name)}</span></td>
+        <td style="padding:6px 9px"><button data-cbagocourse="${t.ci}" style="border:none;background:none;padding:0;cursor:pointer;text-align:left;color:var(--text-accent);font:inherit"><span class="cb-name" title="${esc(t.name)}">${esc(t.name)}</span></button>
+          ${t.marginal!=null&&t.marginal<=0?`<div class="cb-sub" style="font-size:10px;color:${CBA_TONE.warn[0]}">${tf("Adding more students to this course under current assumptions does not move UCC toward break-even.","在当前假设下，为该课程增加学生并不能推动 UCC 走向盈亏平衡。")}</div>`:""}</td>
         <td style="padding:6px 9px;text-align:right;color:#64748b">${cbaN(t.current)}</td>
         <td style="padding:6px 9px;text-align:right;font-weight:700">${cbaN(t.target)}</td>
         <td style="padding:6px 9px;text-align:right;color:${t.add>0?CBA_TONE.warn[0]:"#64748b"}">${t.add>0?"+":""}${cbaN(t.add)}</td>
-        <td style="padding:6px 9px;text-align:right">${extra>0?cbaPct(Math.max(0,t.add)/Math.max(1,extra)):"—"}</td>
-      </tr>`).join("")}</tbody></table></div>
+        ${mo?`<td style="padding:6px 9px;text-align:right">${(t.target/mo).toFixed(1)}</td>`:""}
+        <td style="padding:6px 9px;text-align:right;color:${t.marginal==null?"#94a3b8":t.marginal>0?CBA_TONE.good[0]:CBA_TONE.bad[0]}">${t.marginal==null?"N/A":sgd(t.marginal)}</td>
+        <td style="padding:6px 9px;text-align:right">${plan.total>0?cbaPct(t.target/plan.total):"—"}</td>
+      </tr>`).join("")}</tbody>
+      <tfoot><tr style="border-top:1.5px solid var(--border-strong);font-weight:700">
+        <td style="padding:6px 9px">${tf("Total","合计")}</td>
+        <td style="padding:6px 9px;text-align:right">${cbaN(plan.targets.reduce((a,t)=>a+t.current,0))}</td>
+        <td style="padding:6px 9px;text-align:right">${cbaN(plan.targets.reduce((a,t)=>a+t.target,0))}</td>
+        <td style="padding:6px 9px;text-align:right">${cbaN(plan.targets.reduce((a,t)=>a+Math.max(0,t.add),0))}</td>
+        ${mo?`<td style="padding:6px 9px;text-align:right">${(plan.total/mo).toFixed(1)}</td>`:""}
+        <td></td><td style="padding:6px 9px;text-align:right">100%</td></tr></tfoot></table></div>
     ${cbaAdv(st)?`<div class="cb-sub" style="margin-top:8px">${tf(
       "Solver: {n} candidate totals evaluated against the live scenario engine, search bound {max} students.",
       "求解器：已用实时情景引擎评估 {n} 个候选总量，搜索上限 {max} 名学生。",
       {n:cbaN(plan.tested),max:cbaN(plan.max)})}${plan.prevNet!=null?" "+tf(
       "The next lower total gives {v}.","总人数再少一名时结果为 {v}。",{v:sgd(plan.prevNet)}):""}</div>`:""}`;
   }
-  return `<div class="cb-panel cb-sec" style="border-left:4px solid ${CBA_TONE.info[0]}">
+  const months=cbaBeMonths(d);
+  const paceNow=months?d.T.students/months:null;
+  return `<div class="cb-sec">
     <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
-      <div class="cb-h" style="margin:0">UCC break-even plan</div>
-      <span class="cb-sub">Break-even scenario · scenario only, live data unchanged</span>
+      <div class="cb-h" style="margin:0">${tf("UCC Break-even","UCC 整体盈亏平衡")}
+        ${cbaInfo(tf("UCC Break-even","UCC 整体盈亏平衡"),esc(tf(
+          "UCC break-even shows how many students are needed across the selected course mix for course contribution to cover the college's full cost. Different courses need different numbers of students because their fees and costs are different.",
+          "UCC 整体盈亏平衡显示，在所选课程组合下，需要多少学生才能使课程贡献覆盖学院的全部成本。由于不同课程的学费和成本不同，所需学生人数也会不同。")))}</div>
+      <span class="cb-sub">${tf("{y} · {b} · scenario only, live data unchanged","{y} 年 · {b} · 仅为情景推演，不改动任何实际数据",
+        {y:d.yr,b:(d.basis||"budget")==="actual"?tf("Actual","实际"):tf("Budget","预算")})}</span>
     </div>
-    <div class="cb-strip" style="margin-top:10px">
-      ${cell("Current students",cbaN(d.T.students))}
-      ${cell("Current course contribution",sgd(d.T.contribution),null,d.T.contribution>=0?CBA_TONE.good[0]:CBA_TONE.bad[0])}
-      ${cell("Current full-cost result",sgd(d.T.net),null,d.T.net>=0?CBA_TONE.good[0]:CBA_TONE.bad[0])}
-      ${cell("Additional contribution required",need>0?sgd(need):"None",null,need>0?CBA_TONE.warn[0]:CBA_TONE.good[0])}
+    ${cbaBeScopeNote(d)}
+    <div class="cb-panel cb-sec">
+      <div class="cb-h" style="font-size:13px;margin-top:0">${tf("Current position","当前状况")}</div>
+      <div class="cb-strip">
+        ${cell(tf("Students","学生人数"),cbaN(d.T.students),paceNow==null?null:tf("{n} / month","每月 {n} 名",{n:paceNow.toFixed(1)}))}
+        ${cell(tf("Revenue","收入"),sgd(d.T.benefit))}
+        ${cell(tf("Course contribution","课程贡献额"),sgd(d.T.contribution),null,d.T.contribution>=0?CBA_TONE.good[0]:CBA_TONE.bad[0])}
+        ${cell(tf("UCC full cost","UCC 全成本"),sgd(d.T.cost),tf("incl. {v} central overhead","含中央间接费用 {v}",{v:sgd(d.pool)}))}
+        ${cell(d.T.net>=0?tf("Surplus","盈余"):tf("Deficit","缺口"),sgd(Math.abs(d.T.net)),`${cbaLbl(st,"bcr")} ${cbaX(d.T.bcr)}`,d.T.net>=0?CBA_TONE.good[0]:CBA_TONE.bad[0])}
+        ${cell(tf("More contribution needed","尚需增加的贡献额"),need>0?sgd(need):tf("None","无"),null,need>0?CBA_TONE.warn[0]:CBA_TONE.good[0])}
+      </div>
     </div>
-    <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:14px">
-      <span class="cb-sub">Break-even mix</span>
-      <div class="view-toggle">${CBA_MIXES.map(mixBtn).join("")}</div>
-      <button data-cbasolve="1" style="font-size:12px;font-weight:600;padding:6px 13px;border:none;border-radius:7px;background:${CBA_TONE.info[0]};color:#fff;cursor:pointer">Find UCC break-even</button>
+    <div class="cb-panel cb-sec" style="border-left:4px solid ${CBA_TONE.info[0]}">
+      <div class="cb-h" style="font-size:13px;margin-top:0">${tf("What UCC needs to break even","UCC 达到盈亏平衡所需条件")}</div>
+      <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:4px">
+        <span class="cb-sub">${tf("Break-even mix","盈亏平衡课程组合")}</span>
+        <div class="view-toggle">${CBA_MIXES.map(mixBtn).join("")}</div>
+        <button data-cbasolve="1" style="font-size:12px;font-weight:600;padding:6px 13px;border:none;border-radius:7px;background:${CBA_TONE.info[0]};color:#fff;cursor:pointer">${plan?tf("Recalculate","重新计算"):tf("Solve break-even","求解盈亏平衡")}</button>
+      </div>
+      <div class="cb-sub" style="margin-top:6px">${tf(
+        "The number of students needed depends on which courses they enrol in, because each course contributes a different amount toward UCC's shared costs.",
+        "所需学生人数取决于这些学生进入哪些课程，因为每门课程对 UCC 共同成本的贡献各不相同。")}</div>
+      ${customPanel}
+      ${result}
     </div>
-    <div class="cb-sub" style="margin-top:6px">The break-even student target depends on where additional students enrol.</div>
-    ${customPanel}
-    ${result}
+    <div class="cb-sub cb-sec">${tf(
+      "Course economics: Course Simulator · Student numbers: Yearly Budget · UCC overhead: Forecast and P&L",
+      "课程经济性：课程模拟器 · 学生人数：年度预算 · UCC 间接费用：预测与损益")}</div>
   </div>`;
+}
+/* Months the requirement is spread over: the same reporting period every other
+   Cost-Benefit screen uses, so a pace here means the same thing as a pace there. */
+function cbaBeMonths(d){
+  const r=d.live.find(x=>x.months)||d.rows.find(x=>x.months);
+  return r?r.months:0;
+}
+/* The solver starts from exactly the population the rest of Cost-Benefit
+   analyses. Say so, and say what is left out, so nobody has to reconcile two
+   different student counts by hand. */
+function cbaBeScopeNote(d){
+  const ex=d.counts.excludedWithActivity;
+  return `<div class="cb-sub cb-sec">${tf(
+    "Scope: the {n} courses included in this analysis, the same population as Manage and Analyse.",
+    "计算范围：本次分析所纳入的 {n} 门课程，与「管理」和「分析」页面的口径完全一致。",{n:cbaN(d.counts.both)})}${
+    ex?" "+tf("{n} course(s) with enrolment are excluded and take no part in the solve.",
+              "另有 {n} 门有招生的课程已被排除，不参与本次求解。",{n:cbaN(ex)}):""}</div>`;
 }
 function cbaScenPortfolio(st,d){
   const S=cbaScen(st),sd=cbaCompute(st,null,null,cbaScenOverlay(st));
@@ -5881,11 +5956,9 @@ function cbaScenPortfolio(st,d){
     <td style="padding:5px 8px;text-align:right;color:var(--text-muted)">${fmt(a)}</td>
     <td style="padding:5px 8px;text-align:right;font-weight:700">${fmt(b)}</td>
     <td style="padding:5px 8px;text-align:right;font-weight:700;color:${b-a>=0?CBA_TONE.good[0]:CBA_TONE.bad[0]}">${b-a>=0?"+":""}${fmt(b-a)}</td></tr>`;
-  const mode=st.cba.portScen==="solve"?"solve":"manual";
-  const modeBar=`<div class="view-toggle cb-sec" style="width:max-content">
-    <button data-cbaportscen="manual" class="${mode==="manual"?"on":""}">Manual targets</button>
-    <button data-cbaportscen="solve" class="${mode==="solve"?"on":""}">Solve break-even</button></div>`;
-  if(mode==="solve")return modeBar+cbaBreakevenPlan(st,d);
+  const modeBar=`<div class="cb-sub cb-sec">${tf(
+    "Manual targets. To solve for whole-college break-even, use <strong>UCC Break-even</strong>.",
+    "手动设定目标。如需求解全院盈亏平衡，请使用<strong>UCC 整体盈亏平衡</strong>。")}</div>`;
   return modeBar+`<div class="cb-grid">
     <div class="cb-5"><div class="cb-panel">
       <div class="cb-h">Target enrolment</div>
@@ -6248,7 +6321,7 @@ function bindCbaEvents(){
   document.querySelectorAll("[data-cbamode]").forEach(b=>b.addEventListener("click",e=>{ST.cba.mode=e.currentTarget.dataset.cbamode;save_render();}));
   const gobe=document.querySelector("[data-cbagobe]");
   if(gobe)gobe.addEventListener("click",()=>{
-    ST.cba.mode="simulate";ST.cba.scenSub="portfolio";ST.cba.portScen="solve";save_render();});
+    ST.cba.mode="breakeven";save_render();});
   const why=document.querySelector("[data-cbawhy]");
   if(why)why.addEventListener("click",()=>{ST.cba.showWhy=!ST.cba.showWhy;save_render();});
   document.querySelectorAll("[data-cbaview]").forEach(b=>b.addEventListener("click",e=>{ST.cba.view=e.currentTarget.dataset.cbaview;save_render();}));
@@ -6324,7 +6397,7 @@ function bindCbaEvents(){
     ST.cba.bePlan=null;save_render();}));
   const solve=document.querySelector("[data-cbasolve]");
   if(solve)solve.addEventListener("click",()=>{
-    const d=cbaCompute(ST),kind=ST.cba.mixKind||"actual";
+    const d=cbaCompute(ST),kind=ST.cba.mixKind||((d.basis||"budget")==="actual"?"actual":"budget");
     const S=cbaSolveUcc(ST,d,kind);
     ST.cba.bePlan=S.err
       ? {mix:kind,yr:d.yr,basis:d.basis,err:S.err,max:S.max}
@@ -6333,10 +6406,14 @@ function bindCbaEvents(){
          T:{net:S.d.T.net,bcr:S.d.T.bcr,benefit:S.d.T.benefit,cost:S.d.T.cost,students:S.d.T.students},
          targets:Object.keys(S.alloc).map(ci=>{
            const r=d.rows.find(x=>String(x.ci)===String(ci))||{};
+           const mg=cbaMarginal(ST,+ci,d.basis,d.yr);
            return {ci:+ci,name:r.name||"",current:r.students||0,
-                   target:S.alloc[ci],add:S.alloc[ci]-(r.students||0)};})
+                   target:S.alloc[ci],add:S.alloc[ci]-(r.students||0),
+                   marginal:mg?mg.contribution:null};})
            .sort((a,b)=>b.target-a.target)};
     save_render();});
+  document.querySelectorAll("[data-cbagocourse]").forEach(b=>b.addEventListener("click",e=>{
+    ST.cba.mode="analyse";ST.cba.sub="course";ST.cba.chartCi=+e.currentTarget.dataset.cbagocourse;save_render();}));
   const scReset=document.querySelector("[data-cbascenreset]");
   if(scReset)scReset.addEventListener("click",()=>{ST.cba.scen={rows:{}};save_render();});
   const scApply=document.querySelector("[data-cbascenapply]");
