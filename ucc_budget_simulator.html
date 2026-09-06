@@ -750,7 +750,14 @@ const ST={
         people:[{id:1,name:"Salesperson 1",salary:3000,active:true}],
         nextId:2,
         bands:[{from:0,to:3000,rate:3},{from:3000,to:null,rate:5}],
-        attrib:{}},          /* attrib[spid][year][ci][month] = students */
+        attrib:{},           /* attrib[spid][year][ci][month] = students */
+        view:"earnings",     /* earnings | compare */
+        schemeSel:"A",       /* which scheme the per-course table details */
+        /* Sandbox schemes. A is seeded from the live bands the first time the
+           compare view opens — whatever they are — because comparing against
+           the scheme actually in force is the point. Nothing here reaches the
+           live bands without Apply plus a confirm. */
+        schemes:null},
   intakes:[],ybView:"monthly",ybYear:new Date().getFullYear(),ybCat:"All",
   ybCopy:{to:0,kind:"both"},
   ybForm:{kind:"budget",ci:0,month:0,year:new Date().getFullYear(),students:15},
@@ -3155,9 +3162,9 @@ function fcPnl(st){
 
 /* Build stamp. APP_VERSION is what the Change Log shows so you can tell at a
    glance whether a machine is running the latest file. Regenerate with mkver.py. */
-const APP_VERSION="v1.88.0";
+const APP_VERSION="v1.90.0";
 const APP_BUILD="2026-09-06";
-const APP_CHANGELOG=[{"h": "c54e74f", "d": "2026-09-06", "t": "01:21", "s": "Add a Sales Commission module"}, {"h": "ddbd664", "d": "2026-09-06", "t": "00:31", "s": "Document the suite: TECHNICAL.md and FRONTEND.md"}, {"h": "13bb0de", "d": "2026-08-31", "t": "01:06", "s": "Show the workings behind requirement, gap and budget progress (v1.85.0)"}, {"h": "8d0b9da", "d": "2026-08-31", "t": "00:54", "s": "Explain every Cost-Benefit view to a first-time user (v1.84.0)"}, {"h": "9eead86", "d": "2026-08-31", "t": "00:46", "s": "Carry the selected year into the operating-requirement headers (v1.83.0)"}, {"h": "c85bb07", "d": "2026-08-31", "t": "00:25", "s": "Promote the UCC break-even solver to its own management view (v1.82.0)"}, {"h": "4f5e9fd", "d": "2026-08-30", "t": "23:22", "s": "Simplify the operating-requirement column heading and tooltip (v1.81.0)"}, {"h": "847fea4", "d": "2026-08-30", "t": "23:16", "s": "Name the period and show the exact derivation for the operating requirement (v1.80.0)"}, {"h": "d97baaa", "d": "2026-08-30", "t": "10:54", "s": "Explain the operating requirement, and fix its display arithmetic (v1.79.0)"}, {"h": "0f2d05e", "d": "2026-08-30", "t": "10:07", "s": "Make the Cost-Benefit full-cost source auditable on screen (v1.78.0)"}, {"h": "827a17b", "d": "2026-08-30", "t": "09:49", "s": "Complete the CN translation across the whole Planning Suite (v1.77.0)"}, {"h": "8680498", "d": "2026-08-30", "t": "09:19", "s": "Add management break-even planning to Cost-Benefit (v1.76.0)"}, {"h": "14e28e6", "d": "2026-08-30", "t": "09:03", "s": "Add an application-wide EN / 简体中文 translation layer"}, {"h": "ca9f669", "d": "2026-08-30", "t": "08:38", "s": "Fix the dead Compare tab, matrix identification, terminology and print"}, {"h": "f25545b", "d": "2026-08-30", "t": "08:27", "s": "Cost-Benefit: one visible course population, and no dismissable insights"}, {"h": "0ac9314", "d": "2026-08-30", "t": "07:58", "s": "Cost-Benefit polish: white workspace, readable charts, no page scroll"}, {"h": "b684cda", "d": "2026-08-30", "t": "07:32", "s": "Cost-Benefit second pass: scan instead of read"}, {"h": "b1dde77", "d": "2026-08-30", "t": "06:59", "s": "Cost-Benefit: four management modes replacing eight finance tabs"}, {"h": "c4b2020", "d": "2026-08-30", "t": "06:41", "s": "Replace What to look at with a Management attention panel"}, {"h": "82189f1", "d": "2026-08-29", "t": "11:08", "s": "Cost-Benefit wording: stop calling only the analysed courses running"}, {"h": "487bb44", "d": "2026-08-29", "t": "10:58", "s": "Upgrade-path fixes: distinguish the two Actual columns, make legacy exclusions reviewable"}, {"h": "b365285", "d": "2026-08-29", "t": "10:33", "s": "Separate factual course activity from Cost-Benefit inclusion; wire Yearly Budget enrolment into Simulator Inputs"}, {"h": "94bddc8", "d": "2026-08-29", "t": "10:14", "s": "Fix Yearly Budget → Cost-Benefit data flow: never swallow an intake edit silently"}, {"h": "b2b43f5", "d": "2026-08-29", "t": "10:05", "s": "Cost-Benefit: separate configured courses from courses with activity"}, {"h": "4b5c1a0", "d": "2026-08-29", "t": "09:45", "s": "Replace discrete-run operating model with rolling intake"}, {"h": "f7edaed", "d": "2026-08-29", "t": "09:11", "s": "Cost-Benefit: portfolio ranking, overhead burden, year-over-year trends"}, {"h": "6c37f64", "d": "2026-08-29", "t": "09:04", "s": "Cost-Benefit: net-revenue accounting, recorded runs, rebuilt diagnostics"}, {"h": "569da30", "d": "2026-08-29", "t": "08:44", "s": "Cost-Benefit diagnostics: fee, commission and cost-driver analysis"}, {"h": "ab9a994", "d": "2026-08-29", "t": "08:34", "s": "Cost-Benefit: canonical Operating BE, run-aware status, YTD attainment"}, {"h": "ae0da18", "d": "2026-08-29", "t": "07:59", "s": "Add Simulator Inputs master sheet; confirm Price List is canonical"}, {"h": "ddcf1f0", "d": "2026-08-29", "t": "07:44", "s": "Course Simulator: give every course its own remembered assumptions"}, {"h": "46ce818", "d": "2026-08-29", "t": "07:22", "s": "Cost-Benefit: separate Operating and Full-Cost break-even, audit metrics, add explanatory diagrams"}, {"h": "b92e23b", "d": "2026-08-29", "t": "06:58", "s": "Yearly Budget: copy a year's intake plan to another year"}, {"h": "dae4d5f", "d": "2026-08-29", "t": "06:53", "s": "Collapse the per-course rate columns on the Active courses tab"}, {"h": "10c1379", "d": "2026-08-29", "t": "06:47", "s": "Cost-Benefit: pass rates, budget vs actual, and other income"}, {"h": "94b1772", "d": "2026-08-29", "t": "06:43", "s": "Fix false positive in the mkver duplicate guard"}, {"h": "07ae6ba", "d": "2026-08-29", "t": "06:42", "s": "Add Cost-Benefit charts tab (D3), ROI, and the do-not-average principle"}, {"h": "593b609", "d": "2026-08-29", "t": "06:21", "s": "Fix fatal duplicate const APP_VERSION that blanked the app"}, {"h": "c180693", "d": "2026-08-29", "t": "06:00", "s": "Explain why the two per-course views give different numbers"}, {"h": "322e4f0", "d": "2026-08-29", "t": "05:57", "s": "Add version stamp and rebuild the changelog from real git history"}, {"h": "dbfd3f0", "d": "2026-08-29", "t": "05:43", "s": "Cost-Benefit: per-course action verdicts and institution sustainability call"}, {"h": "cf96ca6", "d": "2026-08-29", "t": "05:35", "s": "Cost-Benefit: split the blended permanent-salary line out of the overhead pool"}, {"h": "5ddbb02", "d": "2026-08-29", "t": "05:32", "s": "Cost-Benefit rates inherit from Course Simulator instead of own defaults"}, {"h": "3d14a7e", "d": "2026-08-29", "t": "05:21", "s": "Add Cost-Benefit module (school + per-course) and a passcode gate"}, {"h": "360af5b", "d": "2026-08-12", "t": "10:21", "s": "Rename ULEC to Contractor in UI; set AEIS course fee to 11,500"}, {"h": "b568fb8", "d": "2026-07-07", "t": "14:45", "s": "Show comma-separated numbers in editable money fields (24,000 not 24000)"}, {"h": "2180e03", "d": "2026-07-07", "t": "14:37", "s": "Make budget period dynamic: 5-year window, choose start year, save named periods"}, {"h": "c02c902", "d": "2026-07-07", "t": "14:29", "s": "Extend forecast to 2026-2040 (15 years) + add Change Log module"}, {"h": "056a4ef", "d": "2026-07-07", "t": "14:10", "s": "Add yearly expense growth model + budget period selector"}, {"h": "93407a4", "d": "2026-07-07", "t": "13:54", "s": "Add monthly expense breakdown (base-year drill-down) + bake in Supabase config"}, {"h": "b9c34e3", "d": "2026-07-07", "t": "13:20", "s": "Add fixed Supabase config option that locks the Cloud Save fields"}, {"h": "bdd773b", "d": "2026-07-07", "t": "09:27", "s": "Link all modules to live data: revenue from Price List × Yearly Budget, Excel expense sub-items, dynamic course catalog"}, {"h": "e324f9e", "d": "2026-07-07", "t": "09:07", "s": "Add Strategy & Governance module (Phase D): growth initiatives NPV/payback, compliance tracker, funding register; fix mobile overflow"}, {"h": "9d069c9", "d": "2026-07-07", "t": "09:00", "s": "Add Valuation & Statements module (Phase C of Excel master-budget port)"}, {"h": "e209b5e", "d": "2026-07-07", "t": "08:56", "s": "Add Operating Detail module (Phase B of Excel master-budget port)"}, {"h": "f76ed77", "d": "2026-07-07", "t": "08:47", "s": "Add Forecast & P&L module (Phase A of Excel master-budget port)"}, {"h": "352f494", "d": "2026-07-07", "t": "07:47", "s": "Re-add drag-to-move to Yearly Budget nodes with a grip handle"}, {"h": "674ded3", "d": "2026-07-07", "t": "07:25", "s": "Yearly Budget planner: back to vertical month rows, add per-month duplicate + price"}, {"h": "0278c90", "d": "2026-07-07", "t": "07:16", "s": "Yearly Budget planner: horizontal month columns with drag, duplicate, copy"}, {"h": "1a8a09a", "d": "2026-07-07", "t": "07:08", "s": "Redesign Yearly Budget intake area as a month-by-month planner grid"}, {"h": "ff7957c", "d": "2026-07-07", "t": "06:56", "s": "Add duplicate + month-shift controls to Yearly Budget intakes"}, {"h": "c97000b", "d": "2026-07-07", "t": "06:52", "s": "Add \"Save over\" (overwrite) to cloud-saved scenarios"}, {"h": "5c6ff65", "d": "2026-07-07", "t": "02:49", "s": "Add cloud save/load via Supabase"}, {"h": "66c8c12", "d": "2026-07-07", "t": "02:16", "s": "Fix Yearly Budget responsiveness across tablet and small-phone widths"}, {"h": "486dc2b", "d": "2026-07-07", "t": "02:10", "s": "Replace top nav bar with hamburger drawer menu"}, {"h": "2e80831", "d": "2026-07-07", "t": "02:00", "s": "Redesign Yearly Budget module — teal hero banner + attainment strip"}, {"h": "efda20c", "d": "2026-07-07", "t": "01:37", "s": "Add readable TypeScript/React version of the Yearly Budget module"}, {"h": "9c742f7", "d": "2026-07-07", "t": "01:32", "s": "Split into two top-level modules: Course Simulator + Yearly Budget"}, {"h": "35123f6", "d": "2026-07-07", "t": "01:14", "s": "Add Portfolio tab: multi-course Monthly/Quarterly/Yearly/Total menu"}, {"h": "3501c6d", "d": "2026-07-07", "t": "00:51", "s": "Add portfolio performance React prototype"}, {"h": "b716e62", "d": "2026-07-06", "t": "23:55", "s": "Add legends to all D3 chart views"}, {"h": "f2fd130", "d": "2026-07-06", "t": "23:47", "s": "Add D3.js charts to all remaining tabs (6 new chart views)"}, {"h": "b915c0d", "d": "2026-07-06", "t": "23:25", "s": "Add D3.js chart view for What-if profit-by-students, alongside existing table"}, {"h": "13776d3", "d": "2026-06-30", "t": "03:37", "s": "Clarify breakeven is total enrolment for one run, not per month"}, {"h": "2efacb5", "d": "2026-06-30", "t": "02:04", "s": "Widen left panel and redesign ULEC subcontract tab"}, {"h": "64fcb77", "d": "2026-06-30", "t": "01:50", "s": "Rename student inputs to 'Planned/Actual students (total)' with per-month sub-label"}, {"h": "2b2b1a7", "d": "2026-06-30", "t": "01:48", "s": "Clarify Planned/Actual students labels: show total cohort + per-month sub-label"}, {"h": "ebf05c9", "d": "2026-06-30", "t": "01:46", "s": "Split what-if table: separate Students (total) and Per month columns"}, {"h": "8418481", "d": "2026-06-30", "t": "01:42", "s": "Add what-if enrolment table and per-month student figures to Overview"}, {"h": "ae816dd", "d": "2026-06-30", "t": "01:32", "s": "Redesign layout, add AI chatbot, price list with hours/months, and finance advisor skill"}, {"h": "274a2b1", "d": "2026-06-30", "t": "01:10", "s": "Add localStorage persistence + JSON export/import"}, {"h": "b8c60d6", "d": "2026-06-29", "t": "23:29", "s": "Add QuickLook fallback message and DOMContentLoaded guard"}, {"h": "05a4e6d", "d": "2026-06-29", "t": "23:27", "s": "Fix blank page: add proper HTML5 document structure"}, {"h": "b1afa6b", "d": "2026-06-29", "t": "23:26", "s": "Make layout fully responsive for mobile and tablet"}, {"h": "d72fc86", "d": "2026-06-29", "t": "23:08", "s": "Fix visual design: card depth, blue header, active tab, sr-only"}, {"h": "e451348", "d": "2026-06-29", "t": "23:04", "s": "Add CSS variable definitions and form element styling"}, {"h": "8730024", "d": "2026-06-29", "t": "21:19", "s": "Add Fee Calculator tab to UCC budget simulator"}];
+const APP_CHANGELOG=[{"h": "5741b94", "d": "2026-09-06", "t": "04:51", "s": "Add Compare schemes to the Sales Commission module"}, {"h": "d7136e4", "d": "2026-09-06", "t": "01:40", "s": "Stamp v1.88.0"}, {"h": "c54e74f", "d": "2026-09-06", "t": "01:21", "s": "Add a Sales Commission module"}, {"h": "ddbd664", "d": "2026-09-06", "t": "00:31", "s": "Document the suite: TECHNICAL.md and FRONTEND.md"}, {"h": "13bb0de", "d": "2026-08-31", "t": "01:06", "s": "Show the workings behind requirement, gap and budget progress (v1.85.0)"}, {"h": "8d0b9da", "d": "2026-08-31", "t": "00:54", "s": "Explain every Cost-Benefit view to a first-time user (v1.84.0)"}, {"h": "9eead86", "d": "2026-08-31", "t": "00:46", "s": "Carry the selected year into the operating-requirement headers (v1.83.0)"}, {"h": "c85bb07", "d": "2026-08-31", "t": "00:25", "s": "Promote the UCC break-even solver to its own management view (v1.82.0)"}, {"h": "4f5e9fd", "d": "2026-08-30", "t": "23:22", "s": "Simplify the operating-requirement column heading and tooltip (v1.81.0)"}, {"h": "847fea4", "d": "2026-08-30", "t": "23:16", "s": "Name the period and show the exact derivation for the operating requirement (v1.80.0)"}, {"h": "d97baaa", "d": "2026-08-30", "t": "10:54", "s": "Explain the operating requirement, and fix its display arithmetic (v1.79.0)"}, {"h": "0f2d05e", "d": "2026-08-30", "t": "10:07", "s": "Make the Cost-Benefit full-cost source auditable on screen (v1.78.0)"}, {"h": "827a17b", "d": "2026-08-30", "t": "09:49", "s": "Complete the CN translation across the whole Planning Suite (v1.77.0)"}, {"h": "8680498", "d": "2026-08-30", "t": "09:19", "s": "Add management break-even planning to Cost-Benefit (v1.76.0)"}, {"h": "14e28e6", "d": "2026-08-30", "t": "09:03", "s": "Add an application-wide EN / 简体中文 translation layer"}, {"h": "ca9f669", "d": "2026-08-30", "t": "08:38", "s": "Fix the dead Compare tab, matrix identification, terminology and print"}, {"h": "f25545b", "d": "2026-08-30", "t": "08:27", "s": "Cost-Benefit: one visible course population, and no dismissable insights"}, {"h": "0ac9314", "d": "2026-08-30", "t": "07:58", "s": "Cost-Benefit polish: white workspace, readable charts, no page scroll"}, {"h": "b684cda", "d": "2026-08-30", "t": "07:32", "s": "Cost-Benefit second pass: scan instead of read"}, {"h": "b1dde77", "d": "2026-08-30", "t": "06:59", "s": "Cost-Benefit: four management modes replacing eight finance tabs"}, {"h": "c4b2020", "d": "2026-08-30", "t": "06:41", "s": "Replace What to look at with a Management attention panel"}, {"h": "82189f1", "d": "2026-08-29", "t": "11:08", "s": "Cost-Benefit wording: stop calling only the analysed courses running"}, {"h": "487bb44", "d": "2026-08-29", "t": "10:58", "s": "Upgrade-path fixes: distinguish the two Actual columns, make legacy exclusions reviewable"}, {"h": "b365285", "d": "2026-08-29", "t": "10:33", "s": "Separate factual course activity from Cost-Benefit inclusion; wire Yearly Budget enrolment into Simulator Inputs"}, {"h": "94bddc8", "d": "2026-08-29", "t": "10:14", "s": "Fix Yearly Budget → Cost-Benefit data flow: never swallow an intake edit silently"}, {"h": "b2b43f5", "d": "2026-08-29", "t": "10:05", "s": "Cost-Benefit: separate configured courses from courses with activity"}, {"h": "4b5c1a0", "d": "2026-08-29", "t": "09:45", "s": "Replace discrete-run operating model with rolling intake"}, {"h": "f7edaed", "d": "2026-08-29", "t": "09:11", "s": "Cost-Benefit: portfolio ranking, overhead burden, year-over-year trends"}, {"h": "6c37f64", "d": "2026-08-29", "t": "09:04", "s": "Cost-Benefit: net-revenue accounting, recorded runs, rebuilt diagnostics"}, {"h": "569da30", "d": "2026-08-29", "t": "08:44", "s": "Cost-Benefit diagnostics: fee, commission and cost-driver analysis"}, {"h": "ab9a994", "d": "2026-08-29", "t": "08:34", "s": "Cost-Benefit: canonical Operating BE, run-aware status, YTD attainment"}, {"h": "ae0da18", "d": "2026-08-29", "t": "07:59", "s": "Add Simulator Inputs master sheet; confirm Price List is canonical"}, {"h": "ddcf1f0", "d": "2026-08-29", "t": "07:44", "s": "Course Simulator: give every course its own remembered assumptions"}, {"h": "46ce818", "d": "2026-08-29", "t": "07:22", "s": "Cost-Benefit: separate Operating and Full-Cost break-even, audit metrics, add explanatory diagrams"}, {"h": "b92e23b", "d": "2026-08-29", "t": "06:58", "s": "Yearly Budget: copy a year's intake plan to another year"}, {"h": "dae4d5f", "d": "2026-08-29", "t": "06:53", "s": "Collapse the per-course rate columns on the Active courses tab"}, {"h": "10c1379", "d": "2026-08-29", "t": "06:47", "s": "Cost-Benefit: pass rates, budget vs actual, and other income"}, {"h": "94b1772", "d": "2026-08-29", "t": "06:43", "s": "Fix false positive in the mkver duplicate guard"}, {"h": "07ae6ba", "d": "2026-08-29", "t": "06:42", "s": "Add Cost-Benefit charts tab (D3), ROI, and the do-not-average principle"}, {"h": "593b609", "d": "2026-08-29", "t": "06:21", "s": "Fix fatal duplicate const APP_VERSION that blanked the app"}, {"h": "c180693", "d": "2026-08-29", "t": "06:00", "s": "Explain why the two per-course views give different numbers"}, {"h": "322e4f0", "d": "2026-08-29", "t": "05:57", "s": "Add version stamp and rebuild the changelog from real git history"}, {"h": "dbfd3f0", "d": "2026-08-29", "t": "05:43", "s": "Cost-Benefit: per-course action verdicts and institution sustainability call"}, {"h": "cf96ca6", "d": "2026-08-29", "t": "05:35", "s": "Cost-Benefit: split the blended permanent-salary line out of the overhead pool"}, {"h": "5ddbb02", "d": "2026-08-29", "t": "05:32", "s": "Cost-Benefit rates inherit from Course Simulator instead of own defaults"}, {"h": "3d14a7e", "d": "2026-08-29", "t": "05:21", "s": "Add Cost-Benefit module (school + per-course) and a passcode gate"}, {"h": "360af5b", "d": "2026-08-12", "t": "10:21", "s": "Rename ULEC to Contractor in UI; set AEIS course fee to 11,500"}, {"h": "b568fb8", "d": "2026-07-07", "t": "14:45", "s": "Show comma-separated numbers in editable money fields (24,000 not 24000)"}, {"h": "2180e03", "d": "2026-07-07", "t": "14:37", "s": "Make budget period dynamic: 5-year window, choose start year, save named periods"}, {"h": "c02c902", "d": "2026-07-07", "t": "14:29", "s": "Extend forecast to 2026-2040 (15 years) + add Change Log module"}, {"h": "056a4ef", "d": "2026-07-07", "t": "14:10", "s": "Add yearly expense growth model + budget period selector"}, {"h": "93407a4", "d": "2026-07-07", "t": "13:54", "s": "Add monthly expense breakdown (base-year drill-down) + bake in Supabase config"}, {"h": "b9c34e3", "d": "2026-07-07", "t": "13:20", "s": "Add fixed Supabase config option that locks the Cloud Save fields"}, {"h": "bdd773b", "d": "2026-07-07", "t": "09:27", "s": "Link all modules to live data: revenue from Price List × Yearly Budget, Excel expense sub-items, dynamic course catalog"}, {"h": "e324f9e", "d": "2026-07-07", "t": "09:07", "s": "Add Strategy & Governance module (Phase D): growth initiatives NPV/payback, compliance tracker, funding register; fix mobile overflow"}, {"h": "9d069c9", "d": "2026-07-07", "t": "09:00", "s": "Add Valuation & Statements module (Phase C of Excel master-budget port)"}, {"h": "e209b5e", "d": "2026-07-07", "t": "08:56", "s": "Add Operating Detail module (Phase B of Excel master-budget port)"}, {"h": "f76ed77", "d": "2026-07-07", "t": "08:47", "s": "Add Forecast & P&L module (Phase A of Excel master-budget port)"}, {"h": "352f494", "d": "2026-07-07", "t": "07:47", "s": "Re-add drag-to-move to Yearly Budget nodes with a grip handle"}, {"h": "674ded3", "d": "2026-07-07", "t": "07:25", "s": "Yearly Budget planner: back to vertical month rows, add per-month duplicate + price"}, {"h": "0278c90", "d": "2026-07-07", "t": "07:16", "s": "Yearly Budget planner: horizontal month columns with drag, duplicate, copy"}, {"h": "1a8a09a", "d": "2026-07-07", "t": "07:08", "s": "Redesign Yearly Budget intake area as a month-by-month planner grid"}, {"h": "ff7957c", "d": "2026-07-07", "t": "06:56", "s": "Add duplicate + month-shift controls to Yearly Budget intakes"}, {"h": "c97000b", "d": "2026-07-07", "t": "06:52", "s": "Add \"Save over\" (overwrite) to cloud-saved scenarios"}, {"h": "5c6ff65", "d": "2026-07-07", "t": "02:49", "s": "Add cloud save/load via Supabase"}, {"h": "66c8c12", "d": "2026-07-07", "t": "02:16", "s": "Fix Yearly Budget responsiveness across tablet and small-phone widths"}, {"h": "486dc2b", "d": "2026-07-07", "t": "02:10", "s": "Replace top nav bar with hamburger drawer menu"}, {"h": "2e80831", "d": "2026-07-07", "t": "02:00", "s": "Redesign Yearly Budget module — teal hero banner + attainment strip"}, {"h": "efda20c", "d": "2026-07-07", "t": "01:37", "s": "Add readable TypeScript/React version of the Yearly Budget module"}, {"h": "9c742f7", "d": "2026-07-07", "t": "01:32", "s": "Split into two top-level modules: Course Simulator + Yearly Budget"}, {"h": "35123f6", "d": "2026-07-07", "t": "01:14", "s": "Add Portfolio tab: multi-course Monthly/Quarterly/Yearly/Total menu"}, {"h": "3501c6d", "d": "2026-07-07", "t": "00:51", "s": "Add portfolio performance React prototype"}, {"h": "b716e62", "d": "2026-07-06", "t": "23:55", "s": "Add legends to all D3 chart views"}, {"h": "f2fd130", "d": "2026-07-06", "t": "23:47", "s": "Add D3.js charts to all remaining tabs (6 new chart views)"}, {"h": "b915c0d", "d": "2026-07-06", "t": "23:25", "s": "Add D3.js chart view for What-if profit-by-students, alongside existing table"}, {"h": "13776d3", "d": "2026-06-30", "t": "03:37", "s": "Clarify breakeven is total enrolment for one run, not per month"}, {"h": "2efacb5", "d": "2026-06-30", "t": "02:04", "s": "Widen left panel and redesign ULEC subcontract tab"}, {"h": "64fcb77", "d": "2026-06-30", "t": "01:50", "s": "Rename student inputs to 'Planned/Actual students (total)' with per-month sub-label"}, {"h": "2b2b1a7", "d": "2026-06-30", "t": "01:48", "s": "Clarify Planned/Actual students labels: show total cohort + per-month sub-label"}, {"h": "ebf05c9", "d": "2026-06-30", "t": "01:46", "s": "Split what-if table: separate Students (total) and Per month columns"}, {"h": "8418481", "d": "2026-06-30", "t": "01:42", "s": "Add what-if enrolment table and per-month student figures to Overview"}, {"h": "ae816dd", "d": "2026-06-30", "t": "01:32", "s": "Redesign layout, add AI chatbot, price list with hours/months, and finance advisor skill"}, {"h": "274a2b1", "d": "2026-06-30", "t": "01:10", "s": "Add localStorage persistence + JSON export/import"}, {"h": "b8c60d6", "d": "2026-06-29", "t": "23:29", "s": "Add QuickLook fallback message and DOMContentLoaded guard"}, {"h": "05a4e6d", "d": "2026-06-29", "t": "23:27", "s": "Fix blank page: add proper HTML5 document structure"}, {"h": "b1afa6b", "d": "2026-06-29", "t": "23:26", "s": "Make layout fully responsive for mobile and tablet"}, {"h": "d72fc86", "d": "2026-06-29", "t": "23:08", "s": "Fix visual design: card depth, blue header, active tab, sr-only"}, {"h": "e451348", "d": "2026-06-29", "t": "23:04", "s": "Add CSS variable definitions and form element styling"}, {"h": "8730024", "d": "2026-06-29", "t": "21:19", "s": "Add Fee Calculator tab to UCC budget simulator"}];
 function fmtLogDate(iso){
   const d=new Date(iso);
   if(isNaN(d))return iso||"";
@@ -8039,8 +8046,14 @@ function commMerge(cur,d){
   out.bands=Array.isArray(d.bands)?d.bands.map(b=>({...b})):cur.bands;
   out.attrib=(d.attrib&&typeof d.attrib==="object")?d.attrib:{};
   out.nextId=Number(d.nextId)||Math.max(1,...out.people.map(p=>Number(p.id)||0))+1;
+  out.schemes=(d.schemes&&typeof d.schemes==="object")
+    ? Object.fromEntries(COMM_SCHEME_KEYS.map(k=>[k,{
+        name:(d.schemes[k]&&d.schemes[k].name)||k,
+        bands:Array.isArray(d.schemes[k]&&d.schemes[k].bands)?d.schemes[k].bands.map(b=>({...b})):[]}]))
+    : null;
   return out;
 }
+const COMM_SCHEME_KEYS=["A","B","C"];
 const COMM_MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 function commMonthLabel(m){
   const Z=["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"];
@@ -8175,6 +8188,128 @@ function commTeamYear(st,yr){
     commission:rows.reduce((a,r)=>a+r.y.commission,0),
     total:rows.reduce((a,r)=>a+r.y.total,0),
     students:rows.reduce((a,r)=>a+r.y.students,0)};
+}
+
+/* ── COMPARE SCHEMES ─────────────────────────────────────────────────────
+   A sandbox: three full band tables scored against the attribution already
+   entered, so "3% flat or 5% above a threshold, and where" has an answer built
+   from this year's real volume rather than an assertion.
+
+   Contribution per student is the AVERAGE, r.contribution / r.students, not the
+   marginal. The overpay row asks what a year's realised volume earned against
+   what the scheme paid out for it, which is an average-over-volume question.
+   The marginal is shown beside it because it answers a different question —
+   whether to chase one more — and where the two differ in SIGN the course is
+   sitting on a class boundary, which is a scheduling fact worth seeing. A sign
+   divergence never counts toward the overpay row.
+
+   Contribution comes from the COMMISSION module's own year and basis, never
+   from ST.cba, so the contribution column can never describe a different year
+   from the commission column beside it. */
+function commSchemesInit(st){
+  if(st.comm.schemes)return st.comm.schemes;
+  const live=(st.comm.bands||[]).map(b=>({...b}));
+  st.comm.schemes={
+    A:{name:"A",bands:live.map(b=>({...b}))},
+    B:{name:"B",bands:[{from:0,to:3000,rate:3},{from:3000,to:null,rate:5}]},
+    C:{name:"C",bands:[{from:0,to:null,rate:3}]}};
+  return st.comm.schemes;
+}
+function commScheme(st,k){const S=commSchemesInit(st);return S[k]||S.A;}
+/* Band lookup against an arbitrary band list, so a scheme can be scored without
+   disturbing the live one. Same cliff rule as commBandFor. */
+function commBandIn(bands,fee){
+  const f=Number(fee)||0;
+  const B=(bands||[]).map(b=>({from:Number(b.from)||0,
+    to:(b.to===null||b.to===""||b.to===undefined)?null:Number(b.to),
+    rate:Number(b.rate)||0})).sort((a,b)=>a.from-b.from);
+  return B.find(b=>f>=b.from&&(b.to===null||f<b.to))||null;
+}
+function commRateIn(bands,fee){const b=commBandIn(bands,fee);return b?b.rate:0;}
+/* Attributed enrolments for a course across the whole year, every salesperson.
+   Timing does not matter here: spreading moves when money lands, not how much,
+   and a year total is the same either way. */
+function commYearAttrib(st,yr){
+  const out={};
+  Object.keys(st.comm.attrib||{}).forEach(spid=>{
+    const Y=st.comm.attrib[spid][yr];if(!Y)return;
+    Object.keys(Y).forEach(ci=>{
+      const months=Y[ci];
+      Object.keys(months).forEach(m=>{out[ci]=(out[ci]||0)+(Number(months[m])||0);});
+    });
+  });
+  return out;
+}
+/* One row per attributed course, scored against one scheme. */
+function commScore(st,bands,yr){
+  const A=commYearAttrib(st,yr),basis=st.comm.basis||"budget";
+  const d=cbaCompute(st,basis,yr);
+  const rows=Object.keys(A).map(ciKey=>{
+    const ci=+ciKey,c=COURSES[ci];
+    if(!c)return null;
+    const students=A[ciKey];
+    if(students<=0)return null;
+    const fee=commBaseFee(st,c);
+    const band=commBandIn(bands,fee),rate=band?band.rate:0;
+    const perEnrol=fee*rate/100;
+    /* contribution is only meaningful where the course has enrolment on the
+       selected basis. No enrolment, no figure — never a fabricated zero. */
+    const r=d.rows.find(x=>x.ci===ci);
+    const enrolled=!!(r&&r.students>0);
+    const avg=enrolled?r.contribution/r.students:null;
+    const mg=enrolled?cbaMarginal(st,ci,basis,yr):null;
+    const marginal=mg?mg.contribution:null;
+    return {ci,c,students,fee,band,rate,perEnrol,
+      commission:students*perEnrol,
+      gross:students*fee,
+      avg,marginal,
+      contribution:avg==null?null:avg*students,
+      pctOfContrib:(avg==null||avg===0)?null:perEnrol/avg,
+      overpay:avg!=null&&perEnrol>avg,
+      /* opposite signs means the next enrolment opens a class */
+      signSplit:avg!=null&&marginal!=null&&((avg>0)!==(marginal>0)),
+      reason:enrolled?null:(basis==="actual"
+        ? tf("no actual enrolment in {y}","{y} 年无实际招生",{y:yr})
+        : tf("no budget enrolment in {y}","{y} 年无预算招生",{y:yr}))};
+  }).filter(Boolean).sort((a,b)=>b.commission-a.commission);
+  const priced=rows.filter(r=>r.avg!=null);
+  const commission=rows.reduce((a,r)=>a+r.commission,0);
+  const gross=rows.reduce((a,r)=>a+r.gross,0);
+  const students=rows.reduce((a,r)=>a+r.students,0);
+  const contribution=priced.reduce((a,r)=>a+r.contribution,0);
+  return {rows,priced,commission,gross,students,contribution,
+    pctOfGross:gross>0?commission/gross:null,
+    perEnrol:students>0?commission/students:null,
+    /* the denominator covers only the courses that HAVE a contribution figure,
+       and the view states how many were left out */
+    pctOfContrib:contribution>0?commission/contribution:null,
+    overpay:rows.filter(r=>r.overpay).length,
+    signSplit:rows.filter(r=>r.signSplit).length,
+    unpriced:rows.length-priced.length};
+}
+function commCompareAll(st,yr){
+  const S=commSchemesInit(st);
+  return COMM_SCHEME_KEYS.map(k=>({k,name:S[k].name||k,bands:S[k].bands,
+    score:commScore(st,S[k].bands,yr)}));
+}
+/* Where should the threshold sit? Sweep it across the fee range and total the
+   year's commission at each stop. Evaluation points are every distinct course
+   fee plus the midpoints between them: exact at every step edge, which a fixed
+   grid would miss, and ~70 points rather than several hundred. */
+function commSweep(st,yr,lowRate,highRate){
+  const fees=[...new Set(COURSES.map(c=>Number(c.fee)||0).filter(f=>f>0))].sort((a,b)=>a-b);
+  if(fees.length<2)return null;
+  const pts=[];
+  fees.forEach((f,i)=>{pts.push(f);if(i<fees.length-1)pts.push((f+fees[i+1])/2);});
+  pts.unshift(Math.max(0,fees[0]-(fees[0]*0.1)));
+  pts.push(fees[fees.length-1]*1.1);
+  const uniq=[...new Set(pts)].sort((a,b)=>a-b);
+  const series=uniq.map(t=>{
+    const bands=[{from:0,to:t,rate:lowRate},{from:t,to:null,rate:highRate}];
+    const sc=commScore(st,bands,yr);
+    return {t,commission:sc.commission,overpay:sc.overpay};
+  });
+  return {series,fees,lowRate,highRate};
 }
 
 /* ── the screen ──────────────────────────────────────────────────────── */
@@ -8338,6 +8473,155 @@ function commYearPanel(st){
       </tr></tfoot></table></div>
   </div>`;
 }
+/* ── compare view ────────────────────────────────────────────────────── */
+function commSchemeBandTable(st,k){
+  const sc=commScheme(st,k),B=sc.bands||[];
+  const inp=(v,attr)=>`<input type="number" ${attr} value="${v===null||v===undefined?"":v}" style="width:74px;text-align:right">`;
+  return `<div class="cb-panel" style="height:100%">
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      <input type="text" data-commsname="${k}" value="${esc(sc.name||k)}" data-i18n-skip
+        style="width:96px;font-weight:700" aria-label="${esc(tf("Scheme name","方案名称"))}">
+      <button data-commsapply="${k}" class="cb-sub" style="margin-left:auto;border:1px solid ${CBA_TONE.warn[0]};border-radius:6px;background:#fff;cursor:pointer;padding:3px 9px">${tf("Apply to live bands","应用为正式区间")}</button>
+    </div>
+    <table class="tbl" style="width:100%;margin-top:7px"><thead><tr>
+      <th style="text-align:right;padding:3px 6px;font-size:10px">${tf("From","下限")}</th>
+      <th style="text-align:right;padding:3px 6px;font-size:10px">${tf("To","上限")}</th>
+      <th style="text-align:right;padding:3px 6px;font-size:10px">${tf("Rate","费率")}</th><th></th></tr></thead>
+      <tbody>${B.map((b,i)=>`<tr>
+        <td style="padding:3px 6px">${inp(b.from,`data-commsband="${k}" data-i="${i}" data-k="from" min="0" step="50"`)}</td>
+        <td style="padding:3px 6px">${inp(b.to,`data-commsband="${k}" data-i="${i}" data-k="to" min="0" step="50" placeholder="${esc(tf("open","不限"))}"`)}</td>
+        <td style="padding:3px 6px">${inp(b.rate,`data-commsband="${k}" data-i="${i}" data-k="rate" min="0" max="100" step="0.1"`)}%</td>
+        <td style="padding:3px 6px"><button data-commsdel="${k}" data-i="${i}" class="cb-sub" style="border:none;background:none;cursor:pointer" aria-label="${esc(tf("Remove","移除"))}">×</button></td>
+      </tr>`).join("")}</tbody></table>
+    <button data-commsadd="${k}" class="cb-sub" style="margin-top:6px;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;padding:3px 9px">${tf("+ Add band","+ 新增区间")}</button>
+  </div>`;
+}
+function commCompareTable(st,all,yr){
+  const money=commMoney;
+  const best=all.reduce((a,x)=>x.score.commission<a.score.commission?x:a,all[0]);
+  const row=(x)=>{
+    const S=x.score,on=st.comm.schemeSel===x.k;
+    const tip=(lines,note)=>commTip(x.name||x.k,lines,"",note||"");
+    return `<tr data-commsrow="${x.k}" style="cursor:pointer${on?";background:var(--surface-1)":""}">
+      <td style="padding:6px 9px;font-weight:${on?700:600}"><span data-i18n-skip>${esc(x.name||x.k)}</span>
+        ${x.k===best.k?`<span class="cb-chip" style="color:${CBA_TONE.good[0]};background:${CBA_TONE.good[1]};margin-left:5px">↓ ${tf("lowest cost","成本最低")}</span>`:""}</td>
+      <td style="padding:6px 9px;text-align:right;font-weight:700">${money(S.commission)}${
+        tip([tf("Attributed enrolments: {n}","已分配招生：{n}",{n:cbaNumX(S.students)}),
+             tf("Attributed gross fees: {v}","已分配学费总额：{v}",{v:money(S.gross)}),
+             `${cbaNumX(S.students)} ${tf("enrolments","名招生")} → ${money(S.commission)}`])}</td>
+      <td style="padding:6px 9px;text-align:right">${S.pctOfGross==null?"N/A":(S.pctOfGross*100).toFixed(2)+"%"}${
+        tip([`${money(S.commission)} ÷ ${money(S.gross)} × 100 = ${S.pctOfGross==null?"N/A":(S.pctOfGross*100).toFixed(2)+"%"}`])}</td>
+      <td style="padding:6px 9px;text-align:right">${S.perEnrol==null?"N/A":money(S.perEnrol)}${
+        tip([`${money(S.commission)} ÷ ${cbaNumX(S.students)} = ${S.perEnrol==null?"N/A":money(S.perEnrol)}`])}</td>
+      <td style="padding:6px 9px;text-align:right">${S.pctOfContrib==null?"N/A":(S.pctOfContrib*100).toFixed(1)+"%"}${
+        tip([`${money(S.commission)} ÷ ${money(S.contribution)} × 100 = ${S.pctOfContrib==null?"N/A":(S.pctOfContrib*100).toFixed(1)+"%"}`],
+            S.unpriced?tf("{n} attributed course(s) have no enrolment on this basis and are left out of this denominator.",
+                          "有 {n} 门已分配课程在该口径下没有招生，未计入此分母。",{n:cbaN(S.unpriced)}):"")}</td>
+      <td style="padding:6px 9px;text-align:right">${S.overpay>0
+        ? `<span style="font-weight:700;color:${CBA_TONE.bad[0]}">⚠ ${cbaN(S.overpay)}</span>`
+        : `<span style="color:${CBA_TONE.good[0]}">✓ 0</span>`}${
+        tip([S.overpay>0
+          ? tf("{n} course(s) pay more commission per enrolment than the enrolment earns.","有 {n} 门课程每名学生的佣金高于该学生带来的贡献额。",{n:cbaN(S.overpay)})
+          : tf("No course pays more per enrolment than it earns.","没有课程的每名学生佣金高于其贡献额。")],
+          tf("Compared against average contribution per student for the year. A course at a class boundary is flagged separately and never counted here.",
+             "此处与该年度的生均平均贡献额比较。处于班级容量临界点的课程会单独标示，且不计入此项。"))}</td>
+    </tr>`;};
+  return `<div class="cb-panel">
+    <div class="cb-h" style="margin-top:0;font-size:14px">${tf("Scheme comparison","方案对比")} <span class="cb-sub">${yr}</span>
+      ${cbaInfo(tf("Scheme comparison","方案对比"),esc(tf(
+        "Each scheme is scored against the enrolments you have already attributed for this year. Only the band table changes between them, so any difference in cost is the scheme, not the volume.",
+        "每个方案都基于您本年度已分配的招生数据进行测算。方案之间只有区间设置不同，因此成本差异完全来自方案本身，而非招生量。")))}</div>
+    <div style="overflow-x:auto"><table class="tbl" style="width:100%;min-width:640px">
+      <thead><tr>
+        <th style="text-align:left;padding:5px 9px">${tf("Scheme","方案")}</th>
+        <th style="text-align:right;padding:5px 9px">${tf("Commission for the year","全年佣金")}</th>
+        <th style="text-align:right;padding:5px 9px">${tf("% of gross fees","占学费总额")}</th>
+        <th style="text-align:right;padding:5px 9px">${tf("Per enrolment","每名招生")}</th>
+        <th style="text-align:right;padding:5px 9px">${tf("% of contribution","占贡献额")}</th>
+        <th style="text-align:right;padding:5px 9px">${tf("Paying more than it earns","佣金高于贡献额")}</th></tr></thead>
+      <tbody>${all.map(row).join("")}</tbody></table></div>
+  </div>`;
+}
+function commCourseTable(st,x,yr){
+  const S=x.score,money=commMoney;
+  const rows=S.rows.map(r=>{
+    const lines=[
+      tf("Fee used: {v} ({b})","所用学费：{v}（{b}）",{v:money(r.fee),b:commBaseLabel(st)}),
+      r.band?tf("Band {a} to {b}: {r}%","区间 {a} 至 {b}：{r}%",
+        {a:money(r.band.from),b:r.band.to===null?tf("open","不限"):money(r.band.to),r:r.rate})
+        :tf("Outside every band, so 0%.","不在任何区间内，因此为 0%。"),
+      `${money(r.fee)} × ${r.rate}% = ${money(r.perEnrol)}`];
+    if(r.avg==null)lines.push(tf("Contribution per student is not available: {why}.","无法计算生均贡献额：{why}。",{why:r.reason}));
+    else{
+      lines.push(tf("Contribution per student: {v}","生均贡献额：{v}",{v:money(r.avg)}));
+      lines.push(`${money(r.perEnrol)} ÷ ${money(r.avg)} × 100 = ${r.pctOfContrib==null?"N/A":(r.pctOfContrib*100).toFixed(1)+"%"}`);
+    }
+    if(r.signSplit)lines.push(tf("This course is at a class boundary; the next enrolment opens a new class, which is why the next-student figure is the opposite sign.",
+                                 "该课程已达班级容量临界点；再增加一名学生将新开一个班，因此「下一名学生」的数值符号相反。"));
+    return `<tr>
+      <td style="padding:5px 9px"><span class="cb-name" title="${esc(r.c.name)}" data-i18n-skip>${esc(r.c.name)}</span>
+        ${r.overpay?`<span class="cb-chip" style="color:${CBA_TONE.bad[0]};background:${CBA_TONE.bad[1]};margin-left:5px">⚠ ${tf("pays more than it earns","佣金高于贡献额")}</span>`:""}
+        ${r.signSplit?`<span class="cb-chip" style="color:${CBA_TONE.warn[0]};background:${CBA_TONE.warn[1]};margin-left:5px">◐ ${tf("at class boundary","班级容量临界")}</span>`:""}</td>
+      <td style="padding:5px 9px;text-align:right;color:var(--text-muted)">${cbaNumX(r.students)}</td>
+      <td style="padding:5px 9px;text-align:right;color:var(--text-muted)" data-i18n-skip>${money(r.fee)}</td>
+      <td style="padding:5px 9px;text-align:right">${r.band?r.rate+"%":`<span style="color:${CBA_TONE.bad[0]}">0%</span>`}</td>
+      <td style="padding:5px 9px;text-align:right;font-weight:600">${money(r.perEnrol)}${commTip(courseLabel(r.c)||r.c.name,lines,"","")}</td>
+      <td style="padding:5px 9px;text-align:right">${r.avg==null?`<span style="color:#94a3b8">N/A</span>`:money(r.avg)}</td>
+      <td style="padding:5px 9px;text-align:right">${r.marginal==null?`<span style="color:#94a3b8">N/A</span>`:money(r.marginal)}</td>
+      <td style="padding:5px 9px;text-align:right;font-weight:${r.overpay?700:400};color:${r.overpay?CBA_TONE.bad[0]:"inherit"}">${
+        r.pctOfContrib==null?`<span style="color:#94a3b8">N/A</span>`:(r.pctOfContrib*100).toFixed(1)+"%"}</td>
+    </tr>`;}).join("");
+  return `<div class="cb-panel cb-sec">
+    <div class="cb-h" style="margin-top:0;font-size:14px">${tf("By course","分课程")} <span class="cb-sub" data-i18n-skip>${esc(x.name||x.k)}</span></div>
+    <div class="cb-sub" style="margin-bottom:6px">${tf(
+      "Contribution is the average per student for {y} on the {b} basis. Next student is the marginal contribution of one more enrolment; where the two differ in sign the course is at a class boundary.",
+      "「贡献额」为 {y} 年按{b}口径计算的生均平均值。「下一名学生」为再增加一名学生的边际贡献；当两者符号相反时，表示该课程已达班级容量临界点。",
+      {y:yr,b:(st.comm.basis||"budget")==="actual"?tf("Actual","实际"):tf("Budget","预算")})}</div>
+    ${S.unpriced?`<div class="cb-sub" style="margin-bottom:6px;color:${CBA_TONE.warn[0]}">${tf(
+      "{n} attributed course(s) have no enrolment on this basis, so contribution is N/A and they are excluded from the percentages and the scatter.",
+      "有 {n} 门已分配课程在该口径下没有招生，因此贡献额显示为 N/A，并已从各项百分比与散点图中排除。",{n:cbaN(S.unpriced)})}</div>`:""}
+    <div style="overflow-x:auto"><table class="tbl" style="width:100%;min-width:720px">
+      <thead><tr>
+        <th style="text-align:left;padding:5px 9px">${tf("Course","课程")}</th>
+        <th style="text-align:right;padding:5px 9px">${tf("Attributed","已分配")}</th>
+        <th style="text-align:right;padding:5px 9px">${tf("Fee","学费")}</th>
+        <th style="text-align:right;padding:5px 9px">${tf("Rate","费率")}</th>
+        <th style="text-align:right;padding:5px 9px">${tf("Commission each","每名佣金")}</th>
+        <th style="text-align:right;padding:5px 9px">${tf("Contribution each","生均贡献额")}</th>
+        <th style="text-align:right;padding:5px 9px">${tf("Next student","下一名学生")}</th>
+        <th style="text-align:right;padding:5px 9px">${tf("% of contribution","占贡献额")}</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>
+  </div>`;
+}
+function commRenderCompare(st){
+  const yr=st.comm.year;
+  const all=commCompareAll(st,yr);
+  const sel=all.find(x=>x.k===st.comm.schemeSel)||all[0];
+  return `
+  <div class="cb-sub cb-sec" style="padding:8px 10px;background:var(--surface-1);border-left:3px solid var(--border-strong);border-radius:6px">
+    ${tf("Sandbox. Schemes are scored against the attribution you have already entered; nothing here changes the live bands until you press Apply and confirm.",
+         "情景推演。各方案均基于您已录入的招生分配进行测算；在您点击「应用为正式区间」并确认之前，不会改动正式区间设置。")}
+  </div>
+  <div class="cb-grid cb-sec">
+    ${COMM_SCHEME_KEYS.map(k=>`<div class="cb-4">${commSchemeBandTable(st,k)}</div>`).join("")}
+  </div>
+  <div class="cb-sec">${commCompareTable(st,all,yr)}</div>
+  <div class="cb-grid cb-sec">
+    <div class="cb-6"><div class="cb-panel"><div class="cb-h" style="margin-top:0;font-size:13px">${tf("Scheme shape","方案形状")}
+      ${cbaInfo(tf("Scheme shape","方案形状"),esc(tf("Rate against fee for all three schemes. Each tick on the bottom axis is one course fee, so you can see whether a threshold sits in a gap or slices through a cluster of courses.","三个方案的费率随学费的变化。底部坐标轴上的每个刻度代表一门课程的学费，可据此判断阈值是落在空档处，还是切分了某一组课程。")))}</div>
+      <div id="commChartShape"></div></div></div>
+    <div class="cb-6"><div class="cb-panel"><div class="cb-h" style="margin-top:0;font-size:13px">${tf("Cost by scheme","各方案成本")}
+      ${cbaInfo(tf("Cost by scheme","各方案成本"),esc(tf("Total commission for the year under each scheme, against the contribution those same enrolments generated.","各方案下的全年佣金总额，并与同一批招生所产生的贡献额对比。")))}</div>
+      <div id="commChartCost"></div></div></div>
+    <div class="cb-6"><div class="cb-panel"><div class="cb-h" style="margin-top:0;font-size:13px">${tf("Paying more than it earns","佣金高于贡献额")}
+      ${cbaInfo(tf("Paying more than it earns","佣金高于贡献额"),esc(tf("One dot per course, sized by attributed enrolments. Anything above the diagonal costs more in commission per enrolment than that enrolment earns.","每个圆点代表一门课程，大小表示已分配招生人数。位于对角线上方的课程，其每名学生的佣金高于该学生带来的贡献额。")))}</div>
+      <div id="commChartScatter"></div></div></div>
+    <div class="cb-6"><div class="cb-panel"><div class="cb-h" style="margin-top:0;font-size:13px">${tf("Threshold sweep","阈值扫描")}
+      ${cbaInfo(tf("Threshold sweep","阈值扫描"),esc(tf("Total annual commission as the threshold of a two-band scheme moves across the fee range. Flat stretches are places where moving the threshold changes nothing; the cliffs are course fees.","当两段式方案的阈值在整个学费区间内移动时，全年佣金总额的变化。平坦区段表示移动阈值不会产生任何影响；陡降处即为各课程的学费。")))}</div>
+      <div id="commChartSweep"></div></div></div>
+  </div>
+  ${commCourseTable(st,sel,yr)}`;
+}
 function renderCommissionModule(st){
   const yr=st.comm.year,m=st.comm.month,spid=commSelId(st);
   const P=commPeople(st),cur=commPerson(st,spid);
@@ -8370,6 +8654,7 @@ function renderCommissionModule(st){
     </div>
   </div>
   <div class="cb-sec" style="display:flex;gap:9px;align-items:center;flex-wrap:wrap">
+    <div class="view-toggle">${btn("earnings","Earnings","收入",(st.comm.view||"earnings")==="earnings","data-commview")}${btn("compare","Compare schemes","方案对比",st.comm.view==="compare","data-commview")}</div>
     <select data-commsp style="max-width:220px">${P.map(p=>`<option value="${p.id}"${String(p.id)===String(spid)?" selected":""} data-i18n-skip>${esc(p.name||"")}</option>`).join("")}</select>
     <select data-commyear>${years.map(y=>`<option value="${y}"${y===yr?" selected":""}>${y}</option>`).join("")}</select>
     <select data-commmonth>${COMM_MONTHS.map((_,i)=>`<option value="${i}"${i===m?" selected":""}>${commMonthLabel(i)}</option>`).join("")}</select>
@@ -8386,12 +8671,236 @@ function renderCommissionModule(st){
     ${tf("This module reads course fees from the Price List and enrolment from the Yearly Budget, and writes to neither. Internal sales pay is not part of Cost-Benefit full cost or Forecast expenses, so those figures do not include it.",
          "本模块从价格表读取课程学费、从年度预算读取招生数据，且不会写入其中任何一处。内部销售人员薪酬不计入成本效益的全成本，也不计入预测中的支出，因此那些数字并不包含此项。")}
   </div>
+  ${(st.comm.view||"earnings")==="compare"?commRenderCompare(st):`
   <div class="cb-grid cb-sec">
     <div class="cb-7">${commAttribPanel(st)}</div>
     <div class="cb-5">${commBandPanel(st)}<div class="cb-sec">${commPeoplePanel(st)}</div></div>
   </div>
-  ${commYearPanel(st)}
+  ${commYearPanel(st)}`}
   </div>`;
+}
+/* ── charts ──────────────────────────────────────────────────────────────
+   One local SVG helper for these four only; the other 21 charts in the file
+   are left exactly as they are. Interaction follows cbaDrawMatrix: tabindex,
+   role and aria-label go on the circle or rect that is actually hit, never on
+   a <g>, because Chromium will not focus a <g>; focusin/focusout because focus
+   does not bubble; and .raise() only on pointer hover, never on focus, because
+   raising steals it. */
+function commSvg(id,ratio,M){
+  const el=document.getElementById(id);
+  if(!el)return null;
+  el.innerHTML="";
+  if(typeof d3==="undefined"){el.innerHTML=`<div class="cb-sub">${tf("Chart unavailable.","图表不可用。")}</div>`;return null;}
+  const W=Math.max(260,el.clientWidth||520),H=Math.min(300,Math.max(200,W*(ratio||0.62)));
+  const m=M||{t:14,r:14,b:40,l:56};
+  const svg=d3.select(el).append("svg").attr("width",W).attr("height",H)
+    .attr("viewBox",`0 0 ${W} ${H}`).style("max-width","100%").style("display","block");
+  return {el,svg,W,H,M:m,iw:W-m.l-m.r,ih:H-m.t-m.b,
+          g:svg.append("g").attr("transform",`translate(${m.l},${m.t})`)};
+}
+function commNote(el,txt){
+  const d=document.createElement("div");
+  d.className="cb-sub";d.style.marginTop="6px";d.style.fontSize="10px";d.textContent=txt;
+  el.appendChild(d);
+}
+function commEmpty(id,msg){
+  const el=document.getElementById(id);
+  if(el)el.innerHTML=`<div class="cb-sub" style="padding:14px 0">${esc(msg)}</div>`;
+}
+/* interaction shared by the four, so focus behaviour cannot drift between them */
+function commHover(sel,htmlOf,onRaise){
+  const tip=cbaTipEl();
+  const show=(ev,d,keep)=>{
+    cbaTipShow(tip,htmlOf(d),ev.clientX!=null?ev.clientX:0,ev.clientY!=null?ev.clientY:0);
+    if(!keep&&onRaise)onRaise(d);};
+  const hide=()=>cbaTipHide(tip);
+  sel.on("mousemove",show).on("mouseleave",hide)
+     .on("focusin",function(ev,d){const b=this.getBoundingClientRect();
+       show({clientX:b.left,clientY:b.bottom},d,true);})     /* keep: no raise on focus */
+     .on("focusout",hide);
+}
+const COMM_SCHEME_COLOR={A:"#7c3aed",B:"#0891b2",C:"#f59e0b"};
+/* 1. rate against fee, three schemes overlaid, course fees as axis ticks */
+function commDrawShape(st){
+  const all=commCompareAll(st,st.comm.year);
+  const fees=[...new Set(COURSES.map(c=>Number(c.fee)||0).filter(f=>f>0))].sort((a,b)=>a-b);
+  if(!fees.length)return commEmpty("commChartShape",tf("No course fees to plot.","没有可绘制的课程学费。"));
+  const C=commSvg("commChartShape",0.62,{t:14,r:14,b:46,l:44});
+  if(!C)return;
+  const maxFee=fees[fees.length-1]*1.08;
+  const maxRate=Math.max(1,d3.max(all,x=>d3.max(x.bands||[],b=>Number(b.rate)||0))||1)*1.25;
+  const x=d3.scaleLinear().domain([0,maxFee]).range([0,C.iw]);
+  const y=d3.scaleLinear().domain([0,maxRate]).range([C.ih,0]);
+  C.g.append("g").attr("transform",`translate(0,${C.ih})`).call(d3.axisBottom(x).ticks(5).tickFormat(v=>cbaK(v)))
+    .attr("font-size",9);
+  C.g.append("g").call(d3.axisLeft(y).ticks(4).tickFormat(v=>v+"%")).attr("font-size",9);
+  /* step line per scheme */
+  all.forEach(sc=>{
+    const B=(sc.bands||[]).map(b=>({from:Number(b.from)||0,
+      to:(b.to==null||b.to==="")?maxFee:Number(b.to),rate:Number(b.rate)||0}))
+      .sort((a,b)=>a.from-b.from);
+    if(!B.length)return;
+    const pts=[];
+    B.forEach(b=>{pts.push([b.from,b.rate]);pts.push([Math.min(b.to,maxFee),b.rate]);});
+    C.g.append("path").datum(pts)
+      .attr("fill","none").attr("stroke",COMM_SCHEME_COLOR[sc.k]).attr("stroke-width",2)
+      .attr("stroke-opacity",st.comm.schemeSel===sc.k?1:.55)
+      .attr("d",d3.line().x(d=>x(d[0])).y(d=>y(d[1])));
+  });
+  /* every course fee as a tick, so a threshold in a gap is visible */
+  const ticks=C.g.selectAll("g.fee").data(fees.map(f=>({f,
+    courses:COURSES.filter(c=>Number(c.fee)===f)}))).enter().append("g").attr("class","fee");
+  ticks.append("line").attr("x1",d=>x(d.f)).attr("x2",d=>x(d.f))
+    .attr("y1",C.ih).attr("y2",C.ih+7).attr("stroke","#94a3b8").attr("stroke-width",1);
+  const hit=ticks.append("rect").attr("x",d=>x(d.f)-5).attr("y",C.ih-6).attr("width",10).attr("height",18)
+    .attr("fill","transparent").attr("tabindex",0).attr("role","button")
+    .attr("aria-label",d=>tf("{v}. {n} course(s).","{v}。{n} 门课程。",{v:sgd(d.f),n:d.courses.length}));
+  commHover(hit,d=>`<div class="t">${esc(sgd(d.f))}</div>`
+    +`<div style="font-size:11px;line-height:1.6">${d.courses.slice(0,6).map(c=>esc(courseLabel(c)||c.name)).join("<br>")}</div>`
+    +`<div style="font-size:11px;margin-top:5px">${all.map(sc=>
+        `${esc(sc.name||sc.k)}: ${commRateIn(sc.bands,d.f)}%`).join(" · ")}</div>`);
+  const leg=C.svg.append("g").attr("transform",`translate(${C.M.l},${C.H-10})`);
+  all.forEach((sc,i)=>{
+    const gx=i*74;
+    leg.append("rect").attr("x",gx).attr("y",-8).attr("width",9).attr("height",3).attr("fill",COMM_SCHEME_COLOR[sc.k]);
+    leg.append("text").attr("x",gx+13).attr("y",-4).attr("font-size",9).attr("fill","#64748b").text(sc.name||sc.k);
+  });
+  commNote(C.el,tf("Course fees {n} · plotted {m}","课程学费 {n} 个 · 已绘制 {m} 个",{n:fees.length,m:fees.length}));
+}
+/* 2. total commission per scheme, with contribution as a reference line */
+function commDrawCost(st){
+  const all=commCompareAll(st,st.comm.year);
+  if(!all.some(x=>x.score.students>0))
+    return commEmpty("commChartCost",tf("Attribute some enrolments to compare schemes.","请先分配招生数据，方可比较各方案。"));
+  const C=commSvg("commChartCost",0.62,{t:16,r:14,b:34,l:60});
+  if(!C)return;
+  const contrib=all[0].score.contribution;
+  const mx=Math.max(1,d3.max(all,x=>x.score.commission),contrib)*1.15;
+  const x=d3.scaleBand().domain(all.map(a=>a.k)).range([0,C.iw]).padding(0.32);
+  const y=d3.scaleLinear().domain([0,mx]).range([C.ih,0]);
+  C.g.append("g").attr("transform",`translate(0,${C.ih})`).call(d3.axisBottom(x)
+    .tickFormat(k=>(all.find(a=>a.k===k)||{}).name||k)).attr("font-size",9);
+  C.g.append("g").call(d3.axisLeft(y).ticks(4).tickFormat(v=>cbaK(v))).attr("font-size",9);
+  const bars=C.g.selectAll("rect.bar").data(all).enter().append("rect").attr("class","bar")
+    .attr("x",d=>x(d.k)).attr("width",x.bandwidth())
+    .attr("y",d=>y(d.score.commission)).attr("height",d=>Math.max(1,C.ih-y(d.score.commission)))
+    .attr("rx",3).attr("fill",d=>COMM_SCHEME_COLOR[d.k])
+    .attr("fill-opacity",d=>st.comm.schemeSel===d.k?1:.62)
+    .attr("tabindex",0).attr("role","button")
+    .attr("aria-label",d=>`${d.name||d.k}. `+tf("{v}. {n} course(s) paying more than they earn.",
+      "{v}。有 {n} 门课程的佣金高于贡献额。",{v:sgd(d.score.commission),n:d.score.overpay}));
+  commHover(bars,d=>`<div class="t">${esc(d.name||d.k)}</div>`
+    +`<table><tr><td>${esc(tf("Commission","佣金"))}</td><td>${sgd(d.score.commission)}</td></tr>`
+    +`<tr><td>${esc(tf("% of contribution","占贡献额"))}</td><td>${d.score.pctOfContrib==null?"N/A":(d.score.pctOfContrib*100).toFixed(1)+"%"}</td></tr>`
+    +`<tr><td>${esc(tf("Paying more than it earns","佣金高于贡献额"))}</td><td>${cbaN(d.score.overpay)}</td></tr></table>`);
+  if(contrib>0){
+    C.g.append("line").attr("x1",0).attr("x2",C.iw).attr("y1",y(contrib)).attr("y2",y(contrib))
+      .attr("stroke",CBA_TONE.good[0]).attr("stroke-width",1.5).attr("stroke-dasharray","5 3");
+    C.g.append("text").attr("x",C.iw).attr("y",y(contrib)-5).attr("text-anchor","end")
+      .attr("font-size",9).attr("fill",CBA_TONE.good[0])
+      .text(`${tf("contribution","贡献额")} ${cbaK(contrib)}`);
+  }
+  commNote(C.el,tf("Schemes {n} · plotted {m}","方案 {n} 个 · 已绘制 {m} 个",{n:all.length,m:all.length}));
+}
+/* 3. commission per enrolment against contribution per student, with the
+      break-even diagonal. Courses without a contribution figure are named
+      rather than plotted at zero. */
+function commDrawScatter(st){
+  const all=commCompareAll(st,st.comm.year);
+  const sel=all.find(x=>x.k===st.comm.schemeSel)||all[0];
+  const rows=sel.score.priced;
+  const omitted=sel.score.rows.filter(r=>r.avg==null);
+  if(!rows.length)return commEmpty("commChartScatter",
+    tf("No attributed course has a contribution figure on this basis.","在该口径下，没有已分配课程具备贡献额数据。"));
+  const C=commSvg("commChartScatter",0.62,{t:14,r:16,b:38,l:58});
+  if(!C)return;
+  const lo=Math.min(0,d3.min(rows,r=>Math.min(r.avg,r.perEnrol)));
+  const hi=Math.max(d3.max(rows,r=>Math.max(r.avg,r.perEnrol)),1)*1.12;
+  const x=d3.scaleLinear().domain([lo,hi]).range([0,C.iw]);
+  const y=d3.scaleLinear().domain([lo,hi]).range([C.ih,0]);
+  C.g.append("g").attr("transform",`translate(0,${C.ih})`).call(d3.axisBottom(x).ticks(4).tickFormat(v=>cbaK(v))).attr("font-size",9);
+  C.g.append("g").call(d3.axisLeft(y).ticks(4).tickFormat(v=>cbaK(v))).attr("font-size",9);
+  C.g.append("text").attr("x",C.iw).attr("y",C.ih+30).attr("text-anchor","end").attr("font-size",9)
+    .attr("fill","#64748b").text(tf("contribution per student →","生均贡献额 →"));
+  C.g.append("text").attr("transform","rotate(-90)").attr("x",0).attr("y",-44).attr("font-size",9)
+    .attr("fill","#64748b").text(tf("← commission per enrolment","← 每名招生佣金"));
+  /* the break-even diagonal: above it you pay more than the sale earns */
+  C.g.append("line").attr("x1",x(lo)).attr("y1",y(lo)).attr("x2",x(hi)).attr("y2",y(hi))
+    .attr("stroke","#94a3b8").attr("stroke-width",1).attr("stroke-dasharray","4 3");
+  C.g.append("text").attr("x",x(hi)-4).attr("y",y(hi)+12).attr("text-anchor","end")
+    .attr("font-size",9).attr("fill","#94a3b8").text(tf("pay = earn","佣金 = 贡献额"));
+  const rs=d3.scaleSqrt().domain([0,Math.max(1,d3.max(rows,r=>r.students))]).range([3,11]);
+  const pts=C.g.selectAll("g.pt").data(rows).enter().append("g").attr("class","pt")
+    .attr("transform",r=>`translate(${x(r.avg)},${y(r.perEnrol)})`);
+  const dots=pts.append("circle").attr("class","hit").attr("r",r=>rs(r.students))
+    .attr("fill",r=>r.overpay?CBA_TONE.bad[0]:CBA_TONE.good[0]).attr("fill-opacity",.75)
+    .attr("stroke","#fff").attr("stroke-width",1.5)
+    .attr("tabindex",0).attr("role","button")
+    .attr("aria-label",r=>`${r.c.name}. `
+      +tf("{c} commission, {v} contribution.","佣金 {c}，贡献额 {v}。",{c:sgd(r.perEnrol),v:sgd(r.avg)})
+      +(r.overpay?" "+tf("Paying more than it earns.","佣金高于贡献额。"):""));
+  commHover(dots,r=>`<div class="t">${esc(r.c.name)}</div>`
+    +(r.overpay?`<div class="s" style="color:${CBA_TONE.bad[0]}">⚠ ${esc(tf("pays more than it earns","佣金高于贡献额"))}</div>`:"")
+    +`<table><tr><td>${esc(tf("Attributed","已分配"))}</td><td>${cbaNumX(r.students)}</td></tr>`
+    +`<tr><td>${esc(tf("Commission each","每名佣金"))}</td><td>${sgd(r.perEnrol)}</td></tr>`
+    +`<tr><td>${esc(tf("Contribution each","生均贡献额"))}</td><td>${sgd(r.avg)}</td></tr>`
+    +`<tr><td>${esc(tf("% of contribution","占贡献额"))}</td><td>${r.pctOfContrib==null?"N/A":(r.pctOfContrib*100).toFixed(1)+"%"}</td></tr></table>`,
+    r=>{pts.filter(o=>o.ci===r.ci).raise();});
+  commNote(C.el,tf("Attributed courses {n} · plotted {m}","已分配课程 {n} 门 · 已绘制 {m} 门",
+    {n:sel.score.rows.length,m:rows.length})
+    +(omitted.length?" · "+tf("not plotted: {names}","未绘制：{names}",
+      {names:omitted.map(r=>courseLabel(r.c)||r.c.name).join(", ")}):""));
+}
+/* 4. where should the threshold sit */
+function commDrawSweep(st){
+  const all=commCompareAll(st,st.comm.year);
+  const sel=all.find(x=>x.k===st.comm.schemeSel)||all[0];
+  const B=(sel.bands||[]).slice().sort((a,b)=>(Number(a.from)||0)-(Number(b.from)||0));
+  if(B.length!==2)return commEmpty("commChartSweep",
+    tf("The sweep needs a two-band scheme. {n} has {c} band(s).","阈值扫描需要两段式方案。{n} 目前有 {c} 个区间。",
+      {n:sel.name||sel.k,c:B.length}));
+  if(!sel.score.students)return commEmpty("commChartSweep",
+    tf("Attribute some enrolments to sweep the threshold.","请先分配招生数据，方可进行阈值扫描。"));
+  const sw=commSweep(st,st.comm.year,Number(B[0].rate)||0,Number(B[1].rate)||0);
+  if(!sw)return commEmpty("commChartSweep",tf("Not enough distinct course fees to sweep.","课程学费的不同取值过少，无法扫描。"));
+  const C=commSvg("commChartSweep",0.62,{t:14,r:16,b:46,l:60});
+  if(!C)return;
+  const cur=Number(B[0].to)||0;
+  const x=d3.scaleLinear().domain([sw.series[0].t,sw.series[sw.series.length-1].t]).range([0,C.iw]);
+  const y=d3.scaleLinear().domain([0,Math.max(1,d3.max(sw.series,d=>d.commission))*1.12]).range([C.ih,0]);
+  C.g.append("g").attr("transform",`translate(0,${C.ih})`).call(d3.axisBottom(x).ticks(5).tickFormat(v=>cbaK(v))).attr("font-size",9);
+  C.g.append("g").call(d3.axisLeft(y).ticks(4).tickFormat(v=>cbaK(v))).attr("font-size",9);
+  C.g.append("path").datum(sw.series).attr("fill","none")
+    .attr("stroke",COMM_SCHEME_COLOR[sel.k]).attr("stroke-width",2)
+    .attr("d",d3.line().curve(d3.curveStepAfter).x(d=>x(d.t)).y(d=>y(d.commission)));
+  /* the fees that create the steps */
+  C.g.selectAll("line.fee").data(sw.fees.filter(f=>f>=x.domain()[0]&&f<=x.domain()[1]))
+    .enter().append("line").attr("class","fee")
+    .attr("x1",f=>x(f)).attr("x2",f=>x(f)).attr("y1",C.ih).attr("y2",C.ih+6)
+    .attr("stroke","#94a3b8").attr("stroke-width",1);
+  if(cur>=x.domain()[0]&&cur<=x.domain()[1]){
+    C.g.append("line").attr("x1",x(cur)).attr("x2",x(cur)).attr("y1",0).attr("y2",C.ih)
+      .attr("stroke",CBA_TONE.warn[0]).attr("stroke-width",1.5).attr("stroke-dasharray","4 3");
+    C.g.append("text").attr("x",x(cur)+4).attr("y",11).attr("font-size",9)
+      .attr("fill",CBA_TONE.warn[0]).text(tf("now","当前"));
+  }
+  const step=Math.max(1,Math.round(sw.series.length/26));
+  const hits=C.g.selectAll("rect.hit").data(sw.series.filter((_,i)=>i%step===0))
+    .enter().append("rect").attr("class","hit")
+    .attr("x",d=>x(d.t)-5).attr("y",0).attr("width",10).attr("height",C.ih)
+    .attr("fill","transparent").attr("tabindex",0).attr("role","button")
+    .attr("aria-label",d=>tf("Threshold {t}. Commission {c}.","阈值 {t}。佣金 {c}。",
+      {t:sgd(d.t),c:sgd(d.commission)}));
+  commHover(hits,d=>`<div class="t">${esc(tf("Threshold","阈值"))} ${esc(sgd(d.t))}</div>`
+    +`<table><tr><td>${esc(tf("Commission for the year","全年佣金"))}</td><td>${sgd(d.commission)}</td></tr>`
+    +`<tr><td>${esc(tf("Paying more than it earns","佣金高于贡献额"))}</td><td>${cbaN(d.overpay)}</td></tr></table>`
+    +`<div style="font-size:10px;color:#64748b;margin-top:5px">${esc(tf("Below the threshold {a}%, above it {b}%.","阈值以下 {a}%，阈值以上 {b}%。",{a:sw.lowRate,b:sw.highRate}))}</div>`);
+  commNote(C.el,tf("Thresholds tested {n} · course fees marked {m}","已测试阈值 {n} 个 · 已标示课程学费 {m} 个",
+    {n:sw.series.length,m:sw.fees.length}));
+}
+function commDrawCharts(st){
+  if((st.comm.view||"earnings")!=="compare")return;
+  commDrawShape(st);commDrawCost(st);commDrawScatter(st);commDrawSweep(st);
 }
 function bindCommissionEvents(){
   const save_render=()=>{saveToStorage();render();};
@@ -8435,6 +8944,31 @@ function bindCommissionEvents(){
   document.querySelectorAll("[data-commat]").forEach(el=>el.addEventListener("change",e=>{
     const ci=+e.currentTarget.dataset.commat;
     commAttribSet(ST,commSelId(ST),C().year,ci,C().month,e.target.value);save_render();}));
+  document.querySelectorAll("[data-commview]").forEach(b=>b.addEventListener("click",e=>{C().view=e.currentTarget.dataset.commview;save_render();}));
+  document.querySelectorAll("[data-commsrow]").forEach(b=>b.addEventListener("click",e=>{C().schemeSel=e.currentTarget.dataset.commsrow;save_render();}));
+  document.querySelectorAll("[data-commsname]").forEach(el=>el.addEventListener("change",e=>{
+    const k=e.currentTarget.dataset.commsname;commSchemesInit(ST)[k].name=e.target.value;save_render();}));
+  document.querySelectorAll("[data-commsband]").forEach(el=>el.addEventListener("change",e=>{
+    const k=e.currentTarget.dataset.commsband,i=+e.currentTarget.dataset.i,key=e.currentTarget.dataset.k;
+    const b2=commSchemesInit(ST)[k].bands[i];if(!b2)return;
+    b2[key]=(key==="to"&&e.target.value==="")?null:(Number(e.target.value)||0);
+    save_render();}));
+  document.querySelectorAll("[data-commsdel]").forEach(b=>b.addEventListener("click",e=>{
+    const k=e.currentTarget.dataset.commsdel;
+    commSchemesInit(ST)[k].bands.splice(+e.currentTarget.dataset.i,1);save_render();}));
+  document.querySelectorAll("[data-commsadd]").forEach(b=>b.addEventListener("click",e=>{
+    const k=e.currentTarget.dataset.commsadd,B=commSchemesInit(ST)[k].bands,last=B[B.length-1];
+    B.push({from:last&&last.to!=null?last.to:0,to:null,rate:0});save_render();}));
+  /* the only path from sandbox to live, and it asks first */
+  document.querySelectorAll("[data-commsapply]").forEach(b=>b.addEventListener("click",e=>{
+    const k=e.currentTarget.dataset.commsapply,sc=commSchemesInit(ST)[k];
+    const msg=tf("Replace the live commission bands with scheme {n}?\n\nThis changes what everyone is actually paid. The schemes themselves are not affected.",
+                 "确定要用方案 {n} 替换正式佣金区间吗？\n\n这将改变实际支付给销售人员的佣金。各方案本身不受影响。",{n:sc.name||k});
+    if(!confirm(msg))return;
+    const before=JSON.stringify(ST.comm.bands);
+    ST.comm.bands=(sc.bands||[]).map(x=>({...x}));
+    logAudit("Sales Commission","Apply scheme to live bands",before,JSON.stringify(ST.comm.bands));
+    save_render();}));
   document.querySelectorAll("[data-commseed]").forEach(b=>b.addEventListener("click",()=>{
     const spid=commSelId(ST),yr=C().year,m=C().month,basis=C().basis||"budget";
     if(spid==null)return;
@@ -8738,6 +9272,7 @@ function render_(){
     bindModuleNavEvents();
     bindCommissionEvents();
     cbaTipInit();          /* the one tooltip component, shared */
+    commDrawCharts(ST);
     return;
   }
   if(ST.module==="log"){
