@@ -260,6 +260,283 @@ await p.evaluate(()=>setLang('en'));
 ok('no horizontal page scroll at 1440, 1280, 768 or 375 in either language',
    !errs.some(e=>/overflow/.test(e)));
 
+// ══ COMPARE SCHEMES ══════════════════════════════════════════════════════
+const seedSchemes = async () => p.evaluate(()=>{
+  /* enrolment for every course we attribute, including one sitting exactly on a
+     class boundary so the average/marginal sign split is genuinely exercised */
+  const iv=[]; let id=1;
+  [[0,24],[1,12],[7,18],[20,14],[3,30]].forEach(([ci,n])=>{ for(let m=0;m<12;m++)
+    iv.push({id:id++,kind:'budget',ci,month:m,year:2026,students:n/12}); });
+  ST.intakes=iv;
+  ST.comm.year=2026; ST.comm.basis='budget'; ST.comm.spid=1; ST.comm.attrib={};
+  ST.comm.people=[{id:1,name:'A',salary:0,active:true}]; ST.comm.nextId=2;
+  ST.comm.base='gross'; ST.comm.timing='enrol';
+  [[0,10],[1,6],[7,9],[20,7],[3,15],[5,4]].forEach(([ci,n])=>commAttribSet(ST,1,2026,ci,0,n));
+  ST.comm.schemes=null; commSchemesInit(ST);
+  ST.comm.schemes.A.bands=[{from:0,to:3000,rate:3},{from:3000,to:null,rate:5}];
+  ST.comm.schemes.B.bands=[{from:0,to:8000,rate:2},{from:8000,to:null,rate:9}];
+  ST.comm.schemes.C.bands=[{from:0,to:null,rate:12}];
+  ST.comm.schemeSel='A'; ST.comm.view='compare'; ST.module='commission'; render();});
+await seedSchemes();
+
+// three schemes, one attribution, three different answers
+const three = await p.evaluate(()=>{
+  const all=commCompareAll(ST,2026);
+  return all.map(x=>({k:x.k,c:Math.round(x.score.commission),
+    pg:x.score.pctOfGross,pe:x.score.perEnrol,pc:x.score.pctOfContrib,
+    stu:x.score.students,gross:Math.round(x.score.gross)}));});
+ok('three schemes on the same attribution give three different totals',
+   new Set(three.map(x=>x.c)).size===3, three.map(x=>`${x.k}=${x.c}`).join(' · '));
+ok('the volume is identical across schemes — only the bands differ',
+   new Set(three.map(x=>x.stu)).size===1 && new Set(three.map(x=>x.gross)).size===1,
+   `${three[0].stu} enrolments, ${three[0].gross} gross in every scheme`);
+ok('a flat 12% scheme really is 12% of gross fees',
+   Math.abs(three[2].pg-0.12)<1e-9, `${(three[2].pg*100).toFixed(2)}%`);
+ok('per-enrolment and percentage figures follow from the totals',
+   three.every(x=>Math.abs(x.pe-x.c/x.stu)<0.51),
+   three.map(x=>`${x.k}: ${Math.round(x.pe)}`).join(' · '));
+
+// the overpay row
+const over = await p.evaluate(()=>{
+  const before=commScore(ST,ST.comm.schemes.A.bands,2026);
+  /* a rate high enough that commission per enrolment beats contribution */
+  const brutal=[{from:0,to:null,rate:400}];
+  const after=commScore(ST,brutal,2026);
+  const detail=after.rows.filter(r=>r.overpay).map(r=>({
+    n:courseLabel(r.c),per:Math.round(r.perEnrol),avg:Math.round(r.avg)}));
+  /* every flagged course must genuinely have commission above contribution */
+  const honest=after.rows.filter(r=>r.overpay).every(r=>r.perEnrol>r.avg);
+  const noFalseNeg=after.rows.filter(r=>r.avg!=null&&r.perEnrol>r.avg).length===after.overpay;
+  return {before:before.overpay, after:after.overpay, priced:after.priced.length,
+    detail, honest, noFalseNeg};});
+ok('a sane scheme flags nothing', over.before===0);
+ok('a scheme paying more than the sale earns is caught, on every affected course',
+   over.after===over.priced && over.after>0 && over.honest && over.noFalseNeg,
+   over.detail.slice(0,2).map(d=>`${d.n}: pays ${d.per} vs earns ${d.avg}`).join(' · '));
+
+// average, not marginal, and a sign split never counts as overpay
+const comparator = await p.evaluate(()=>{
+  const sc=commScore(ST,ST.comm.schemes.A.bands,2026);
+  const split=sc.rows.filter(r=>r.signSplit);
+  const d=cbaCompute(ST,'budget',2026);
+  const checks=sc.priced.map(r=>{
+    const row=d.rows.find(x=>x.ci===r.ci);
+    return Math.abs(r.avg-row.contribution/row.students)<1e-9;});
+  return {allAverage:checks.every(Boolean), splits:split.length,
+    splitNames:split.map(r=>courseLabel(r.c)),
+    splitCountedAsOverpay:split.filter(r=>r.overpay).length,
+    splitDetail:split.map(r=>({avg:Math.round(r.avg),mg:Math.round(r.marginal)}))};});
+ok('contribution per student is the average, r.contribution / r.students',
+   comparator.allAverage);
+ok('a course at a class boundary is flagged where average and marginal differ in sign',
+   comparator.splits>0 &&
+   comparator.splitDetail.every(d=>(d.avg>0)!==(d.mg>0)),
+   comparator.splitNames.join(', ')+' '+JSON.stringify(comparator.splitDetail));
+ok('a sign split never counts toward the overpay row',
+   comparator.splitCountedAsOverpay===0);
+
+// zero enrolment: N/A with a reason, excluded everywhere
+const na = await p.evaluate(()=>{
+  const sc=commScore(ST,ST.comm.schemes.A.bands,2026);
+  const un=sc.rows.filter(r=>r.avg==null);
+  const d=cbaCompute(ST,'budget',2026);
+  return {n:un.length,
+    reasons:un.map(r=>r.reason),
+    reallyZero:un.every(r=>{const row=d.rows.find(x=>x.ci===r.ci);return row.students===0;}),
+    notInPriced:un.every(r=>!sc.priced.some(x=>x.ci===r.ci)),
+    notInOverpay:un.every(r=>!r.overpay),
+    denomExcludes:Math.abs(sc.contribution-sc.priced.reduce((a,r)=>a+r.contribution,0))<1e-9,
+    txt:document.getElementById('app').innerText};});
+ok('a course with no enrolment on the basis gets N/A and a stated reason',
+   na.n>0 && na.reallyZero && na.reasons.every(r=>/no (budget|actual) enrolment|无(预算|实际)招生/.test(r)),
+   na.reasons[0]);
+ok('it is excluded from the overpay count, the scatter and the percentage denominator',
+   na.notInPriced && na.notInOverpay && na.denomExcludes);
+ok('the omission is stated on screen and the chart names what it left out',
+   /have no enrolment on this basis/i.test(na.txt) && /not plotted:/i.test(na.txt));
+
+// threshold sweep
+const sweep = await p.evaluate(()=>{
+  const sw=commSweep(ST,2026,3,9);
+  const fees=[...new Set(COURSES.map(c=>c.fee).filter(Boolean))].sort((a,b)=>a-b);
+  /* every distinct fee is an evaluation point */
+  const coversFees=fees.every(f=>sw.series.some(s=>Math.abs(s.t-f)<1e-9));
+  /* low rate below the top fee, high rate above: pushing the threshold up moves
+     more fees into the LOW band, so total commission must not increase */
+  let monotone=true;
+  for(let i=1;i<sw.series.length;i++) if(sw.series[i].commission>sw.series[i-1].commission+1e-6) monotone=false;
+  /* it is a step function: consecutive equal stretches exist */
+  const flats=sw.series.filter((s,i)=>i>0&&Math.abs(s.commission-sw.series[i-1].commission)<1e-9).length;
+  const steps=sw.series.filter((s,i)=>i>0&&Math.abs(s.commission-sw.series[i-1].commission)>1e-6).length;
+  /* a threshold below every fee = flat high rate; above every fee = flat low */
+  const allHigh=sw.series[0].commission, allLow=sw.series[sw.series.length-1].commission;
+  const gross=commScore(ST,[{from:0,to:null,rate:1}],2026).commission*100;
+  return {pts:sw.series.length, coversFees, monotone, flats, steps,
+    allHigh:Math.round(allHigh), allLow:Math.round(allLow),
+    expectHigh:Math.round(gross*0.09), expectLow:Math.round(gross*0.03)};});
+ok('the sweep evaluates at every distinct course fee, not on a fixed grid',
+   sweep.coversFees, `${sweep.pts} points`);
+ok('the series is monotonic in steps as the threshold rises',
+   sweep.monotone && sweep.steps>0 && sweep.flats>0,
+   `${sweep.steps} steps, ${sweep.flats} flat stretches`);
+ok('the extremes match a flat scheme at each rate',
+   Math.abs(sweep.allHigh-sweep.expectHigh)<2 && Math.abs(sweep.allLow-sweep.expectLow)<2,
+   `${sweep.allHigh} vs ${sweep.expectHigh} · ${sweep.allLow} vs ${sweep.expectLow}`);
+
+// Apply: sandbox until confirmed
+const apply = await p.evaluate(()=>{
+  const live=JSON.stringify(ST.comm.bands);
+  const out={};
+  window.confirm=()=>false;
+  document.querySelector('[data-commsapply="B"]').click();
+  out.afterCancel=JSON.stringify(ST.comm.bands)===live;
+  window.confirm=()=>true;
+  document.querySelector('[data-commsapply="B"]').click();
+  out.afterConfirm=JSON.stringify(ST.comm.bands)===JSON.stringify(ST.comm.schemes.B.bands);
+  out.schemesUntouched=JSON.stringify(ST.comm.schemes.B.bands)!==live;
+  out.logged=(ST.audit||[]).some(a=>/Apply scheme to live bands/.test(a.what||''));
+  ST.comm.bands=JSON.parse(live); render();
+  return out;});
+ok('declining the confirm leaves the live bands alone', apply.afterCancel);
+ok('confirming copies the scheme into the live bands', apply.afterConfirm);
+ok('applying is recorded in the audit trail', apply.logged);
+const sandbox = await p.evaluate(()=>{
+  const live=JSON.stringify(ST.comm.bands);
+  ST.comm.schemes.C.bands=[{from:0,to:null,rate:44}];
+  ST.comm.schemes.A.name='Renamed'; render();
+  return JSON.stringify(ST.comm.bands)===live;});
+ok('editing or renaming a scheme never touches the live bands', sandbox);
+
+// schemes persist
+await p.evaluate(()=>{
+  ST.comm.schemes.B.bands=[{from:0,to:4444,rate:1.5},{from:4444,to:null,rate:8.5}];
+  ST.comm.schemes.B.name='Threshold test'; ST.comm.view='compare'; ST.comm.schemeSel='B';
+  saveToStorage();});
+await p.reload(); await p.waitForTimeout(400);
+const kept = await p.evaluate(()=>({
+  name:ST.comm.schemes&&ST.comm.schemes.B.name,
+  from:ST.comm.schemes&&ST.comm.schemes.B.bands[1].from,
+  rate:ST.comm.schemes&&ST.comm.schemes.B.bands[1].rate,
+  view:ST.comm.view, sel:ST.comm.schemeSel}));
+ok('scheme bands, names and the selected view survive a reload',
+   kept.name==='Threshold test' && kept.from===4444 && kept.rate===8.5 &&
+   kept.view==='compare' && kept.sel==='B', JSON.stringify(kept));
+const cloudS = await p.evaluate(()=>{
+  const snap=JSON.parse(JSON.stringify(buildFullSnapshot()));
+  ST.comm.schemes.B.bands[1].rate=1;
+  applyFullSnapshot(snap);
+  return {carried:!!(snap.comm&&snap.comm.schemes), rate:ST.comm.schemes.B.bands[1].rate};});
+ok('schemes ride the cloud snapshot in both directions',
+   cloudS.carried && cloudS.rate===8.5);
+
+// isolation
+await seedSchemes();
+const isoS = await p.evaluate(()=>{
+  const other=()=>{const d=cbaCompute(ST,'budget',2026),f=fcPnl(ST),yi=FC_YEARS.indexOf(2026);
+    return JSON.stringify({cost:d.T.cost,benefit:d.T.benefit,net:d.T.net,bcr:d.T.bcr,pool:d.pool,
+      cogs:f.cogs[yi],opex:f.opex[yi],fcNet:f.net[yi],intakes:JSON.stringify(ST.intakes).length,
+      off:JSON.stringify(ST.cba.off),rates:JSON.stringify(ST.cba.rates)});};
+  const b4=other(), c4=commScore(ST,ST.comm.schemes.A.bands,2026).commission;
+  ST.comm.schemes.A.bands=[{from:0,to:999,rate:33},{from:999,to:null,rate:77}];
+  ST.comm.schemeSel='A'; render();
+  const af=other(), c5=commScore(ST,ST.comm.schemes.A.bands,2026).commission;
+  return {same:b4===af, moved:Math.abs(c5-c4)>1};});
+ok('changing a scheme moves this view', isoS.moved);
+ok('and moves Cost-Benefit, Forecast and Yearly Budget by exactly $0', isoS.same);
+
+// charts
+await seedSchemes();
+const charts = await p.evaluate(()=>{
+  const t0=performance.now(); render(); const ms=performance.now()-t0;
+  return {ms:Math.round(ms),
+    svgs:document.querySelectorAll('#app svg').length,
+    onG:document.querySelectorAll('#app g[tabindex]').length,
+    marks:document.querySelectorAll('#app svg [tabindex="0"][role="button"]').length,
+    labelled:[...document.querySelectorAll('#app svg [tabindex="0"]')].every(e=>e.getAttribute('aria-label')),
+    tipEls:document.querySelectorAll('.cb-tip').length,
+    plotted:(document.getElementById('app').innerText.match(/plotted/g)||[]).length};});
+ok('all four charts draw', charts.svgs===4, `${charts.svgs} svg`);
+ok('render with all four charts stays under 400ms', charts.ms<400, `${charts.ms}ms`);
+ok('focusable marks are on shapes, never on a <g>',
+   charts.onG===0 && charts.marks>0, `${charts.marks} marks, ${charts.onG} on <g>`);
+ok('every focusable mark carries an accessible label', charts.labelled);
+ok('the charts share the one tooltip element', charts.tipEls===1);
+ok('each chart states how much of the data it plotted', charts.plotted>=4, `${charts.plotted} statements`);
+const focusable = await p.evaluate(()=>{
+  const el=document.querySelector('#app svg circle.hit')||document.querySelector('#app svg [tabindex="0"]');
+  el.focus();
+  const got=document.activeElement===el;
+  el.dispatchEvent(new FocusEvent('focusin',{bubbles:true}));
+  const shown=document.querySelector('.cb-tip').classList.contains('on');
+  const still=document.activeElement===el;      /* raise() must not steal it */
+  el.dispatchEvent(new FocusEvent('focusout',{bubbles:true}));
+  const hid=!document.querySelector('.cb-tip').classList.contains('on');
+  return {got,shown,still,hid};});
+ok('keyboard focus reaches a chart mark and opens its tooltip',
+   focusable.got && focusable.shown, JSON.stringify(focusable));
+ok('focus is not stolen by raise, and focusout closes the tooltip',
+   focusable.still && focusable.hid);
+
+// CN across the compare view
+const zhS = await p.evaluate(()=>{
+  setLang('zh'); render();
+  const t=document.getElementById('app').innerText;
+  const attrs=[...document.querySelectorAll('#app [aria-label]')].map(e=>e.getAttribute('aria-label')).join(' ~ ');
+  const tips=[...document.querySelectorAll('#app [data-tip]')].map(e=>{
+    const d=document.createElement('div');d.innerHTML=e.getAttribute('data-tip');return d.textContent;}).join(' ~ ');
+  setLang('en');
+  return {t,attrs,tips};});
+ok('the compare view is Chinese: table, charts and course rows',
+   /方案对比/.test(zhS.t) && /全年佣金/.test(zhS.t) && /佣金高于贡献额/.test(zhS.t) &&
+   /方案形状/.test(zhS.t) && /阈值扫描/.test(zhS.t) && /分课程/.test(zhS.t) &&
+   /生均贡献额/.test(zhS.t) && /下一名学生/.test(zhS.t));
+ok('chart omission and axis text are Chinese',
+   /已绘制/.test(zhS.t) && /生均贡献额 →/.test(zhS.t) && /已测试阈值/.test(zhS.t));
+ok('the class-boundary explanation is Chinese',
+   /班级容量临界/.test(zhS.tips) || /班级容量临界/.test(zhS.t));
+const leak = await p.evaluate(()=>{
+  setLang('zh'); render();
+  const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+  const allow=new Set();
+  COURSES.forEach(c=>[c.name,c.abbr,c.group].forEach(v=>norm(v).split(' ').forEach(w=>w&&allow.add(w))));
+  (ST.comm.people||[]).forEach(p=>norm(p.name).split(' ').forEach(w=>w&&allow.add(w)));
+  COMM_SCHEME_KEYS.forEach(k=>norm((ST.comm.schemes[k]||{}).name).split(' ').forEach(w=>w&&allow.add(w)));
+  `ucc roi bcr gst cpf fte i x v en cn united ceres college supabase n a`
+    .split(' ').forEach(w=>allow.add(w));
+  const out=new Set();
+  const add=txt=>(String(txt).match(/[A-Za-z][A-Za-z0-9'’&/().,%\- ]*[A-Za-z0-9)%]|[A-Za-z]{2,}/g)||[])
+    .map(x=>x.trim()).filter(x=>x.length>1)
+    .filter(x=>!norm(x).split(' ').every(w=>/^\d+$/.test(w)||allow.has(w)))
+    .forEach(x=>out.add(x));
+  const root=document.getElementById('app');
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+  for(let n;(n=w.nextNode());){const el=n.parentElement;
+    if(!el||el.closest('script,style')||el.closest('[data-i18n-skip]'))continue;
+    add(n.nodeValue);}
+  root.querySelectorAll('[aria-label],[title],[placeholder]').forEach(el=>{
+    if(el.closest('[data-i18n-skip]'))return;
+    ['aria-label','title','placeholder'].forEach(a=>{if(el.hasAttribute(a))add(el.getAttribute(a));});});
+  root.querySelectorAll('[data-tip]').forEach(el=>{
+    if(el.closest('[data-i18n-skip]'))return;
+    const d=document.createElement('div');d.innerHTML=el.getAttribute('data-tip');add(d.textContent);});
+  setLang('en');
+  return [...out];});
+ok('no untranslated English anywhere in the compare view, text or attributes',
+   leak.length===0, leak.slice(0,6).join(' · '));
+
+// responsive, charts included
+for (const lang of ['en','zh']) for (const w of [1440,1280,768,375]){
+  await p.setViewportSize({width:w,height:900});
+  const of = await p.evaluate((lang)=>{
+    if((localStorage.getItem('ucc_lang')||'en')!==lang) setLang(lang);
+    ST.module='commission'; ST.comm.view='compare'; render();
+    return document.documentElement.scrollWidth-document.documentElement.clientWidth;}, lang);
+  if(of>1) errs.push(`compare ${lang} ${w}px overflow=${of}`);
+}
+await p.evaluate(()=>{setLang('en');ST.comm.view='earnings';});
+ok('the compare view does not scroll the page sideways at any width, either language',
+   !errs.some(e=>/compare .* overflow/.test(e)));
+
 if(errs.length)fails.push(...errs);
 console.log(errs.length?'\nerrors: '+errs.join(' | '):'\nno console errors, no overflow');
 console.log(fails.length?`\nFAILED (${fails.length})`:'\nALL PASS');
