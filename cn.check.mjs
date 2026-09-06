@@ -18,6 +18,55 @@ await p.goto('file://' + process.cwd() + '/ucc_budget_simulator.html');
 await p.evaluate(()=>{ localStorage.setItem('ucc_unlocked','ucc2026'); localStorage.setItem('ucc_lang','zh'); });
 await p.reload(); await p.waitForTimeout(600);
 
+/* A guard that walks an empty app only ever sees empty states. Seed enough that
+   every module renders populated: enrolment across several courses and months
+   on both bases and in two years, so year-over-year and copy-year surfaces
+   appear; commission salespeople, bands and attribution; a growth case and a
+   competitor price. Kept here rather than in a fixture file, matching how the
+   other suites seed themselves. */
+await p.evaluate(()=>{
+  const iv=[]; let id=1;
+  const mix=[[0,24],[1,12],[7,18],[20,14],[3,30]];
+  mix.forEach(([ci,n])=>{
+    for(let m=0;m<12;m++){
+      iv.push({id:id++,kind:'budget',ci,month:m,year:2026,students:Math.max(1,Math.round(n/12))});
+      /* actual through September only, so year-to-date surfaces render */
+      if(m<9) iv.push({id:id++,kind:'actual',ci,month:m,year:2026,students:Math.max(1,Math.round(n/14))});
+    }
+    /* a second year, so trends and copy-year have something to compare */
+    for(let m=0;m<12;m++)
+      iv.push({id:id++,kind:'budget',ci,month:m,year:2027,students:Math.max(1,Math.round(n/14))});
+  });
+  ST.intakes=iv; ST.ybYear=2026;
+  /* one course excluded from Cost-Benefit, so the exclusion surfaces appear */
+  ST.cba.off[COURSES[3].name]=true;
+  /* commission: two salespeople, attribution in two months, schemes built */
+  ST.comm.people=[{id:1,name:'Aisyah Rahman',salary:3000,active:true},
+                  {id:2,name:'Wei Lin',salary:2600,active:true}];
+  ST.comm.nextId=3; ST.comm.spid=1; ST.comm.year=2026; ST.comm.attrib={};
+  [[0,10],[7,9],[20,7]].forEach(([ci,n])=>commAttribSet(ST,1,2026,ci,0,n));
+  [[1,5],[3,4]].forEach(([ci,n])=>commAttribSet(ST,2,2026,ci,1,n));
+  commSchemesInit(ST);
+  /* a growth case and a competitor price, so those tables are not empty */
+  if(ST.strat&&Array.isArray(ST.strat.cases)&&!ST.strat.cases.length)
+    ST.strat.cases.push({name:'Evening intake',start:2027,rev:200000,gm:0.55,opex:60000,capex:40000});
+  if(ST.op&&ST.op.comp)ST.op.comp[COURSES[0].name]=[7000,7500,6800];
+  /* a saved scenario, built the way the Save button builds one — a hand-made
+     object with different keys renders undefined/NaN and would look like an
+     application bug rather than a bad fixture */
+  if(Array.isArray(ST.saved)&&!ST.saved.length){
+    const c=COURSES[ST.ci],sc=calc(ST);
+    ST.saved.push({name:'Baseline',course:c.name,disc:ST.disc,agent:ST.agent,plan:ST.plan,
+                   be:sc.beStu,cost:sc.totalCost,netRev:sc.pTotal,profit:sc.pProfit,mgn:sc.pMgn});}
+  /* a few audit entries, so Change Log renders its edit history rather than
+     its empty state — the last module the seed would otherwise leave bare */
+  logAudit("Price List","Course fee "+COURSES[0].name,2400,2480);
+  logAudit("Expenses","Accounting Fees 2026",4000,4200);
+  logAudit("Sales Commission","Band 1 rate",3,3.5);
+  saveToStorage();
+});
+await p.reload(); await p.waitForTimeout(600);
+
 /* the exemption vocabulary, derived from live data + an approved token list */
 await p.evaluate(()=>{
   const norm = s => String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();

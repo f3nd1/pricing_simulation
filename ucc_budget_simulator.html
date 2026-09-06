@@ -1771,7 +1771,7 @@ function renderULEC(s,st){
     <div style="flex:1;padding:12px 14px;background:var(${s.uccProfit>=0?"--green-50":"--red-50"})">
       <div style="font-size:10px;font-weight:600;color:var(${s.uccProfit>=0?"--green-800":"--red-700"});text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">UCC keeps</div>
       <div style="font-size:20px;font-weight:700;color:var(${s.uccProfit>=0?"--green-800":"--red-700"})">${sgd(s.uccProfit)}</div>
-      <div style="font-size:11px;color:var(--text-muted);margin-top:3px">${fp(s.uccMgn)} margin · ${sgd(s.uccProfit/c.mo)}/mo</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:3px">${tf("{m} margin · {v}/mo","利润率 {m} · 每月 {v}",{m:fp(s.uccMgn),v:sgd(s.uccProfit/c.mo)})}</div>
     </div>
   </div>
 
@@ -2273,7 +2273,7 @@ function renderYearlyBudgetModule(st){
       <div class="ybg-mo">
         <div class="ybg-mo-name">${mname}</div>
         <div class="ybg-mo-tot">${monthStu?`<span class="ybg-mo-sum">${monthStu} stu</span><span class="ybg-mo-sales">${sgd(monthSales)}</span>`:""}</div>
-        <button class="ybg-dupmo" data-dupmonth="${m}" title="${rows.length?`Copy all of ${mname} into ${nextName}`:"Nothing to copy"}"${(m>=11||rows.length===0)?" disabled":""}>⧉→${nextName}</button>
+        <button class="ybg-dupmo" data-dupmonth="${m}" title="${rows.length?tf("Copy all of {a} into {b}","将 {a} 的全部内容复制到 {b}",{a:i18nStr(mname),b:i18nStr(nextName)}):tf("Nothing to copy","无可复制内容")}"${(m>=11||rows.length===0)?" disabled":""}>⧉→${nextName}</button>
       </div>
       <div class="ybg-cells" data-dropmonth="${m}">
         ${nodes||`<span class="ybg-empty">—</span>`}
@@ -2694,6 +2694,7 @@ Object.assign(I18N.zh, {"Operating requirement": "运营所需招生人数", "Op
 Object.assign(I18N.zh, {"Estimated enrolments needed during the selected period for this course to cover its own running costs. It starts from the exact Course Simulator break-even, converts it to a monthly enrolment pace, then multiplies it by the number of months in this period. Rounded up to a whole student. It excludes UCC central overhead and is not a minimum class size.": "该课程在所选期间内为覆盖自身运营成本所需的预计招生人数。系统从课程模拟器的精确盈亏平衡人数开始，换算为每月所需招生节奏，再乘以所选期间的月份数，并向上取整为完整学生人数。此数值不包括 UCC 中央间接费用，也不是最低开班人数。", "Rounded up to a whole student.": "向上取整为完整学生人数。"});
 Object.assign(I18N.zh, {"UCC Break-even": "UCC 整体盈亏平衡"});
 Object.assign(I18N.zh, {"Sales Commission": "销售佣金", "Salesperson earnings by month": "销售人员每月收入", "💼 Sales Commission": "💼 销售佣金"});
+Object.assign(I18N.zh, {"ACTUAL": "实际", "BUDGET": "预算", "Basis": "口径", "BE": "盈亏平衡", "Agent": "代理佣金", "Disc": "折扣", "Plan": "计划", "Measure": "指标", "Chart": "图表", "Chart metric": "图表指标", "Students": "学生人数", "Student enrolments": "学生招生人数", "Course contribution": "课程贡献额", "Courses running": "在营课程", "Grow enrolment": "扩大招生", "Include all": "纳入全部", "Clear all scenarios": "清除全部情景", "Year comparison": "年度对比", "Institution by year": "分年度的学院整体", "One course across years": "单一课程的跨年度对比", "Benefit-cost ratio": "成本效益比", "Full-cost BCR": "全成本成本效益比", "Profit / loss": "利润 / 亏损", "Profitable scenario": "盈利情景", "Loss-making scenario": "亏损情景", "Expenses": "支出", "Each cell": "每个单元格", "Price-List total/student": "价格表的生均总费用", "Total/student, no discount)": "生均总费用，未计折扣）", "Sub-total English": "小计 — 英语课程", "Sub-total Business": "小计 — 商业课程"});
 I18N.pat=[
   [/^Full-cost coverage ([\d.]+)×$/, "全成本覆盖率 $1×"],
   [/^Coverage ([\d.]+)×$/, "覆盖率 $1×"],
@@ -4388,11 +4389,14 @@ function cbaVerdict(r){
      a strategic hold rather than a growth target. */
   if(r.beFull!=null&&r.beFull<=Math.max(r.students*3,r.cls))
     return {k:"grow",label:`Grow to ${r.beFull}`,tone:"var(--blue-700)",
-            why:`funds overhead already; ${r.beFull-r.students} more students reach full-cost recovery`};
+            why:tf("funds overhead already; {n} more students reach full-cost recovery",
+                     "已能分担间接费用；再增加 {n} 名学生即可实现全成本回收",{n:r.beFull-r.students})};
   return {k:"review",label:"Review / strategic",tone:"#7c3aed",
           why:r.beFull==null
             ? "contributes to overhead, but no enrolment reaches full-cost recovery — keep only for strategic reasons"
-            : `contributes ${sgd(r.contribution)} to overhead, but full-cost recovery needs ${r.beFull} students against ${r.students} — not a realistic recruitment target, so judge it on strategic value`};
+            : tf("contributes {v} to overhead, but full-cost recovery needs {n} students against {s} — not a realistic recruitment target, so judge it on strategic value",
+                   "已为间接费用贡献 {v}，但实现全成本回收需要 {n} 名学生，而目前为 {s} 名 — 这并非现实的招生目标，因此应以战略价值来评估该课程",
+                   {v:sgd(r.contribution),n:r.beFull,s:r.students})};
 }
 const CBA_ACTIONS=[["maintain","Maintain / healthy","var(--text-success)"],["grow","Grow enrolment","var(--blue-700)"],
                    ["review","Review / strategic","#7c3aed"],["reprice","Reprice / review cost","var(--amber-800)"],
@@ -5030,13 +5034,15 @@ function cbaDrawMatrix(st){
   const pts=g.selectAll("g.pt").data(rows).enter().append("g").attr("class","pt")
     .attr("transform",r=>`translate(${pos[r.ci][0]},${pos[r.ci][1]})`)
     .attr("role","group").style("cursor","pointer")
-    .attr("aria-label",r=>`${r.name}. ${r.verdict.label}. ${r.students} students.`);
+    .attr("aria-label",r=>`${r.name}. ${i18nStr(r.verdict.label)}. `
+      +tf("{n} students","{n} 名学生",{n:cbaN(r.students)}));
   pts.filter(r=>r.ci===sel).append("circle").attr("r",12)
     .attr("fill","none").attr("stroke",tone).attr("stroke-opacity",.35).attr("stroke-width",2);
   pts.append("circle").attr("class","hit").attr("r",r=>r.ci===sel?8:7)
     .attr("fill",tone).attr("fill-opacity",.8).attr("stroke","#fff").attr("stroke-width",1.5)
     .attr("tabindex",0).attr("role","button")
-    .attr("aria-label",r=>`${r.name}. ${r.verdict.label}. ${r.students} students. Open course.`);
+    .attr("aria-label",r=>`${r.name}. ${i18nStr(r.verdict.label)}. `
+      +tf("{n} students. Open course.","{n} 名学生。打开该课程。",{n:cbaN(r.students)}));
   /* label the selected course and the two strongest, so no dot is anonymous */
   const byC=rows.slice().sort((a,b)=>b.contribution-a.contribution);
   const labelled=new Set([sel,...byC.slice(0,2).map(r=>r.ci),
@@ -5431,7 +5437,7 @@ function cbaCompactTable(st,d){
     <div style="margin-bottom:8px">${cbaScopeToggle(st,d)}</div>
     <div class="cb-sub" style="margin-bottom:10px">
       ${d.counts.relevant} course${d.counts.relevant===1?"":"s"} ha${d.counts.relevant===1?"s":"ve"} Budget or Actual enrolment in ${d.yr}. ${d.counts.both} ${d.counts.both===1?"is":"are"} included in Cost-Benefit${d.counts.excludedWithActivity?` and ${d.counts.excludedWithActivity} ${d.counts.excludedWithActivity===1?"is":"are"} excluded`:""}.
-      ${d.counts.excludedWithActivity?`Excluded courses keep their Yearly Budget enrolment.`:""}
+      ${d.counts.excludedWithActivity?tf("Excluded courses keep their Yearly Budget enrolment.","已排除的课程仍保留其年度预算招生数据。"):""}
     </div>
     <div style="overflow-x:auto;max-width:100%">
       <table class="tbl" style="width:100%;${adv?"min-width:1720px":"min-width:820px"}">
@@ -6323,7 +6329,9 @@ function cbaRenderOverview(st,d){
            "成本基数回报率：每投入 $1 可收回 <strong>{v}</strong>。",
            {v:(T.bcr==null?"—":"$"+T.bcr.toFixed(2))})}
       ${T.needStudents!=null
-        ? `At this course mix and pricing, breakeven needs <strong>${T.needStudents}</strong> students against the <strong>${T.students}</strong> planned.`
+        ? tf("At this course mix and pricing, breakeven needs <strong>{n}</strong> students against the <strong>{p}</strong> planned.",
+             "按此课程组合与定价，达到盈亏平衡需要 <strong>{n}</strong> 名学生，而当前计划为 <strong>{p}</strong> 名。",
+             {n:T.needStudents,p:T.students})
         : `<strong style="color:var(--text-danger)">No enrolment reaches breakeven at this pricing</strong> — the running courses contribute ${sgd(T.contribution)} before overhead, so volume cannot close the gap. This is a pricing or commission problem, not a recruitment one.`}
     </div>
   </div>
@@ -7217,7 +7225,8 @@ function cbaRenderYears(st,d){
     ${!withData.length?`<div style="padding:24px;text-align:center;color:var(--text-muted)">No ${basis} enrolment recorded for any year. Enter intakes in <strong>Yearly Budget</strong>.</div>`
       :`<div id="cbaTrendChart" style="width:100%"></div>${trend}`}
     <div style="font-size:11px;color:var(--text-muted);margin-top:8px;line-height:1.6">
-      Only Budget and Actual are offered — this application holds no Forecast enrolment data, so none is shown rather than invented. Years without recorded enrolment read <strong>N/A</strong>, not zero.
+      ${tf("Only Budget and Actual are offered — this application holds no Forecast enrolment data, so none is shown rather than invented. Years without recorded enrolment read <strong>N/A</strong>, not zero.",
+            "此处仅提供预算与实际两种口径 — 本应用不存放预测招生数据，因此宁可不显示，也不会凭空生成。没有招生记录的年份显示为 <strong>N/A</strong>，而非零。")}
     </div>
   </div>
 
@@ -7243,7 +7252,10 @@ function cbaRenderYears(st,d){
             const col=v==null?"var(--text-muted)":k==="contribution"?(v>=0?"var(--text-success)":"var(--text-danger)"):"var(--text-primary)";
             return `<td style="padding:4px 8px;text-align:right;color:${col}">${cbaTrendFmt(v,kind)}</td>`;}).join("")}</tr>`).join("")}
       </tbody></table></div>
-    <div style="font-size:11px;color:var(--text-muted);margin-top:8px">A year shows N/A where this course had no recorded ${basis} enrolment.</div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:8px">${
+      basis==="actual"
+        ? tf("A year shows N/A where this course had no recorded actual enrolment.","若该课程在某年度没有实际招生记录，则显示为 N/A。")
+        : tf("A year shows N/A where this course had no recorded budget enrolment.","若该课程在某年度没有预算招生记录，则显示为 N/A。")}</div>
   </div>`;
 }
 function cbaDrawTrend(st){
@@ -7313,8 +7325,13 @@ function cbaBudgetState(r){
    that is not traceable to a number on the page. */
 function cbaPlain(r,d){
   const L=[];
-  if(r.opStatus==="met")L.push(["✅",`Enrolling fast enough to cover its own running costs — ${r.paceActual.toFixed(2)} a month against ${r.paceReq.toFixed(2)} required`]);
-  else if(r.opStatus==="not")L.push(["❌",`Enrolling too slowly — ${r.paceActual.toFixed(2)} a month against ${r.paceReq.toFixed(2)} required, ${Math.ceil(Math.abs(r.opGap))} student${Math.ceil(Math.abs(r.opGap))===1?"":"s"} short over ${r.months} month${r.months===1?"":"s"}`]);
+  if(r.opStatus==="met")L.push(["✅",tf("Enrolling fast enough to cover its own running costs — {a} a month against {b} required",
+    "招生速度足以覆盖自身运营成本 — 实际每月 {a} 名，所需每月 {b} 名",{a:r.paceActual.toFixed(2),b:r.paceReq.toFixed(2)})]);
+  else if(r.opStatus==="not")L.push(["❌",tf(
+    "Enrolling too slowly — {a} a month against {b} required, {n} student(s) short over {m} month(s)",
+    "招生速度不足 — 实际每月 {a} 名，所需每月 {b} 名，在 {m} 个月内共少招 {n} 名学生",
+    {a:r.paceActual.toFixed(2),b:r.paceReq.toFixed(2),
+     n:Math.ceil(Math.abs(r.opGap)),m:r.months})]);
   else L.push(["⚪",`No ${(d&&d.basis)==="actual"?"actual":"budget"} enrolment recorded for this year, so pace cannot be measured`]);
   const B=cbaBudgetState(r);
   if(B.k==="na")L.push(["⚪","No Actual enrolment recorded yet for this year, so budget attainment cannot be measured"]);
@@ -7375,7 +7392,8 @@ function cbaInsights(st,d){
     else if(r.opStatus==="not")
       add(risk,"operating-short",band(r.opGap,5),2,"❌",
         tf("Below operating requirement","低于运营所需招生人数"),`${cbaN(r.students)} / ${cbaN(cbaReqShown(r))}`,r.opGap,
-        `${r.paceActual.toFixed(2)} a month against ${r.paceReq.toFixed(2)} required`);
+        tf("{a} a month against {b} required","实际每月 {a} 名，所需每月 {b} 名",
+           {a:r.paceActual.toFixed(2),b:r.paceReq.toFixed(2)}));
     if(r.opStatus!=="not"&&r.ytd&&r.ytd.pct!=null&&r.ytd.pct<CBA_YTD_SHORTFALL)
       add(risk,"budget-shortfall",band((1-r.ytd.pct)*100,10),3,"⚠",
         "Behind budget",`${cbaPct(r.ytd.pct)} of target`,(1-r.ytd.pct)*100,
