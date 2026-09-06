@@ -8287,6 +8287,85 @@ function commScore(st,bands,yr){
     signSplit:rows.filter(r=>r.signSplit).length,
     unpriced:rows.length-priced.length};
 }
+/* ── does the attribution actually separate the schemes? ─────────────────
+   A ranking is only worth showing if the data could have produced a different
+   one. Two schemes that never disagree on any attributed fee will tie, and a
+   "lowest cost" badge on a tie asserts a finding the data cannot support.
+
+   Disagreement is computed exactly rather than guessed: take the union of every
+   band edge across all schemes, and probe the midpoint of each interval between
+   consecutive edges. Inside one interval every scheme's rate is constant by
+   construction, so one probe decides the whole interval. No extra cbaCompute
+   passes -- these are band lookups only. */
+function commDisagreeZones(schemes){
+  const edges=[...new Set(schemes.flatMap(s=>(s.bands||[]).flatMap(b=>[
+    Number(b.from)||0,(b.to===null||b.to===""||b.to===undefined)?null:Number(b.to)]))
+    .filter(v=>v!=null))].sort((a,b)=>a-b);
+  edges.push(Infinity);
+  const out=[];
+  for(let i=0;i<edges.length-1;i++){
+    const lo=edges[i],hi=edges[i+1];
+    const probe=isFinite(hi)?(lo+hi)/2:lo+1;
+    const rates=schemes.map(s=>({k:s.k,name:s.name,rate:commRateIn(s.bands,probe)}));
+    if(new Set(rates.map(r=>r.rate)).size>1)out.push({lo,hi,rates});
+  }
+  return out;
+}
+/* What the comparison rests on. Distinct FEES, not courses: two courses sharing
+   one fee test exactly as much as one course does. */
+function commBasis(st,yr){
+  const A=commYearAttrib(st,yr);
+  const cis=Object.keys(A).filter(ci=>A[ci]>0);
+  const fees=[...new Set(cis.map(ci=>Number((COURSES[ci]||{}).fee)||0).filter(f=>f>0))].sort((a,b)=>a-b);
+  const months=new Set();
+  Object.keys(st.comm.attrib||{}).forEach(spid=>{
+    const Y=(st.comm.attrib[spid]||{})[yr];if(!Y)return;
+    Object.keys(Y).forEach(ci=>Object.keys(Y[ci]).forEach(m=>{
+      if((Number(Y[ci][m])||0)>0)months.add(m);}));});
+  return {courses:cis.length,months:months.size,
+    enrolments:cis.reduce((a,ci)=>a+A[ci],0),
+    fees,distinctFees:fees.length,
+    min:fees[0]||null,max:fees[fees.length-1]||null};
+}
+const COMM_MIN_FEES=2;   /* see commSeparability */
+/* Primary gate: separability. Secondary floor: two distinct fees.
+   At one distinct fee every scheme collapses to a single rate on a single
+   number, so the ranking compares three constants and tells the reader only
+   which flat rate is smallest -- already legible from the band tables. Two is
+   the least at which a threshold can sit BETWEEN attributed fees and therefore
+   be tested at all. Beyond two, count stops being the question and coverage
+   starts, which the zone check measures exactly. */
+function commSeparability(st,all,yr){
+  const basis=commBasis(st,yr);
+  const zones=commDisagreeZones(all);
+  const exercised=zones.filter(z=>basis.fees.some(f=>f>=z.lo&&f<z.hi));
+  const untested=zones.filter(z=>!basis.fees.some(f=>f>=z.lo&&f<z.hi));
+  /* schemes sharing a total, grouped */
+  const byTotal=new Map();
+  all.forEach(x=>{const key=Math.round(x.score.commission*100)/100;
+    byTotal.set(key,(byTotal.get(key)||[]).concat([x]));});
+  const ties=[...byTotal.values()].filter(g=>g.length>1);
+  const tooFewFees=basis.distinctFees<COMM_MIN_FEES;
+  return {basis,zones,exercised,untested,ties,tooFewFees,
+    separable:ties.length===0&&untested.length===0&&!tooFewFees&&basis.enrolments>0};
+}
+/* Why two schemes tie: the bands they differ on, and the fact that nothing
+   attributed reaches that range. */
+function commTieReason(group,sep){
+  /* scheme names are user-entered, so they are data inside the sentence and are
+     never translated -- same rule as course and salesperson names */
+  const names=`<span data-i18n-skip>${esc(group.map(x=>x.name||x.k).join(" / "))}</span>`;
+  const pair=[group[0],group[1]];
+  const zs=commDisagreeZones(pair);
+  if(!zs.length)
+    return tf("{names} are identical: their bands are the same, so no attribution could separate them.",
+              "{names}完全相同：其区间设置一致，任何招生分配都无法区分二者。",{names});
+  const where=zs.map(z=>z.hi===Infinity
+    ? tf("above {lo}","{lo} 以上",{lo:commMoney(z.lo)})
+    : tf("{lo} to {hi}","{lo} 至 {hi}",{lo:commMoney(z.lo),hi:commMoney(z.hi)})).join(", ");
+  return tf("{names} produce the same total. They differ only {where}, and no attributed course fee falls there.",
+            "{names} 的合计相同。二者仅在{where}存在差异，而已分配课程的学费均不落在该范围内。",{names,where});
+}
 function commCompareAll(st,yr){
   const S=commSchemesInit(st);
   return COMM_SCHEME_KEYS.map(k=>({k,name:S[k].name||k,bands:S[k].bands,
@@ -8496,15 +8575,67 @@ function commSchemeBandTable(st,k){
     <button data-commsadd="${k}" class="cb-sub" style="margin-top:6px;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;padding:3px 9px">${tf("+ Add band","+ 新增区间")}</button>
   </div>`;
 }
+/* Always shown, safe ranking or not: a reader needs to know what the verdict
+   rests on, not only when it is unsafe. */
+function commBasisLine(sep){
+  const B=sep.basis;
+  if(!B.enrolments)return tf("Nothing is attributed for this year yet, so there is nothing to compare.",
+                             "本年度尚未分配任何招生数据，因此无法进行比较。");
+  return tf("Based on {c} course(s) across {m} month(s), {e} enrolments, fees {lo} to {hi}. {d} distinct fee(s).",
+            "基于 {c} 门课程、{m} 个月、共 {e} 名招生，学费区间 {lo} 至 {hi}。不同学费共 {d} 种。",
+            {c:cbaN(B.courses),m:cbaN(B.months),e:cbaNumX(B.enrolments),
+             lo:commMoney(B.min),hi:commMoney(B.max),d:cbaN(B.distinctFees)});
+}
+/* An untested boundary should tell the reader what would test it, not merely
+   that something is missing. */
+function commUntestedLine(z,sep){
+  const B=sep.basis;
+  const rates=z.rates.map(r=>`<span data-i18n-skip>${esc(r.name||r.k)}</span> ${r.rate}%`).join(" / ");
+  if(z.hi===Infinity)
+    return tf("Above {lo} the schemes differ ({rates}), but no attributed fee reaches it — the highest is {max}. Attribute a course priced above {lo} to test this boundary.",
+              "在 {lo} 以上各方案存在差异（{rates}），但已分配课程中没有达到该水平的学费，最高为 {max}。请分配一门学费高于 {lo} 的课程以检验该边界。",
+              {lo:commMoney(z.lo),rates,max:commMoney(B.max)});
+  return tf("Between {lo} and {hi} the schemes differ ({rates}), but no attributed fee falls in that range. Attribute a course priced between {lo} and {hi} to test this boundary.",
+            "在 {lo} 至 {hi} 之间各方案存在差异（{rates}），但已分配课程的学费均不在该范围内。请分配一门学费介于 {lo} 与 {hi} 之间的课程以检验该边界。",
+            {lo:commMoney(z.lo),hi:commMoney(z.hi),rates});
+}
+function commDiscriminationPanel(st,sep){
+  const B=sep.basis,tone=sep.separable?CBA_TONE.good:CBA_TONE.warn;
+  const notes=[];
+  sep.ties.forEach(g=>notes.push(commTieReason(g,sep)));
+  if(sep.tooFewFees&&B.enrolments)
+    notes.push(tf("Only {d} distinct course fee is attributed, so every scheme is being judged on a single price point. Attribute a course at a different fee before reading the ranking.",
+                  "已分配的课程学费仅有 {d} 种，因此所有方案都只在同一个价格点上被评判。请先分配一门学费不同的课程，再解读排名。",{d:cbaN(B.distinctFees)}));
+  sep.untested.forEach(z=>notes.push(commUntestedLine(z,sep)));
+  const head=!B.enrolments
+    ? tf("Nothing to compare","无可比较内容")
+    : sep.separable
+      ? tf("The attribution separates these schemes","当前招生分配可以区分各方案")
+      : tf("The attribution cannot separate these schemes","当前招生分配无法区分各方案");
+  return `<div class="cb-panel cb-sec" style="border-left:4px solid ${tone[0]}">
+    <div style="display:flex;align-items:baseline;gap:7px;flex-wrap:wrap">
+      <span style="font-weight:700;font-size:13px;color:${tone[0]}">${sep.separable?"✓":"⚠"} ${head}</span>
+      <span class="cb-sub">${commBasisLine(sep)}</span>
+    </div>
+    ${notes.length?`<ul style="margin:8px 0 0;padding-left:18px;font-size:11px;line-height:1.65;color:var(--text-secondary)">
+      ${notes.map(n=>`<li>${n}</li>`).join("")}</ul>`:""}
+    ${sep.separable&&sep.zones.length?`<div class="cb-sub" style="margin-top:7px;font-size:10px">${tf(
+      "Every range where the schemes differ has at least one attributed fee in it, so the ranking below is supported by the data.",
+      "各方案存在差异的每一个区间内，均至少有一笔已分配的学费，因此下方排名有数据支撑。")}</div>`:""}
+  </div>`;
+}
 function commCompareTable(st,all,yr){
   const money=commMoney;
-  const best=all.reduce((a,x)=>x.score.commission<a.score.commission?x:a,all[0]);
+  const sep=commSeparability(st,all,yr);
+  /* the badge is a claim about the data, so it is withheld unless the data
+     could have produced a different answer */
+  const best=sep.separable?all.reduce((a,x)=>x.score.commission<a.score.commission?x:a,all[0]):null;
   const row=(x)=>{
     const S=x.score,on=st.comm.schemeSel===x.k;
     const tip=(lines,note)=>commTip(x.name||x.k,lines,"",note||"");
     return `<tr data-commsrow="${x.k}" style="cursor:pointer${on?";background:var(--surface-1)":""}">
       <td style="padding:6px 9px;font-weight:${on?700:600}"><span data-i18n-skip>${esc(x.name||x.k)}</span>
-        ${x.k===best.k?`<span class="cb-chip" style="color:${CBA_TONE.good[0]};background:${CBA_TONE.good[1]};margin-left:5px">↓ ${tf("lowest cost","成本最低")}</span>`:""}</td>
+        ${best&&x.k===best.k?`<span class="cb-chip" style="color:${CBA_TONE.good[0]};background:${CBA_TONE.good[1]};margin-left:5px">↓ ${tf("lowest cost","成本最低")}</span>`:""}</td>
       <td style="padding:6px 9px;text-align:right;font-weight:700">${money(S.commission)}${
         tip([tf("Attributed enrolments: {n}","已分配招生：{n}",{n:cbaNumX(S.students)}),
              tf("Attributed gross fees: {v}","已分配学费总额：{v}",{v:money(S.gross)}),
@@ -8526,8 +8657,9 @@ function commCompareTable(st,all,yr){
           tf("Compared against average contribution per student for the year. A course at a class boundary is flagged separately and never counted here.",
              "此处与该年度的生均平均贡献额比较。处于班级容量临界点的课程会单独标示，且不计入此项。"))}</td>
     </tr>`;};
-  return `<div class="cb-panel">
+  return commDiscriminationPanel(st,sep)+`<div class="cb-panel">
     <div class="cb-h" style="margin-top:0;font-size:14px">${tf("Scheme comparison","方案对比")} <span class="cb-sub">${yr}</span>
+      ${best?"":`<span class="cb-chip" style="background:var(--surface-1);color:var(--text-muted);margin-left:6px">${tf("not separable on this attribution","当前招生分配无法区分")}</span>`}
       ${cbaInfo(tf("Scheme comparison","方案对比"),esc(tf(
         "Each scheme is scored against the enrolments you have already attributed for this year. Only the band table changes between them, so any difference in cost is the scheme, not the volume.",
         "每个方案都基于您本年度已分配的招生数据进行测算。方案之间只有区间设置不同，因此成本差异完全来自方案本身，而非招生量。")))}</div>

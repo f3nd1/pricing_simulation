@@ -524,6 +524,98 @@ const leak = await p.evaluate(()=>{
 ok('no untranslated English anywhere in the compare view, text or attributes',
    leak.length===0, leak.slice(0,6).join(' · '));
 
+// ══ DISCRIMINATION ═══════════════════════════════════════════════════════
+const disc = await p.evaluate(()=>{
+  const set=(att,schemes)=>{
+    const iv=[];let id=1;
+    COURSES.forEach((c,ci)=>{for(let m=0;m<12;m++)
+      iv.push({id:id++,kind:'budget',ci,month:m,year:2026,students:2});});
+    ST.intakes=iv; ST.comm.year=2026; ST.comm.attrib={}; ST.comm.spid=1;
+    ST.comm.people=[{id:1,name:'A',salary:0,active:true}]; ST.comm.nextId=2;
+    att.forEach(([ci,m,n])=>commAttribSet(ST,1,2026,ci,m,n));
+    ST.comm.schemes=null; commSchemesInit(ST);
+    ST.comm.schemes.A.bands=[{from:0,to:3000,rate:3},{from:3000,to:null,rate:5}];
+    ST.comm.schemes.B.bands=schemes||[{from:0,to:8000,rate:2},{from:8000,to:null,rate:9}];
+    ST.comm.schemes.C.bands=[{from:0,to:null,rate:3}];
+    ST.module='commission'; ST.comm.view='compare'; render();
+    const all=commCompareAll(ST,2026);
+    const sep=commSeparability(ST,all,2026);
+    const txt=document.getElementById('app').innerText;
+    return {sep:{separable:sep.separable,ties:sep.ties.length,untested:sep.untested.length,
+                 zones:sep.zones.length,tooFew:sep.tooFewFees,basis:sep.basis},
+            totals:all.map(x=>Math.round(x.score.commission)),
+            chip:(txt.match(/lowest cost/g)||[]).length,
+            notSep:/not separable on this attribution/i.test(txt), txt};
+  };
+  return {
+    tie:      set([[0,0,10]]),
+    sameFee:  set([[0,0,10],[1,0,6]]),
+    partial:  set([[0,0,10],[7,1,9]]),
+    full:     set([[0,0,10],[7,1,9],[20,2,7]]),
+    identical:set([[0,0,10],[7,1,9],[20,2,7]],[{from:0,to:3000,rate:3},{from:3000,to:null,rate:5}]),
+    none:     set([])};});
+
+ok('the three-way tie case is caught and no winner is crowned',
+   disc.tie.sep.ties>0 && !disc.tie.sep.separable && disc.tie.chip===0,
+   `totals ${disc.tie.totals.join('/')} · ${disc.tie.sep.ties} tie group(s)`);
+ok('the tie explanation names the schemes and the range they differ on',
+   /produce the same total/i.test(disc.tie.txt) &&
+   /differ only above \$3,000/i.test(disc.tie.txt) &&
+   /no attributed course fee falls there/i.test(disc.tie.txt));
+ok('two courses sharing one fee is still one distinct fee, and is caught',
+   disc.sameFee.sep.basis.courses===2 && disc.sameFee.sep.basis.distinctFees===1 &&
+   disc.sameFee.sep.tooFew && disc.sameFee.chip===0,
+   `${disc.sameFee.sep.basis.courses} courses, ${disc.sameFee.sep.basis.distinctFees} distinct fee`);
+ok('the floor is two DISTINCT fees, not two courses',
+   /Only 1 distinct course fee is attributed/i.test(disc.sameFee.txt));
+ok('a partially tested boundary suppresses the badge even when totals differ',
+   new Set(disc.partial.totals).size===disc.partial.totals.length &&
+   disc.partial.sep.untested>0 && disc.partial.chip===0,
+   `totals ${disc.partial.totals.join('/')} · ${disc.partial.sep.untested} untested zone(s)`);
+ok('an untested boundary says what would test it',
+   /Attribute a course priced (above|between)/i.test(disc.partial.txt));
+ok('a fully exercised attribution restores the badge',
+   disc.full.sep.separable && disc.full.sep.untested===0 && disc.full.sep.ties===0 &&
+   disc.full.chip===1, `${disc.full.sep.zones} zones, all exercised`);
+ok('two schemes with identical bands are reported as unseparable by any attribution',
+   disc.identical.sep.ties>0 && disc.identical.chip===0 &&
+   /their bands are the same/i.test(disc.identical.txt));
+ok('the basis line shows even when the ranking IS supported',
+   /Based on 3 course\(s\) across 3 month\(s\), 26 enrolments, fees \$2,480 to \$8,120/i.test(disc.full.txt) &&
+   /3 distinct fee\(s\)/i.test(disc.full.txt));
+ok('the basis line counts courses, months, enrolments and the fee range correctly',
+   disc.full.sep.basis.courses===3 && disc.full.sep.basis.months===3 &&
+   disc.full.sep.basis.enrolments===26 && disc.full.sep.basis.min===2480 &&
+   disc.full.sep.basis.max===8120);
+ok('an empty attribution says there is nothing to compare rather than ranking',
+   disc.none.sep.basis.enrolments===0 && disc.none.chip===0 &&
+   /Nothing is attributed for this year yet/i.test(disc.none.txt));
+ok('the suppressed state is labelled, not silent',
+   disc.tie.notSep && disc.full.notSep===false);
+ok('disagreement zones are computed exactly from the union of band edges',
+   disc.full.sep.zones===3, `${disc.full.sep.zones} zones for 3 schemes with edges 3000/8000`);
+
+const discZh = await p.evaluate(()=>{
+  setLang('zh');
+  const iv=[];let id=1;
+  COURSES.forEach((c,ci)=>{for(let m=0;m<12;m++)iv.push({id:id++,kind:'budget',ci,month:m,year:2026,students:2});});
+  ST.intakes=iv; ST.comm.attrib={}; ST.comm.spid=1; ST.comm.year=2026;
+  commAttribSet(ST,1,2026,0,0,10);
+  ST.comm.schemes=null; commSchemesInit(ST);
+  ST.comm.schemes.B.bands=[{from:0,to:8000,rate:2},{from:8000,to:null,rate:9}];
+  ST.module='commission'; ST.comm.view='compare'; render();
+  const bad=document.getElementById('app').innerText;
+  commAttribSet(ST,1,2026,7,1,9); commAttribSet(ST,1,2026,20,2,7); render();
+  const good=document.getElementById('app').innerText;
+  setLang('en');
+  return {bad,good};});
+ok('CN: the unseparable state, the tie reason and the remedy are Chinese',
+   /当前招生分配无法区分各方案/.test(discZh.bad) && /的合计相同/.test(discZh.bad) &&
+   /请分配一门学费/.test(discZh.bad) && /不同学费共/.test(discZh.bad));
+ok('CN: the supported state and its basis line are Chinese',
+   /当前招生分配可以区分各方案/.test(discZh.good) && /基于/.test(discZh.good) &&
+   /均至少有一笔已分配的学费/.test(discZh.good));
+
 // responsive, charts included
 for (const lang of ['en','zh']) for (const w of [1440,1280,768,375]){
   await p.setViewportSize({width:w,height:900});
