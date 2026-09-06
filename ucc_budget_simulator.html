@@ -8283,10 +8283,11 @@ function commRateIn(bands,fee){const b=commBandIn(bands,fee);return b?b.rate:0;}
 /* Attributed enrolments for a course across the whole year, every salesperson.
    Timing does not matter here: spreading moves when money lands, not how much,
    and a year total is the same either way. */
-function commYearAttrib(st,yr){
+function commYearAttrib(st,yr,spid){
   const out={};
-  Object.keys(st.comm.attrib||{}).forEach(spid=>{
-    const Y=st.comm.attrib[spid][yr];if(!Y)return;
+  Object.keys(st.comm.attrib||{}).forEach(id=>{
+    if(spid!=null&&String(id)!==String(spid))return;
+    const Y=st.comm.attrib[id][yr];if(!Y)return;
     Object.keys(Y).forEach(ci=>{
       const months=Y[ci];
       Object.keys(months).forEach(m=>{out[ci]=(out[ci]||0)+(Number(months[m])||0);});
@@ -8295,8 +8296,8 @@ function commYearAttrib(st,yr){
   return out;
 }
 /* One row per attributed course, scored against one scheme. */
-function commScore(st,bands,yr){
-  const A=commYearAttrib(st,yr),basis=st.comm.basis||"budget";
+function commScore(st,bands,yr,spid){
+  const A=commYearAttrib(st,yr,spid),basis=st.comm.basis||"budget";
   const d=cbaCompute(st,basis,yr);
   const rows=Object.keys(A).map(ciKey=>{
     const ci=+ciKey,c=COURSES[ci];
@@ -8331,15 +8332,56 @@ function commScore(st,bands,yr){
   const gross=rows.reduce((a,r)=>a+r.gross,0);
   const students=rows.reduce((a,r)=>a+r.students,0);
   const contribution=priced.reduce((a,r)=>a+r.contribution,0);
-  return {rows,priced,commission,gross,students,contribution,
+  /* A ratio has to divide like by like. Contribution only exists for courses
+     with enrolment on the selected basis, so the numerator is the commission
+     paid on THOSE courses -- not the whole payout. Dividing the full payout by
+     a partial contribution gave figures over 100% that meant nothing.
+     The consequence is that this numerator differs from the commission shown
+     in the total column, so the coverage is stated on screen, not only in the
+     tooltip, and the ratio is N/A only when nothing is measurable at all. */
+  const pricedCommission=priced.reduce((a,r)=>a+r.commission,0);
+  return {rows,priced,commission,gross,students,contribution,pricedCommission,
     pctOfGross:gross>0?commission/gross:null,
     perEnrol:students>0?commission/students:null,
-    /* the denominator covers only the courses that HAVE a contribution figure,
-       and the view states how many were left out */
-    pctOfContrib:contribution>0?commission/contribution:null,
+    pctOfContrib:contribution>0?pricedCommission/contribution:null,
+    /* how representative that ratio is: courses, and the share of the money */
+    covCourses:rows.length?priced.length/rows.length:null,
+    covMoney:commission>0?pricedCommission/commission:null,
     overpay:rows.filter(r=>r.overpay).length,
     signSplit:rows.filter(r=>r.signSplit).length,
     unpriced:rows.length-priced.length};
+}
+/* Take-home under a given scheme: what each salesperson earns and what UCC
+   pays. The bands are passed in rather than swapped into ST.comm.bands, so no
+   render path ever mutates live state to score a sandbox scheme. */
+function commTakeHome(st,bands,yr){
+  const rows=commPeople(st).map(p=>{
+    const sc=commScore(st,bands,yr,p.id);
+    const salary=(Number(p.salary)||0)*12;
+    return {id:p.id,name:p.name,salary,commission:sc.commission,
+            take:salary+sc.commission,students:sc.students};});
+  return {rows,
+    salary:rows.reduce((a,r)=>a+r.salary,0),
+    commission:rows.reduce((a,r)=>a+r.commission,0),
+    take:rows.reduce((a,r)=>a+r.take,0)};
+}
+/* Which scheme is the one actually in force. Two schemes can hold the same
+   bands, so the first in A/B/C order wins; when none matches the live bands
+   the view says so rather than baselining against something not in use. */
+function commBandsEqual(a,b){
+  const norm=x=>(x||[]).map(v=>[Number(v.from)||0,
+    (v.to===null||v.to===""||v.to===undefined)?null:Number(v.to),Number(v.rate)||0])
+    .sort((p,q)=>p[0]-q[0]);
+  return JSON.stringify(norm(a))===JSON.stringify(norm(b));
+}
+function commLiveScheme(st){
+  const S=commSchemesInit(st);
+  return COMM_SCHEME_KEYS.find(k=>commBandsEqual(S[k].bands,st.comm.bands))||null;
+}
+function commBaselineKey(st){
+  const want=st.comm.baseline;
+  if(want&&COMM_SCHEME_KEYS.includes(want))return want;
+  return commLiveScheme(st)||"A";
 }
 /* ── does the attribution actually separate the schemes? ─────────────────
    A ranking is only worth showing if the data could have produced a different
@@ -8681,6 +8723,9 @@ function commDiscriminationPanel(st,sep){
 function commCompareTable(st,all,yr){
   const money=commMoney;
   const sep=commSeparability(st,all,yr);
+  const TH={};all.forEach(x=>{TH[x.k]=commTakeHome(st,x.bands,yr);});
+  const baseKey=commBaselineKey(st);
+  const liveKey=commLiveScheme(st);
   /* the badge is a claim about the data, so it is withheld unless the data
      could have produced a different answer */
   const best=sep.separable?all.reduce((a,x)=>x.score.commission<a.score.commission?x:a,all[0]):null;
@@ -8698,10 +8743,36 @@ function commCompareTable(st,all,yr){
         tip([`${money(S.commission)} ÷ ${money(S.gross)} × 100 = ${S.pctOfGross==null?"N/A":(S.pctOfGross*100).toFixed(2)+"%"}`])}</td>
       <td style="padding:6px 9px;text-align:right">${S.perEnrol==null?"N/A":money(S.perEnrol)}${
         tip([`${money(S.commission)} ÷ ${cbaNumX(S.students)} = ${S.perEnrol==null?"N/A":money(S.perEnrol)}`])}</td>
-      <td style="padding:6px 9px;text-align:right">${S.pctOfContrib==null?"N/A":(S.pctOfContrib*100).toFixed(1)+"%"}${
-        tip([`${money(S.commission)} ÷ ${money(S.contribution)} × 100 = ${S.pctOfContrib==null?"N/A":(S.pctOfContrib*100).toFixed(1)+"%"}`],
-            S.unpriced?tf("{n} attributed course(s) have no enrolment on this basis and are left out of this denominator.",
-                          "有 {n} 门已分配课程在该口径下没有招生，未计入此分母。",{n:cbaN(S.unpriced)}):"")}</td>
+      <td style="padding:6px 9px;text-align:right">${S.pctOfContrib==null?`<span style="color:#94a3b8">N/A</span>`:(S.pctOfContrib*100).toFixed(1)+"%"}${
+        tip(S.pctOfContrib==null
+          ? [tf("No attributed course has enrolment on this basis, so there is no contribution to compare against.",
+                "没有任何已分配课程在该口径下存在招生，因此没有可供比较的贡献额。")]
+          : [tf("Commission on the {n} course(s) that have contribution: {v}","有贡献额数据的 {n} 门课程所对应的佣金：{v}",
+                {n:cbaN(S.priced.length),v:money(S.pricedCommission)}),
+             tf("Their contribution: {v}","这些课程的贡献额：{v}",{v:money(S.contribution)}),
+             `${money(S.pricedCommission)} ÷ ${money(S.contribution)} × 100 = ${(S.pctOfContrib*100).toFixed(1)}%`],
+            S.unpriced?tf("This is not the {full} in the total column: {n} attributed course(s) have no enrolment on this basis, so both sides of this ratio leave them out.",
+                          "此处的分子并非总额列中的 {full}：有 {n} 门已分配课程在该口径下没有招生，因此本比率的分子与分母均已将其排除。",
+                          {full:money(S.commission),n:cbaN(S.unpriced)}):"")}
+        ${S.unpriced&&S.pctOfContrib!=null?`<div class="cb-sub" style="font-size:9px;line-height:1.3">${
+          tf("{p} of {t} courses","{t} 门中的 {p} 门",{p:cbaN(S.priced.length),t:cbaN(S.rows.length)})}</div>`:""}</td>
+      <td style="padding:6px 9px;text-align:right;font-weight:600">${money(TH[x.k].take)}${
+        tip([tf("Fixed salary for the year: {v}","全年固定薪酬：{v}",{v:money(TH[x.k].salary)}),
+             tf("Commission for the year: {v}","全年佣金：{v}",{v:money(TH[x.k].commission)}),
+             `${money(TH[x.k].salary)} + ${money(TH[x.k].commission)} = ${money(TH[x.k].take)}`],
+            tf("Salary does not change with the scheme, so the difference in take-home between schemes is exactly the difference in commission.",
+               "固定薪酬不随方案变化，因此各方案之间实得收入的差额，恰好等于佣金的差额。"))}</td>
+      <td style="padding:6px 9px;text-align:right">${x.k===baseKey
+        ? `<span style="color:var(--text-muted)">${tf("baseline","基准方案")}</span>`
+        : (()=>{const d=S.commission-all.find(y=>y.k===baseKey).score.commission;
+                const base=all.find(y=>y.k===baseKey);
+                const pct=base.score.commission>0?Math.abs(d)/base.score.commission*100:null;
+                const bn=`<span data-i18n-skip>${esc(base.name||base.k)}</span>`;
+                return `<span style="font-weight:600;color:${d<0?CBA_TONE.good[0]:d>0?CBA_TONE.bad[0]:"var(--text-muted)"}">${
+                  d===0 ? tf("same as {b}","与 {b} 相同",{b:bn})
+                  : d<0 ? tf("saves {v} against {b}","较 {b} 节省 {v}",{v:money(-d),b:bn})
+                        : tf("costs {v} more than {b}","较 {b} 多支出 {v}",{v:money(d),b:bn})}</span>${
+                  pct==null?"":`<div class="cb-sub" style="font-size:9px">${(d<0?"−":"+")+pct.toFixed(1)}%</div>`}`;})()}</td>
       <td style="padding:6px 9px;text-align:right">${S.overpay>0
         ? `<span style="font-weight:700;color:${CBA_TONE.bad[0]}">⚠ ${cbaN(S.overpay)}</span>`
         : `<span style="color:${CBA_TONE.good[0]}">✓ 0</span>`}${
@@ -8724,9 +8795,33 @@ function commCompareTable(st,all,yr){
         <th style="text-align:right;padding:5px 9px">${tf("% of gross fees","占学费总额")}</th>
         <th style="text-align:right;padding:5px 9px">${tf("Per enrolment","每名招生")}</th>
         <th style="text-align:right;padding:5px 9px">${tf("% of contribution","占贡献额")}</th>
+        <th style="text-align:right;padding:5px 9px">${tf("Team take-home","团队实得合计")}
+          ${cbaInfo(tf("Team take-home","团队实得合计"),esc(tf(
+            "Fixed salary for the year plus commission for the year, across every active salesperson. This is what the sales team earns and what UCC pays.",
+            "全年固定薪酬加全年佣金，涵盖所有在职销售人员。这既是销售团队的收入，也是 UCC 的实际支出。")))}</th>
+        <th style="text-align:right;padding:5px 9px">${tf("Against baseline","与基准方案相比")}
+          ${cbaInfo(tf("Against baseline","与基准方案相比"),esc(tf(
+            "The difference in commission for the year between this scheme and the baseline. Salary does not change with the scheme, so this is also the difference in take-home.",
+            "本方案与基准方案在全年佣金上的差额。固定薪酬不随方案变化，因此该差额同时也是实得收入的差额。")))}</th>
         <th style="text-align:right;padding:5px 9px">${tf("Paying more than it earns","佣金高于贡献额")}</th></tr></thead>
       <tbody>${all.map(row).join("")}</tbody></table></div>
-  </div>`;
+    <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:9px">
+      <span class="cb-sub">${tf("Baseline","基准方案")}</span>
+      <div class="view-toggle">${all.map(x=>`<button data-commbase2="${x.k}" class="${x.k===baseKey?"on":""}" data-i18n-skip>${esc(x.name||x.k)}</button>`).join("")}</div>
+      <span class="cb-sub">${liveKey
+        ? tf("{k} matches the bands currently in force.","{k} 与当前正式使用的区间一致。",{k:`<span data-i18n-skip>${esc((all.find(y=>y.k===liveKey)||{}).name||liveKey)}</span>`})
+        : `<span style="color:${CBA_TONE.warn[0]}">⚠ ${tf("No scheme matches the bands currently in force, so this baseline is not what is being paid today.","没有任何方案与当前正式使用的区间一致，因此该基准方案并非目前实际执行的方案。")}</span>`}</span>
+    </div>
+    ${(()=>{const anyPartial=all.some(x=>x.score.unpriced&&x.score.pctOfContrib!=null);
+      const z=all.find(x=>x.score.unpriced&&x.score.pctOfContrib!=null);
+      return anyPartial?`<div class="cb-sub" style="margin-top:7px;font-size:10px;line-height:1.6">${tf(
+        "<strong>% of contribution</strong> covers {p} of {t} attributed courses, {m} of the commission. Contribution only exists for courses with enrolment on the {basis} basis, so both sides of that ratio leave the others out — which is why its numerator is smaller than the commission total beside it.",
+        "<strong>占贡献额</strong>一列涵盖 {p}／{t} 门已分配课程，占佣金的 {m}。贡献额仅存在于该{basis}口径下有招生的课程，因此该比率的分子与分母均已排除其余课程 — 这也是其分子小于旁边佣金总额的原因。",
+        {p:cbaN(z.score.priced.length),t:cbaN(z.score.rows.length),
+         m:z.score.covMoney==null?"—":Math.round(z.score.covMoney*100)+"%",
+         basis:(st.comm.basis||"budget")==="actual"?tf("Actual","实际"):tf("Budget","预算")})}</div>`:"";})()}
+  </div>
+  ${commTakeHomePanel(st,all,yr,TH,baseKey)}`;
 }
 function commCourseTable(st,x,yr){
   const S=x.score,money=commMoney;
@@ -8777,6 +8872,53 @@ function commCourseTable(st,x,yr){
         <th style="text-align:right;padding:5px 9px">${tf("Next student","下一名学生")}</th>
         <th style="text-align:right;padding:5px 9px">${tf("% of contribution","占贡献额")}</th></tr></thead>
       <tbody>${rows}</tbody></table></div>
+  </div>`;
+}
+/* What each salesperson earns and what UCC pays, for the scheme being detailed.
+   Salary is the same under every scheme, so it is stated once rather than read
+   as though it moved. */
+function commTakeHomePanel(st,all,yr,TH,baseKey){
+  const sel=all.find(x=>x.k===st.comm.schemeSel)||all[0];
+  const T=TH[sel.k],base=TH[baseKey];
+  if(!T.rows.length)return "";
+  const d=T.take-base.take;
+  return `<div class="cb-panel cb-sec">
+    <div class="cb-h" style="margin-top:0;font-size:14px">${tf("Take-home","实得收入")}
+      <span class="cb-sub" data-i18n-skip>${esc(sel.name||sel.k)}</span>
+      <span class="cb-sub">${yr}</span></div>
+    <div class="cb-sub" style="margin-bottom:7px">${tf(
+      "Fixed salary for the year plus commission for the year. Salary does not change with the scheme, so only the commission column moves between schemes.",
+      "全年固定薪酬加全年佣金。固定薪酬不随方案变化，因此各方案之间只有佣金一列会发生变化。")}</div>
+    <div style="overflow-x:auto"><table class="tbl" style="width:100%;min-width:520px">
+      <thead><tr>
+        <th style="text-align:left;padding:5px 9px">${tf("Salesperson","销售人员")}</th>
+        <th style="text-align:right;padding:5px 9px">${tf("Enrolments","招生人数")}</th>
+        <th style="text-align:right;padding:5px 9px">${tf("Fixed salary","固定薪酬")}</th>
+        <th style="text-align:right;padding:5px 9px">${tf("Commission","佣金")}</th>
+        <th style="text-align:right;padding:5px 9px">${tf("Take-home","实得收入")}</th></tr></thead>
+      <tbody>${T.rows.map(r=>`<tr>
+        <td style="padding:5px 9px"><span class="cb-name" data-i18n-skip>${esc(r.name||"")}</span></td>
+        <td style="padding:5px 9px;text-align:right;color:var(--text-muted)">${cbaNumX(r.students)}</td>
+        <td style="padding:5px 9px;text-align:right;color:var(--text-muted)">${commMoney(r.salary)}</td>
+        <td style="padding:5px 9px;text-align:right">${commMoney(r.commission)}</td>
+        <td style="padding:5px 9px;text-align:right;font-weight:700">${commMoney(r.take)}${
+          /* the row already names the person; keeping the name out of the
+             tooltip title stops user data reaching a translated aria-label */
+          commTip(tf("Take-home","实得收入"),[
+            tf("Fixed salary for the year: {v}","全年固定薪酬：{v}",{v:commMoney(r.salary)}),
+            tf("Commission for the year: {v}","全年佣金：{v}",{v:commMoney(r.commission)}),
+            `${commMoney(r.salary)} + ${commMoney(r.commission)} = ${commMoney(r.take)}`],"","")}</td>
+      </tr>`).join("")}</tbody>
+      <tfoot><tr style="border-top:1.5px solid var(--border-strong);font-weight:700">
+        <td style="padding:6px 9px">${tf("Sales team","销售团队")}</td>
+        <td style="padding:6px 9px;text-align:right">${cbaNumX(T.rows.reduce((a,r)=>a+r.students,0))}</td>
+        <td style="padding:6px 9px;text-align:right">${commMoney(T.salary)}</td>
+        <td style="padding:6px 9px;text-align:right">${commMoney(T.commission)}</td>
+        <td style="padding:6px 9px;text-align:right">${commMoney(T.take)}</td></tr></tfoot></table></div>
+    ${sel.k!==baseKey?`<div class="cb-sub" style="margin-top:7px">${
+      d===0 ? tf("Costs UCC the same as {b}.","对 UCC 而言与 {b} 的成本相同。",{b:`<span data-i18n-skip>${esc((all.find(y=>y.k===baseKey)||{}).name||baseKey)}</span>`})
+      : d<0 ? tf("Costs UCC {v} less than {b} over the year.","全年对 UCC 而言比 {b} 少支出 {v}。",{v:commMoney(-d),b:`<span data-i18n-skip>${esc((all.find(y=>y.k===baseKey)||{}).name||baseKey)}</span>`})
+            : tf("Costs UCC {v} more than {b} over the year.","全年对 UCC 而言比 {b} 多支出 {v}。",{v:commMoney(d),b:`<span data-i18n-skip>${esc((all.find(y=>y.k===baseKey)||{}).name||baseKey)}</span>`})}</div>`:""}
   </div>`;
 }
 function commRenderCompare(st){
@@ -9131,6 +9273,8 @@ function bindCommissionEvents(){
     const ci=+e.currentTarget.dataset.commat;
     commAttribSet(ST,commSelId(ST),C().year,ci,C().month,e.target.value);save_render();}));
   document.querySelectorAll("[data-commview]").forEach(b=>b.addEventListener("click",e=>{C().view=e.currentTarget.dataset.commview;save_render();}));
+  document.querySelectorAll("[data-commbase2]").forEach(b=>b.addEventListener("click",e=>{
+    C().baseline=e.currentTarget.dataset.commbase2;save_render();}));
   document.querySelectorAll("[data-commsrow]").forEach(b=>b.addEventListener("click",e=>{C().schemeSel=e.currentTarget.dataset.commsrow;save_render();}));
   document.querySelectorAll("[data-commsname]").forEach(el=>el.addEventListener("change",e=>{
     const k=e.currentTarget.dataset.commsname;commSchemesInit(ST)[k].name=e.target.value;save_render();}));

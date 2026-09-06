@@ -616,6 +616,167 @@ ok('CN: the supported state and its basis line are Chinese',
    /当前招生分配可以区分各方案/.test(discZh.good) && /基于/.test(discZh.good) &&
    /均至少有一笔已分配的学费/.test(discZh.good));
 
+// ══ RATIO COHERENCE, TAKE-HOME, BASELINE ════════════════════════════════
+const coh = await p.evaluate(()=>{
+  const set=(enrolled,attrib)=>{
+    const iv=[];let id=1;
+    enrolled.forEach(([ci,n])=>{for(let m=0;m<12;m++)
+      iv.push({id:id++,kind:'budget',ci,month:m,year:2026,students:Math.max(1,Math.round(n/12))});});
+    ST.intakes=iv; ST.comm.year=2026; ST.comm.basis='budget'; ST.comm.attrib={};
+    ST.comm.people=[{id:1,name:'One',salary:3000,active:true},{id:2,name:'Two',salary:2000,active:true}];
+    ST.comm.nextId=3; ST.comm.spid=1;
+    attrib.forEach(([spid,ci,n])=>commAttribSet(ST,spid,2026,ci,0,n));
+    ST.comm.schemes=null; commSchemesInit(ST);
+    ST.comm.schemes.B.bands=[{from:0,to:8000,rate:2},{from:8000,to:null,rate:9}];
+    ST.comm.schemes.C.bands=[{from:0,to:null,rate:3}];
+    ST.comm.baseline=null; ST.module='commission'; ST.comm.view='compare'; render();
+  };
+  /* partial coverage: 5 attributed, only 2 with budget enrolment */
+  set([[0,24],[1,12]], [[1,0,10],[1,1,6],[1,5,4],[2,9,3],[2,11,2]]);
+  const sc=commScore(ST,ST.comm.schemes.A.bands,2026);
+  const all=commCompareAll(ST,2026);
+  const txt=document.getElementById('app').innerText;
+  /* full coverage for comparison */
+  set([[0,24],[1,12]], [[1,0,10],[1,1,6]]);
+  const full=commScore(ST,ST.comm.schemes.A.bands,2026);
+  return {
+    partial:{rows:sc.rows.length,priced:sc.priced.length,
+      commission:sc.commission,pricedCommission:sc.pricedCommission,
+      contribution:sc.contribution,pct:sc.pctOfContrib,
+      covCourses:sc.covCourses,covMoney:sc.covMoney},
+    full:{rows:full.rows.length,priced:full.priced.length,
+      commission:full.commission,pricedCommission:full.pricedCommission,
+      contribution:full.contribution,pct:full.pctOfContrib},
+    txt};});
+
+ok('the ratio divides commission on measured courses by those same courses contribution',
+   Math.abs(coh.partial.pct-coh.partial.pricedCommission/coh.partial.contribution)<1e-12 &&
+   coh.partial.pricedCommission<coh.partial.commission,
+   `${Math.round(coh.partial.pricedCommission)} ÷ ${Math.round(coh.partial.contribution)} = ${(coh.partial.pct*100).toFixed(1)}%`);
+ok('it can no longer exceed 100% through a population mismatch',
+   coh.partial.pct<1 && coh.partial.commission/coh.partial.contribution>coh.partial.pct,
+   `coherent ${(coh.partial.pct*100).toFixed(1)}% vs the old mismatched ${(coh.partial.commission/coh.partial.contribution*100).toFixed(1)}%`);
+ok('at full coverage the numerator is the whole commission, so nothing regresses',
+   coh.full.priced===coh.full.rows &&
+   Math.abs(coh.full.pricedCommission-coh.full.commission)<1e-9 &&
+   Math.abs(coh.full.pct-coh.full.commission/coh.full.contribution)<1e-12);
+ok('coverage is reported as courses AND share of commission',
+   Math.abs(coh.partial.covCourses-coh.partial.priced/coh.partial.rows)<1e-12 &&
+   Math.abs(coh.partial.covMoney-coh.partial.pricedCommission/coh.partial.commission)<1e-12,
+   `${Math.round(coh.partial.covCourses*100)}% of courses, ${Math.round(coh.partial.covMoney*100)}% of commission`);
+ok('the coverage is stated under the table, not only in a tooltip',
+   /% of contribution covers \d+ of \d+ attributed courses, \d+% of the commission/i.test(coh.txt));
+ok('the table says why that numerator is smaller than the commission column',
+   /why its numerator is smaller than the commission total beside it/i.test(coh.txt));
+ok('each row carries its own coverage count', /\d+ of \d+ courses/i.test(coh.txt));
+const zeroCov = await p.evaluate(()=>{
+  ST.intakes=[]; ST.comm.attrib={}; ST.comm.spid=1;
+  commAttribSet(ST,1,2026,0,0,5); render();
+  const sc=commScore(ST,ST.comm.schemes.A.bands,2026);
+  return {pct:sc.pctOfContrib,priced:sc.priced.length,txt:document.getElementById('app').innerText};});
+ok('with no measurable course at all the ratio is N/A, not zero',
+   zeroCov.pct===null && zeroCov.priced===0 && /N\/A/.test(zeroCov.txt));
+
+const take = await p.evaluate(()=>{
+  const iv=[];let id=1;
+  [[0,24],[1,12],[7,18],[20,14]].forEach(([ci,n])=>{for(let m=0;m<12;m++)
+    iv.push({id:id++,kind:'budget',ci,month:m,year:2026,students:Math.round(n/12)});});
+  ST.intakes=iv; ST.comm.year=2026; ST.comm.attrib={};
+  ST.comm.people=[{id:1,name:'One',salary:3000,active:true},{id:2,name:'Two',salary:2600,active:true}];
+  ST.comm.nextId=3; ST.comm.spid=1;
+  [[1,0,10],[1,7,9]].forEach(([sp,ci,n])=>commAttribSet(ST,sp,2026,ci,0,n));
+  [[2,1,6],[2,20,7]].forEach(([sp,ci,n])=>commAttribSet(ST,sp,2026,ci,1,n));
+  ST.comm.schemes=null; commSchemesInit(ST);
+  ST.comm.schemes.C.bands=[{from:0,to:null,rate:3}];
+  ST.comm.baseline=null; ST.comm.schemeSel='C'; render();
+  const liveBefore=JSON.stringify(ST.comm.bands);
+  const THa=commTakeHome(ST,ST.comm.schemes.A.bands,2026);
+  const THc=commTakeHome(ST,ST.comm.schemes.C.bands,2026);
+  const liveAfter=JSON.stringify(ST.comm.bands);
+  /* each person's commission must come from their OWN attribution */
+  const scAll=commScore(ST,ST.comm.schemes.C.bands,2026);
+  const sc1=commScore(ST,ST.comm.schemes.C.bands,2026,1);
+  const sc2=commScore(ST,ST.comm.schemes.C.bands,2026,2);
+  return {THa,THc,liveUnchanged:liveBefore===liveAfter,
+    perPersonSums:Math.abs(sc1.commission+sc2.commission-scAll.commission)<1e-9,
+    p1:Math.round(sc1.commission),p2:Math.round(sc2.commission),
+    txt:document.getElementById('app').innerText};});
+ok('take-home is salary for the year plus commission for the year, per person',
+   take.THc.rows.every(r=>Math.abs(r.take-(r.salary+r.commission))<1e-9) &&
+   take.THc.rows[0].salary===36000,
+   take.THc.rows.map(r=>`${r.name} ${Math.round(r.take)}`).join(' · '));
+ok('the team row is the sum of the people',
+   Math.abs(take.THc.take-take.THc.rows.reduce((a,r)=>a+r.take,0))<1e-9);
+ok('each salesperson is scored on their OWN attribution, and the parts sum to the whole',
+   take.perPersonSums && take.p1>0 && take.p2>0, `${take.p1} + ${take.p2}`);
+ok('salary is identical across schemes, so only commission moves',
+   take.THa.salary===take.THc.salary && take.THa.commission!==take.THc.commission);
+ok('SCORING A SCHEME NEVER MUTATES THE LIVE BANDS', take.liveUnchanged);
+ok('the per-salesperson breakdown and its team row are on screen',
+   /Take-home/i.test(take.txt) && /Sales team/i.test(take.txt) &&
+   /Fixed salary/i.test(take.txt));
+ok('the screen says salary does not change with the scheme',
+   /Salary does not change with the scheme/i.test(take.txt));
+
+const bl = await p.evaluate(()=>{
+  const out={};
+  ST.comm.baseline=null;
+  /* A and B default to the same bands, so B is made distinct before asserting
+     that the live bands resolve to it */
+  ST.comm.schemes.B.bands=[{from:0,to:5000,rate:1},{from:5000,to:null,rate:11}];
+  ST.comm.bands=JSON.parse(JSON.stringify(ST.comm.schemes.B.bands));
+  out.livesOnB=commLiveScheme(ST); out.baseIsB=commBaselineKey(ST);
+  /* ambiguity: make A and B identical, first in order must win */
+  ST.comm.schemes.A.bands=JSON.parse(JSON.stringify(ST.comm.schemes.B.bands));
+  out.tieBreak=commLiveScheme(ST);
+  /* nothing matches */
+  ST.comm.bands=[{from:0,to:1234,rate:4},{from:1234,to:null,rate:6}];
+  out.noMatch=commLiveScheme(ST); out.fallback=commBaselineKey(ST);
+  render(); out.warn=/No scheme matches the bands currently in force/i.test(document.getElementById('app').innerText);
+  /* an explicit choice overrides the default */
+  ST.comm.baseline='C'; out.explicit=commBaselineKey(ST);
+  ST.comm.baseline=null;
+  return out;});
+ok('the baseline defaults to the scheme matching the bands in force',
+   bl.livesOnB==='B' && bl.baseIsB==='B');
+ok('when two schemes match, the first in A/B/C order wins', bl.tieBreak==='A');
+ok('when no scheme matches, it falls back to A and says so plainly',
+   bl.noMatch===null && bl.fallback==='A' && bl.warn);
+ok('an explicit baseline choice overrides the default', bl.explicit==='C');
+const diff = await p.evaluate(()=>{
+  ST.comm.schemes=null; commSchemesInit(ST);
+  ST.comm.schemes.C.bands=[{from:0,to:null,rate:3}];
+  ST.comm.bands=JSON.parse(JSON.stringify(ST.comm.schemes.A.bands));
+  ST.comm.baseline=null; render();
+  const all=commCompareAll(ST,2026);
+  const A=all.find(x=>x.k==='A').score.commission, C=all.find(x=>x.k==='C').score.commission;
+  const t=document.getElementById('app').innerText;
+  return {delta:Math.round(C-A), txt:t,
+    saysSaves:new RegExp('saves \\$'+Math.round(A-C).toLocaleString()+' against A').test(t),
+    baselineRow:/baseline/i.test(t)};});
+ok('the difference is stated in words against the named baseline',
+   diff.delta<0 && diff.saysSaves,
+   (diff.txt.match(/saves \$[\d,]+ against \w+/)||[''])[0]);
+ok('the baseline row says baseline rather than a zero difference', diff.baselineRow);
+
+const zhNew = await p.evaluate(()=>{
+  /* one attributed course with no enrolment, so the coverage line renders */
+  commAttribSet(ST,1,2026,5,0,4);
+  ST.comm.bands=JSON.parse(JSON.stringify(ST.comm.schemes.A.bands));
+  ST.comm.baseline=null;
+  setLang('zh'); render();
+  const t=document.getElementById('app').innerText;
+  ST.comm.bands=[{from:0,to:99,rate:1}]; render();
+  const warn=document.getElementById('app').innerText;
+  setLang('en');
+  return {t,warn};});
+ok('CN: take-home, baseline and coverage wording',
+   /团队实得合计/.test(zhNew.t) && /与基准方案相比/.test(zhNew.t) &&
+   /实得收入/.test(zhNew.t) && /销售团队/.test(zhNew.t) &&
+   /固定薪酬不随方案变化/.test(zhNew.t) && /占贡献额一列涵盖/.test(zhNew.t) &&
+   /(较 .+ 节省|较 .+ 多支出)/.test(zhNew.t));
+ok('CN: the no-matching-baseline warning', /没有任何方案与当前正式使用的区间一致/.test(zhNew.warn));
+
 // responsive, charts included
 for (const lang of ['en','zh']) for (const w of [1440,1280,768,375]){
   await p.setViewportSize({width:w,height:900});
