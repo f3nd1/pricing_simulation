@@ -757,7 +757,9 @@ const ST={
            compare view opens — whatever they are — because comparing against
            the scheme actually in force is the point. Nothing here reaches the
            live bands without Apply plus a confirm. */
-        schemes:null},
+        schemes:null,
+        goal:0,               /* desired monthly take-home, sales target view */
+        kraMix:"current"},    /* which mix the KRA line is written from */
   intakes:[],ybView:"monthly",ybYear:new Date().getFullYear(),ybCat:"All",
   ybCopy:{to:0,kind:"both"},
   ybForm:{kind:"budget",ci:0,month:0,year:new Date().getFullYear(),students:15},
@@ -8487,6 +8489,130 @@ function commSweep(st,yr,lowRate,highRate){
   return {series,fees,lowRate,highRate};
 }
 
+/* ── SALES TARGET ────────────────────────────────────────────────────────
+   How many enrolments must this salesperson bring in for the college to be
+   better off employing them?
+
+     contribution(N)  >=  annual salary + commission(N)
+
+   This needs its own solver. cbaSolveUcc measures against institution net,
+   which includes central overhead; bending it to accept salary and sales
+   commission would put internal sales payroll inside a Cost-Benefit figure,
+   the one boundary this module has held from the start. What is reused is its
+   SHAPE -- exponential bracket, binary search, saw-tooth walk-back -- and
+   cbaAllocate for turning a total into whole students across a mix.
+
+   The walk-back is not optional. Contribution is not monotonic in N: teaching
+   cost steps whenever a class fills, so the marginal for one course measured
+   here takes two values, +1,838 and -4,882, and across a 200-point sweep the
+   incremental contribution fell 15 times while enrolment rose. A plain binary
+   search would land above the true lowest N. Measured cost: 0.199ms per
+   evaluation, 22 evaluations per solve, ~27ms for all eight solves. */
+const COMM_TGT_MAX=4000;
+/* Only courses with a contribution figure on the selected basis can be solved
+   against. An unpriced course is never counted as free and never given
+   cbaMarginal as a stand-in -- for zero enrolment that returns the first
+   student carrying a whole class, which is not a per-student contribution. */
+function commTargetPool(st,yr,spid){
+  const sc=commScore(st,st.comm.bands,yr,spid);
+  const priced=sc.priced;
+  const attributed=sc.rows.reduce((a,r)=>a+r.students,0);
+  const excluded=sc.rows.filter(r=>r.avg==null);
+  return {sc,priced,excluded,
+    attributed,
+    pricedStudents:priced.reduce((a,r)=>a+r.students,0),
+    excludedStudents:excluded.reduce((a,r)=>a+r.students,0),
+    excludedShare:attributed>0?excluded.reduce((a,r)=>a+r.students,0)/attributed:null};
+}
+const COMM_TGT_MIXES=[["current","Current mix","当前招生组合"],
+                      ["even","Even mix","平均分布"],
+                      ["best","Best case","最优情形"],
+                      ["worst","Worst case","最差情形"]];
+/* Weights over the PRICED courses only. The current mix is reweighted across
+   them rather than carrying the unpriced share, which would make the mix
+   mostly composed of courses the solver cannot value. */
+function commTargetWeights(pool,kind){
+  const P=pool.priced;
+  if(!P.length)return null;
+  const w={};
+  if(kind==="current"){
+    let tot=0;P.forEach(r=>{const v=Math.max(0,r.students);if(v>0){w[r.ci]=v;tot+=v;}});
+    if(tot<=0){P.forEach(r=>{w[r.ci]=1;});}
+    return w;
+  }
+  if(kind==="even"){P.forEach(r=>{w[r.ci]=1;});return w;}
+  /* best/worst lean toward the strongest or weakest contribution per student,
+     but never to a single course -- a target nobody could sell is not advice */
+  const sorted=P.slice().sort((a,b)=>b.avg-a.avg);
+  const order=kind==="best"?sorted:sorted.slice().reverse();
+  order.forEach((r,i)=>{w[r.ci]=Math.max(1,order.length-i);});
+  return w;
+}
+/* Contribution and commission produced by N additional enrolments spread over
+   the mix, both measured through the engines that render the screen. */
+function commTargetAt(st,pool,w,N,yr){
+  const alloc=cbaAllocate(N,w);
+  const basis=st.comm.basis||"budget";
+  const d0=cbaCompute(st,basis,yr);
+  const rows={};
+  let commission=0;
+  Object.keys(alloc).forEach(ci=>{
+    const cur=(d0.rows.find(r=>r.ci===+ci)||{students:0}).students;
+    rows[ci]={students:cur+alloc[ci]};
+    const c=COURSES[+ci];
+    if(c){const fee=commBaseFee(st,c);commission+=alloc[ci]*fee*commRateIn(st.comm.bands,fee)/100;}
+  });
+  const sd=cbaCompute(st,basis,yr,{rows});
+  return {alloc,commission,
+    contribution:sd.T.contribution-d0.T.contribution};
+}
+/* Lowest N where the college is better off. Same shape as cbaSolveUcc. */
+function commSolveTarget(st,pool,kind,yr,salary){
+  const w=commTargetWeights(pool,kind);
+  if(!w)return {err:"nopriced"};
+  const at=N=>{const r=commTargetAt(st,pool,w,N,yr);
+    return {...r,net:r.contribution-(salary+r.commission)};};
+  let hi=1,probe=at(hi),steps=1;
+  while(probe.net<0&&hi<COMM_TGT_MAX){hi=Math.min(COMM_TGT_MAX,Math.max(hi+1,hi*2));probe=at(hi);steps++;}
+  if(probe.net<0)return {err:"range",max:COMM_TGT_MAX,tested:steps};
+  let lo=1;
+  while(lo<hi){const mid=Math.floor((lo+hi)/2);steps++;
+    if(at(mid).net>=0)hi=mid;else lo=mid+1;}
+  /* contribution is not monotonic, so an earlier N may also clear the bar */
+  for(let n=Math.max(1,hi-Math.max(24,Math.ceil(hi*0.05)));n<hi;n++){
+    steps++;if(at(n).net>=0){hi=n;break;}}
+  const R=at(hi);
+  return {n:hi,...R,tested:steps,max:COMM_TGT_MAX,kind,
+    prevNet:hi>1?at(hi-1).net:null};
+}
+/* The inverse: what must be sold to take home a chosen amount. */
+function commSolveEarnings(st,pool,kind,yr,salary,wantMonthly){
+  const w=commTargetWeights(pool,kind);
+  if(!w)return {err:"nopriced"};
+  const wantCommission=Math.max(0,wantMonthly*12-salary);
+  if(wantCommission<=0)return {n:0,commission:0,already:true,kind};
+  const at=N=>commTargetAt(st,pool,w,N,yr);
+  let hi=1,steps=1;
+  while(at(hi).commission<wantCommission&&hi<COMM_TGT_MAX){hi=Math.min(COMM_TGT_MAX,Math.max(hi+1,hi*2));steps++;}
+  if(at(hi).commission<wantCommission)return {err:"range",max:COMM_TGT_MAX,tested:steps};
+  let lo=1;
+  while(lo<hi){const mid=Math.floor((lo+hi)/2);steps++;
+    if(at(mid).commission>=wantCommission)hi=mid;else lo=mid+1;}
+  const R=at(hi);
+  return {n:hi,...R,wantCommission,tested:steps,kind};
+}
+/* Four answers that barely differ are not four answers. With few priced
+   courses the mixes collapse toward each other, and that looks like agreement
+   when it means the data cannot tell them apart. */
+function commTargetSpread(results){
+  const ok=results.filter(r=>r&&!r.err&&r.n!=null);
+  if(ok.length<2)return {ok,collapsed:false,lo:null,hi:null};
+  const ns=ok.map(r=>r.n),lo=Math.min(...ns),hi=Math.max(...ns);
+  return {ok,lo,hi,
+    /* within one enrolment, or within 5% of the lower bound */
+    collapsed:(hi-lo)<=Math.max(1,Math.round(lo*0.05))};
+}
+
 /* ── the screen ──────────────────────────────────────────────────────── */
 function commMoney(v){return sgd(v);}
 function commTip(title,lines,result,note){return cbaInfoRaw(title,cbaCalcTip(title,lines,result,note));}
@@ -8950,6 +9076,143 @@ function commRenderCompare(st){
   </div>
   ${commCourseTable(st,sel,yr)}`;
 }
+function commTargetView(st){
+  const yr=st.comm.year,spid=commSelId(st),p=commPerson(st,spid);
+  if(!p)return `<div class="cb-panel"><div class="cb-sub">${tf("Add a salesperson to begin.","请先新增销售人员。")}</div></div>`;
+  const pool=commTargetPool(st,yr,spid);
+  const salary=(Number(p.salary)||0)*12;
+  const basisLbl=(st.comm.basis||"budget")==="actual"?tf("Actual","实际"):tf("Budget","预算");
+  /* nothing measurable: say why, and show no number at all */
+  if(!pool.priced.length)return `<div class="cb-panel cb-sec" style="border-left:4px solid ${CBA_TONE.warn[0]}">
+    <div style="font-weight:700;font-size:13px;color:${CBA_TONE.warn[0]}">⚠ ${tf("No target can be calculated","无法计算目标")}</div>
+    <div class="cb-sub" style="margin-top:6px">${tf(
+      "None of the {n} attributed course(s) has enrolment on the {b} basis, so no course has a contribution per student to solve against. A target would be a guess, so none is shown.",
+      "已分配的 {n} 门课程在{b}口径下均无招生，因此没有任何课程具备可用于求解的生均贡献额。此时给出目标只能是猜测，故不予显示。",
+      {n:cbaN(pool.sc.rows.length),b:basisLbl})}</div></div>`;
+  const results=COMM_TGT_MIXES.map(([k,en,zh])=>({k,en,zh,r:commSolveTarget(st,pool,k,yr,salary)}));
+  const spread=commTargetSpread(results.map(x=>x.r));
+  const want=Number(st.comm.goal)||0;
+  const goals=want>0?COMM_TGT_MIXES.map(([k,en,zh])=>({k,en,zh,r:commSolveEarnings(st,pool,k,yr,salary,want)})):null;
+  const kraKey=st.comm.kraMix||"current";
+  const kra=results.find(x=>x.k===kraKey)||results[0];
+  const money=commMoney;
+  const cell=(v,extra)=>`<td style="padding:6px 9px;text-align:right${extra||""}">${v}</td>`;
+  const mixRow=(x,isGoal)=>{
+    const R=x.r;
+    if(R.err)return `<tr><td style="padding:6px 9px">${tf(x.en,x.zh)}</td>
+      <td colspan="4" style="padding:6px 9px;color:${CBA_TONE.warn[0]};font-size:11px">${
+        R.err==="range"?tf("Not reached within {n} enrolments.","在 {n} 名招生内未能达到。",{n:cbaN(R.max)})
+                       :tf("No course with a contribution figure.","没有具备贡献额数据的课程。")}</td></tr>`;
+    const perMonth=R.n/12;
+    return `<tr>
+      <td style="padding:6px 9px">${tf(x.en,x.zh)}${x.k===kraKey?` <span class="cb-chip" style="background:var(--surface-1)">${tf("used for KRA","用于绩效考核")}</span>`:""}</td>
+      ${cell(`<strong>${cbaN(R.n)}</strong>`)}
+      ${cell(perMonth.toFixed(1))}
+      ${cell(money(R.commission))}
+      ${cell(money(R.contribution)+commTip(tf(x.en,x.zh),[
+        tf("Contribution from {n} enrolments: {c}","{n} 名招生带来的贡献额：{c}",{n:cbaN(R.n),c:money(R.contribution)}),
+        tf("Annual salary: {v}","全年薪酬：{v}",{v:money(salary)}),
+        tf("Commission on those enrolments: {v}","这些招生对应的佣金：{v}",{v:money(R.commission)}),
+        `${money(R.contribution)} − (${money(salary)} + ${money(R.commission)}) = ${money(R.contribution-salary-R.commission)}`],
+        "",isGoal?"":tf("One enrolment fewer leaves {v}.","少一名招生时为 {v}。",{v:R.prevNet==null?"—":money(R.prevNet)})))}
+    </tr>`;};
+  const goalRow=x=>{
+    const R=x.r;
+    if(R.err)return `<tr><td style="padding:6px 9px">${tf(x.en,x.zh)}</td>
+      <td colspan="3" style="padding:6px 9px;color:${CBA_TONE.warn[0]};font-size:11px">${
+        tf("Not reachable within {n} enrolments.","在 {n} 名招生内无法达成。",{n:cbaN(R.max||COMM_TGT_MAX)})}</td></tr>`;
+    if(R.already)return `<tr><td style="padding:6px 9px">${tf(x.en,x.zh)}</td>
+      <td colspan="3" style="padding:6px 9px;font-size:11px;color:${CBA_TONE.good[0]}">${
+        tf("Salary alone already reaches this.","仅固定薪酬即可达到该水平。")}</td></tr>`;
+    return `<tr><td style="padding:6px 9px">${tf(x.en,x.zh)}</td>
+      ${cell(`<strong>${cbaN(R.n)}</strong>`)}
+      ${cell((R.n/12).toFixed(1))}
+      ${cell(money(R.commission)+commTip(tf(x.en,x.zh),[
+        tf("Wanted take-home: {v} a month, {y} a year","目标实得收入：每月 {v}，全年 {y}",{v:money(want),y:money(want*12)}),
+        tf("Annual salary: {v}","全年薪酬：{v}",{v:money(salary)}),
+        tf("Commission still needed: {v}","仍需佣金：{v}",{v:money(R.wantCommission)}),
+        tf("{n} enrolments produce {v}","{n} 名招生可产生 {v}",{n:cbaN(R.n),v:money(R.commission)})],"",""))}
+    </tr>`;};
+  const avgFee=(()=>{const w=commTargetWeights(pool,kraKey);
+    if(!w||kra.r.err)return null;
+    let f=0,n=0;Object.keys(kra.r.alloc||{}).forEach(ci=>{
+      const c=COURSES[+ci];if(!c)return;f+=commBaseFee(st,c)*kra.r.alloc[ci];n+=kra.r.alloc[ci];});
+    return n>0?f/n:null;})();
+  return `
+  <div class="cb-panel cb-sec" style="border-left:4px solid ${pool.excluded.length?CBA_TONE.warn[0]:CBA_TONE.good[0]}">
+    <div style="font-weight:700;font-size:13px">${pool.excluded.length?"⚠":"✓"} ${tf("What the target rests on","目标测算的依据")}</div>
+    <div class="cb-sub" style="margin-top:5px">${tf(
+      "{p} of {t} attributed course(s) have a contribution figure on the {b} basis, covering {s} of {a} attributed enrolments.",
+      "已分配的 {t} 门课程中有 {p} 门在{b}口径下具备贡献额数据，覆盖 {a} 名已分配招生中的 {s} 名。",
+      {p:cbaN(pool.priced.length),t:cbaN(pool.sc.rows.length),b:basisLbl,
+       s:cbaNumX(pool.pricedStudents),a:cbaNumX(pool.attributed)})}</div>
+    ${pool.excluded.length?`<div style="margin-top:7px;padding:7px 10px;background:${CBA_TONE.warn[1]};border-radius:6px;font-size:11px;line-height:1.6">
+      ${tf("<strong>{n} course(s) are excluded, {pct} of the attributed enrolments.</strong> They have no enrolment on this basis, so they have no contribution per student and cannot be solved against. Every figure below is derived from the remaining {rest}.",
+           "<strong>有 {n} 门课程被排除，占已分配招生的 {pct}。</strong>这些课程在该口径下没有招生，因此没有生均贡献额，无法用于求解。下方所有数字均基于其余 {rest} 得出。",
+           {n:cbaN(pool.excluded.length),pct:pool.excludedShare==null?"—":Math.round(pool.excludedShare*100)+"%",
+            rest:pool.excludedShare==null?"—":Math.round((1-pool.excludedShare)*100)+"%"})}</div>`:""}
+  </div>
+  <div class="cb-panel cb-sec">
+    <div class="cb-h" style="margin-top:0;font-size:14px">${tf("Break-even sales volume","盈亏平衡招生量")}
+      ${cbaInfo(tf("Break-even sales volume","盈亏平衡招生量"),esc(tf(
+        "The lowest number of enrolments at which the contribution they generate covers this salesperson's annual salary plus the commission earned on them. Solved separately for four course mixes, because the answer depends on which courses the enrolments land in.",
+        "使该销售人员所带来的贡献额，足以覆盖其全年薪酬及相应佣金的最低招生人数。系统按四种课程组合分别求解，因为答案取决于这些招生进入哪些课程。")))}</div>
+    <div class="cb-sub" style="margin-bottom:7px">${tf(
+      "Salary {s} a year. The honest answer is a range, not one number, so all four mixes are shown.",
+      "全年薪酬 {s}。诚实的答案是一个区间而非单一数字，因此四种组合全部列出。",{s:money(salary)})}</div>
+    ${spread.ok.length>=2?`<div class="cb-sub" style="margin-bottom:8px;font-weight:600">${
+      spread.collapsed
+        ? `<span style="color:${CBA_TONE.warn[0]}">⚠ ${tf(
+            "All four mixes land between {lo} and {hi} enrolments. That is not agreement — with {p} priced course(s) there is not enough spread in the data to tell the mixes apart.",
+            "四种组合的结果均落在 {lo} 至 {hi} 名招生之间。这并不代表结论一致 — 在仅有 {p} 门课程具备贡献额数据的情况下，数据本身不足以区分这些组合。",
+            {lo:cbaN(spread.lo),hi:cbaN(spread.hi),p:cbaN(pool.priced.length)})}</span>`
+        : tf("Range: {lo} to {hi} enrolments depending on the mix.","区间：视课程组合不同，为 {lo} 至 {hi} 名招生。",
+             {lo:cbaN(spread.lo),hi:cbaN(spread.hi)})}</div>`:""}
+    <div style="overflow-x:auto"><table class="tbl" style="width:100%;min-width:560px">
+      <thead><tr>
+        <th style="text-align:left;padding:5px 9px">${tf("Mix","课程组合")}</th>
+        <th style="text-align:right;padding:5px 9px">${tf("Enrolments","招生人数")}</th>
+        <th style="text-align:right;padding:5px 9px">${tf("Per month","每月")}</th>
+        <th style="text-align:right;padding:5px 9px">${tf("Commission","佣金")}</th>
+        <th style="text-align:right;padding:5px 9px">${tf("Contribution","贡献额")}</th></tr></thead>
+      <tbody>${results.map(x=>mixRow(x,false)).join("")}</tbody></table></div>
+    <div id="commChartTarget" style="margin-top:12px"></div>
+  </div>
+  <div class="cb-panel cb-sec">
+    <div class="cb-h" style="margin-top:0;font-size:14px">${tf("Earnings goal","收入目标")}</div>
+    <div class="cb-sub" style="margin-bottom:7px">${tf(
+      "What this salesperson would need to sell to take home a chosen amount. This is not a target the college has set.",
+      "该销售人员为达到指定实得收入所需的销售量。这并非学院设定的考核目标。")}</div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:9px">
+      <span class="cb-sub">${tf("Desired take-home per month","期望每月实得收入")}</span>
+      <input type="number" min="0" step="100" data-commgoal value="${want||""}" style="width:110px;text-align:right">
+    </div>
+    ${goals?`<div style="overflow-x:auto"><table class="tbl" style="width:100%;min-width:460px">
+      <thead><tr><th style="text-align:left;padding:5px 9px">${tf("Mix","课程组合")}</th>
+        <th style="text-align:right;padding:5px 9px">${tf("Enrolments","招生人数")}</th>
+        <th style="text-align:right;padding:5px 9px">${tf("Per month","每月")}</th>
+        <th style="text-align:right;padding:5px 9px">${tf("Commission","佣金")}</th></tr></thead>
+      <tbody>${goals.map(goalRow).join("")}</tbody></table></div>`
+     :`<div class="cb-sub">${tf("Enter an amount to see what it would take.","请输入金额，以查看所需的销售量。")}</div>`}
+  </div>
+  <div class="cb-panel cb-sec" style="border-left:4px solid ${CBA_TONE.info[0]}">
+    <div class="cb-h" style="margin-top:0;font-size:14px">${tf("KRA line","绩效考核指标")}</div>
+    <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:8px">
+      <span class="cb-sub">${tf("Derived from","依据组合")}</span>
+      <div class="view-toggle">${COMM_TGT_MIXES.map(([k,en,zh])=>`<button data-commkra="${k}" class="${k===kraKey?"on":""}">${tf(en,zh)}</button>`).join("")}</div>
+    </div>
+    ${kra.r.err?`<div class="cb-sub" style="color:${CBA_TONE.warn[0]}">${tf("This mix has no solution, so no line can be written from it.","该组合没有可行解，因此无法据此生成考核指标。")}</div>`
+     :`<div style="padding:10px 12px;background:var(--surface-1);border-radius:7px;font-size:13px;line-height:1.7">
+        ${tf("Bring in at least <strong>{n}</strong> enrolments per month across a mix averaging <strong>{f}</strong> in fees.",
+             "每月至少带来 <strong>{n}</strong> 名招生，且所属课程组合的平均学费为 <strong>{f}</strong>。",
+             {n:Math.ceil(kra.r.n/12),f:avgFee==null?"—":money(avgFee)})}
+      </div>
+      <div class="cb-sub" style="margin-top:6px">${tf(
+        "Derived from the {m} at {n} enrolments a year. Salary {s}, commission {c}, contribution {v}.",
+        "依据{m}，全年 {n} 名招生。薪酬 {s}，佣金 {c}，贡献额 {v}。",
+        {m:tf(kra.en,kra.zh),n:cbaN(kra.r.n),s:money(salary),c:money(kra.r.commission),v:money(kra.r.contribution)})}</div>`}
+  </div>`;
+}
 function renderCommissionModule(st){
   const yr=st.comm.year,m=st.comm.month,spid=commSelId(st);
   const P=commPeople(st),cur=commPerson(st,spid);
@@ -8982,7 +9245,7 @@ function renderCommissionModule(st){
     </div>
   </div>
   <div class="cb-sec" style="display:flex;gap:9px;align-items:center;flex-wrap:wrap">
-    <div class="view-toggle">${btn("earnings","Earnings","收入",(st.comm.view||"earnings")==="earnings","data-commview")}${btn("compare","Compare schemes","方案对比",st.comm.view==="compare","data-commview")}</div>
+    <div class="view-toggle">${btn("earnings","Earnings","收入",(st.comm.view||"earnings")==="earnings","data-commview")}${btn("compare","Compare schemes","方案对比",st.comm.view==="compare","data-commview")}${btn("target","Sales target","销售目标",st.comm.view==="target","data-commview")}</div>
     <select data-commsp style="max-width:220px">${P.map(p=>`<option value="${p.id}"${String(p.id)===String(spid)?" selected":""} data-i18n-skip>${esc(p.name||"")}</option>`).join("")}</select>
     <select data-commyear>${years.map(y=>`<option value="${y}"${y===yr?" selected":""}>${y}</option>`).join("")}</select>
     <select data-commmonth>${COMM_MONTHS.map((_,i)=>`<option value="${i}"${i===m?" selected":""}>${commMonthLabel(i)}</option>`).join("")}</select>
@@ -8999,7 +9262,7 @@ function renderCommissionModule(st){
     ${tf("This module reads course fees from the Price List and enrolment from the Yearly Budget, and writes to neither. Internal sales pay is not part of Cost-Benefit full cost or Forecast expenses, so those figures do not include it.",
          "本模块从价格表读取课程学费、从年度预算读取招生数据，且不会写入其中任何一处。内部销售人员薪酬不计入成本效益的全成本，也不计入预测中的支出，因此那些数字并不包含此项。")}
   </div>
-  ${(st.comm.view||"earnings")==="compare"?commRenderCompare(st):`
+  ${(st.comm.view||"earnings")==="target"?commTargetView(st):(st.comm.view||"earnings")==="compare"?commRenderCompare(st):`
   <div class="cb-grid cb-sec">
     <div class="cb-7">${commAttribPanel(st)}</div>
     <div class="cb-5">${commBandPanel(st)}<div class="cb-sec">${commPeoplePanel(st)}</div></div>
@@ -9226,8 +9489,77 @@ function commDrawSweep(st){
   commNote(C.el,tf("Thresholds tested {n} · course fees marked {m}","已测试阈值 {n} 个 · 已标示课程学费 {m} 个",
     {n:sw.series.length,m:sw.fees.length}));
 }
+/* Contribution against cumulative cost, one line per mix, crossover marked.
+   Same interaction rules as the other four charts. */
+function commDrawTarget(st){
+  const yr=st.comm.year,spid=commSelId(st),p=commPerson(st,spid);
+  if(!p)return;
+  const pool=commTargetPool(st,yr,spid);
+  if(!pool.priced.length)return commEmpty("commChartTarget",
+    tf("No course has a contribution figure on this basis, so there is nothing to plot.",
+       "该口径下没有课程具备贡献额数据，因此没有可绘制的内容。"));
+  const salary=(Number(p.salary)||0)*12;
+  const solved=COMM_TGT_MIXES.map(([k,en,zh])=>({k,en,zh,r:commSolveTarget(st,pool,k,yr,salary)}));
+  const ok=solved.filter(x=>!x.r.err);
+  if(!ok.length)return commEmpty("commChartTarget",
+    tf("No mix reaches break-even within the tested range.","在测试范围内没有任何组合能达到盈亏平衡。"));
+  const maxN=Math.max(...ok.map(x=>x.r.n))*1.35;
+  const step=Math.max(1,Math.round(maxN/26));
+  const series=ok.map(x=>{
+    const w=commTargetWeights(pool,x.k);
+    const pts=[];
+    for(let N=step;N<=maxN;N+=step){
+      const at=commTargetAt(st,pool,w,N,yr);
+      pts.push({N,contribution:at.contribution,cost:salary+at.commission});
+    }
+    return {...x,pts};});
+  const C=commSvg("commChartTarget",0.5,{t:14,r:16,b:42,l:62});
+  if(!C)return;
+  const mx=Math.max(1,d3.max(series,s2=>d3.max(s2.pts,q=>Math.max(q.contribution,q.cost))));
+  const x=d3.scaleLinear().domain([0,maxN]).range([0,C.iw]);
+  const y=d3.scaleLinear().domain([0,mx*1.05]).range([C.ih,0]);
+  C.g.append("g").attr("transform",`translate(0,${C.ih})`).call(d3.axisBottom(x).ticks(5)).attr("font-size",9);
+  C.g.append("g").call(d3.axisLeft(y).ticks(4).tickFormat(v=>cbaK(v))).attr("font-size",9);
+  C.g.append("text").attr("x",C.iw).attr("y",C.ih+32).attr("text-anchor","end")
+    .attr("font-size",9).attr("fill","#64748b").text(tf("enrolments →","招生人数 →"));
+  const col=["#7c3aed","#0891b2","#16a34a","#f59e0b"];
+  /* cost line: salary plus commission, one per mix but they sit close */
+  series.forEach((s2,i)=>{
+    C.g.append("path").datum(s2.pts).attr("fill","none")
+      .attr("stroke",col[i%col.length]).attr("stroke-width",1.2).attr("stroke-dasharray","4 3")
+      .attr("stroke-opacity",.55)
+      .attr("d",d3.line().x(q=>x(q.N)).y(q=>y(q.cost)));
+    C.g.append("path").datum(s2.pts).attr("fill","none")
+      .attr("stroke",col[i%col.length]).attr("stroke-width",2)
+      .attr("d",d3.line().x(q=>x(q.N)).y(q=>y(q.contribution)));
+  });
+  /* the crossover for each mix */
+  const marks=C.g.selectAll("g.xo").data(ok).enter().append("g").attr("class","xo")
+    .attr("transform",d=>`translate(${x(d.r.n)},${y(d.r.contribution)})`);
+  marks.append("circle").attr("class","hit").attr("r",6)
+    .attr("fill",(d,i)=>col[i%col.length]).attr("stroke","#fff").attr("stroke-width",2)
+    .attr("tabindex",0).attr("role","button")
+    .attr("aria-label",d=>tf("{m}: break-even at {n} enrolments.","{m}：在 {n} 名招生时达到盈亏平衡。",
+      {m:tf(d.en,d.zh),n:cbaN(d.r.n)}));
+  commHover(marks.selectAll("circle.hit"),d=>`<div class="t">${esc(tf(d.en,d.zh))}</div>`
+    +`<table><tr><td>${esc(tf("Enrolments","招生人数"))}</td><td>${cbaN(d.r.n)}</td></tr>`
+    +`<tr><td>${esc(tf("Per month","每月"))}</td><td>${(d.r.n/12).toFixed(1)}</td></tr>`
+    +`<tr><td>${esc(tf("Contribution","贡献额"))}</td><td>${sgd(d.r.contribution)}</td></tr>`
+    +`<tr><td>${esc(tf("Salary + commission","薪酬 + 佣金"))}</td><td>${sgd(salary+d.r.commission)}</td></tr></table>`,
+    d=>{marks.filter(o=>o.k===d.k).raise();});
+  const leg=C.svg.append("g").attr("transform",`translate(${C.M.l},${C.H-8})`);
+  ok.forEach((s2,i)=>{const gx=i*82;
+    leg.append("rect").attr("x",gx).attr("y",-8).attr("width",9).attr("height",3).attr("fill",col[i%col.length]);
+    leg.append("text").attr("x",gx+13).attr("y",-4).attr("font-size",9).attr("fill","#64748b").text(tf(s2.en,s2.zh));});
+  const omitted=solved.filter(x=>x.r.err);
+  commNote(C.el,tf("Mixes {n} · plotted {m}","课程组合 {n} 种 · 已绘制 {m} 种",{n:solved.length,m:ok.length})
+    +(omitted.length?" · "+tf("not plotted: {names}","未绘制：{names}",{names:omitted.map(x=>tf(x.en,x.zh)).join(", ")}):"")
+    +" · "+tf("solid = contribution, dashed = salary + commission","实线 = 贡献额，虚线 = 薪酬 + 佣金"));
+}
 function commDrawCharts(st){
-  if((st.comm.view||"earnings")!=="compare")return;
+  const v=st.comm.view||"earnings";
+  if(v==="target")return commDrawTarget(st);
+  if(v!=="compare")return;
   commDrawShape(st);commDrawCost(st);commDrawScatter(st);commDrawSweep(st);
 }
 function bindCommissionEvents(){
@@ -9273,6 +9605,10 @@ function bindCommissionEvents(){
     const ci=+e.currentTarget.dataset.commat;
     commAttribSet(ST,commSelId(ST),C().year,ci,C().month,e.target.value);save_render();}));
   document.querySelectorAll("[data-commview]").forEach(b=>b.addEventListener("click",e=>{C().view=e.currentTarget.dataset.commview;save_render();}));
+  document.querySelectorAll("[data-commgoal]").forEach(el=>el.addEventListener("change",e=>{
+    C().goal=Math.max(0,Number(e.target.value)||0);save_render();}));
+  document.querySelectorAll("[data-commkra]").forEach(b=>b.addEventListener("click",e=>{
+    C().kraMix=e.currentTarget.dataset.commkra;save_render();}));
   document.querySelectorAll("[data-commbase2]").forEach(b=>b.addEventListener("click",e=>{
     C().baseline=e.currentTarget.dataset.commbase2;save_render();}));
   document.querySelectorAll("[data-commsrow]").forEach(b=>b.addEventListener("click",e=>{C().schemeSel=e.currentTarget.dataset.commsrow;save_render();}));

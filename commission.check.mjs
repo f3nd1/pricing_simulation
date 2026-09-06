@@ -790,6 +790,143 @@ await p.evaluate(()=>{setLang('en');ST.comm.view='earnings';});
 ok('the compare view does not scroll the page sideways at any width, either language',
    !errs.some(e=>/compare .* overflow/.test(e)));
 
+// ── Sales target: solver, mixes, exclusion, earnings goal ────────────────
+const tgt = await p.evaluate(()=>{
+  /* a fresh dataset with several priced courses of differing contribution,
+     plus one attributed course with NO enrolment on the basis */
+  const st=ST;
+  st.intakes=[]; let id=1;
+  [[0,24],[1,12],[2,36],[3,18]].forEach(([ci,n])=>{ for(let m=0;m<12;m++)
+    st.intakes.push({id:id++,kind:'budget',ci,month:m,year:2026,students:n/12}); });
+  st.comm.bands=[{from:0,to:3000,rate:3},{from:3000,to:null,rate:5}];
+  st.comm.people=[{id:1,name:'A',salary:3000,active:true}]; st.comm.nextId=2;
+  st.comm.attrib={}; st.comm.spid=1; st.comm.year=2026; st.comm.basis='budget';
+  [[0,8],[1,3],[2,6],[3,3]].forEach(([ci,n])=>commAttribSet(st,1,2026,ci,0,n));
+  commAttribSet(st,1,2026,9,0,7);      /* course 9 has no intakes -> unpriced */
+  const pool=commTargetPool(st,2026,1);
+  const salary=36000;
+  const solved={}, weights={};
+  ['current','even','best','worst'].forEach(k=>{
+    solved[k]=commSolveTarget(st,pool,k,2026,salary);
+    weights[k]=commTargetWeights(pool,k);});
+  /* strict lowest-N: nothing below the answer clears the bar */
+  const w=commTargetWeights(pool,'current');
+  const netAt=N=>{const r=commTargetAt(st,pool,w,N,2026);
+    return r.contribution-(salary+r.commission);};
+  const n=solved.current.n;
+  const below=[]; for(let i=1;i<n;i++) if(netAt(i)>=0) below.push(i);
+  /* earnings goal */
+  const g=commSolveEarnings(st,pool,'current',2026,salary,5000);
+  const gw=commTargetWeights(pool,'current');
+  const cAt=N=>commTargetAt(st,pool,gw,N,2026).commission;
+  const already=commSolveEarnings(st,pool,'current',2026,salary,2000);
+  return {excludedCis:pool.excluded.map(r=>r.ci), excludedStudents:pool.excludedStudents,
+    pricedCis:pool.priced.map(r=>r.ci), attributed:pool.attributed,
+    pricedStudents:pool.pricedStudents,
+    weightKeys:Object.keys(weights.current).map(Number),
+    ns:{c:solved.current.n,e:solved.even.n,b:solved.best.n,w:solved.worst.n},
+    netAtN:netAt(n), below, n,
+    goal:{n:g.n,want:g.wantCommission,at:cAt(g.n),prev:g.n>1?cAt(g.n-1):null},
+    already:already.already===true&&already.n===0,
+    spread:commTargetSpread(Object.values(solved))};});
+
+ok('the solver returns the LOWEST N that clears the bar — nothing below it does',
+   tgt.netAtN>=0 && tgt.below.length===0, `N=${tgt.n}, net=${Math.round(tgt.netAtN)}`);
+ok('a course with no contribution is EXCLUDED, not counted as zero',
+   tgt.excludedCis.includes(9) && !tgt.pricedCis.includes(9) &&
+   tgt.excludedStudents===7 && !tgt.weightKeys.includes(9),
+   `excluded ${JSON.stringify(tgt.excludedCis)}, ${tgt.excludedStudents} enrolments`);
+ok('the excluded share is stated as two real numbers that agree',
+   tgt.pricedStudents+tgt.excludedStudents===tgt.attributed,
+   `${tgt.pricedStudents} + ${tgt.excludedStudents} = ${tgt.attributed}`);
+ok('the four mixes give four distinct answers on data that can tell them apart',
+   new Set(Object.values(tgt.ns)).size===4 && !tgt.spread.collapsed,
+   JSON.stringify(tgt.ns));
+ok('best case needs fewer enrolments than worst case',
+   tgt.ns.b<tgt.ns.w, `best ${tgt.ns.b} < worst ${tgt.ns.w}`);
+ok('the earnings goal inverts: N earns the wanted commission, N-1 does not',
+   tgt.goal.at>=tgt.goal.want-1e-6 && (tgt.goal.prev===null||tgt.goal.prev<tgt.goal.want),
+   `N=${tgt.goal.n} earns ${Math.round(tgt.goal.at)} of ${Math.round(tgt.goal.want)}`);
+ok('a goal already covered by salary needs zero enrolments, not a solve', tgt.already);
+
+const tgtCollapse = await p.evaluate(()=>{
+  /* one priced course only: the mixes cannot be told apart, and it says so */
+  ST.intakes=ST.intakes.filter(i=>i.ci===0);
+  ST.comm.attrib={}; commAttribSet(ST,1,2026,0,0,5); commAttribSet(ST,1,2026,9,0,7);
+  ST.comm.view='target'; ST.module='commission'; render();
+  const pool=commTargetPool(ST,2026,1);
+  const s=commTargetSpread(['current','even','best','worst'].map(k=>commSolveTarget(ST,pool,k,2026,36000)));
+  const t=document.getElementById('app').innerText;
+  return {collapsed:s.collapsed, saysSo:/not enough spread in the data/i.test(t),
+    excl:/excluded/i.test(t), txt:t};});
+ok('with one priced course the mixes collapse and the screen says so, not "they agree"',
+   tgtCollapse.collapsed && tgtCollapse.saysSo);
+ok('the exclusion is stated on screen, not buried in a tooltip', tgtCollapse.excl);
+
+const tgtNone = await p.evaluate(()=>{
+  ST.intakes=[]; ST.comm.attrib={}; commAttribSet(ST,1,2026,9,0,7); render();
+  /* only the panel that replaces the target — the rest of the page is unrelated */
+  const panel=[...document.querySelectorAll('#app .cb-panel')].find(e=>/No target can be calculated/i.test(e.innerText));
+  const t=panel?panel.innerText:'';
+  return {noNum:!!panel, guess:/would be a guess/i.test(t),
+    hasNumber:/\b\d+\s+enrolments\b/i.test(t)};});
+ok('with nothing priced it gives a reason and NO number',
+   tgtNone.noNum && tgtNone.guess && !tgtNone.hasNumber);
+
+const tgtPersist = await p.evaluate(()=>{
+  ST.comm.goal=4200; ST.comm.kraMix='best'; saveToStorage();
+  const raw=JSON.parse(localStorage.getItem('ucc_sim_v4'));
+  return {goal:raw.comm&&raw.comm.goal, kra:raw.comm&&raw.comm.kraMix};});
+ok('the target inputs survive a save', tgtPersist.goal===4200 && tgtPersist.kra==='best');
+await p.reload(); await p.waitForTimeout(400);
+const tgtReload = await p.evaluate(()=>({goal:ST.comm.goal,kra:ST.comm.kraMix}));
+ok('and they are still there after a reload', tgtReload.goal===4200 && tgtReload.kra==='best');
+
+// re-seed after the reload and measure render + check the other modules
+const tgtPerf = await p.evaluate(()=>{
+  const st=ST; st.intakes=[]; let id=1;
+  [[0,24],[1,12],[2,36],[3,18]].forEach(([ci,n])=>{ for(let m=0;m<12;m++)
+    st.intakes.push({id:id++,kind:'budget',ci,month:m,year:2026,students:n/12}); });
+  st.comm.people=[{id:1,name:'A',salary:3000,active:true}]; st.comm.nextId=2;
+  st.comm.spid=1; st.comm.attrib={}; st.comm.goal=5000;
+  [0,1,2,3].forEach(ci=>commAttribSet(st,1,2026,ci,0,5));
+  const before=JSON.stringify({cba:cbaCompute(st,'budget',2026).T, fx:fcExpenses(st)});
+  st.module='commission'; st.comm.view='target';
+  const t0=performance.now(); render(); const t1=performance.now();
+  const svg=document.querySelectorAll('#app svg path,#app svg circle').length;
+  const after=JSON.stringify({cba:cbaCompute(st,'budget',2026).T, fx:fcExpenses(st)});
+  return {ms:t1-t0, svg, moved:before!==after};});
+ok('nothing in Cost-Benefit or Forecast moves — exactly $0', !tgtPerf.moved);
+ok(`the target view renders with its chart in under 400ms`,
+   tgtPerf.ms<400 && tgtPerf.svg>0, `${tgtPerf.ms.toFixed(0)}ms, ${tgtPerf.svg} chart marks`);
+
+const tgtZh = await p.evaluate(()=>{
+  setLang('zh'); render(); const t=document.getElementById('app').innerText;
+  ST.intakes=[]; render(); const none=document.getElementById('app').innerText;
+  setLang('en');
+  return {t,none};});
+ok('CN: the target view carries no English leak in its own strings',
+   /目标测算的依据/.test(tgtZh.t) && /当前招生组合/.test(tgtZh.t) &&
+   /最优情形/.test(tgtZh.t) && /最差情形/.test(tgtZh.t));
+ok('CN: the no-target reason', /无法计算目标/.test(tgtZh.none));
+
+await p.evaluate(()=>{ ST.intakes=[]; let id=1;
+  [[0,24],[1,12],[2,36],[3,18]].forEach(([ci,n])=>{ for(let m=0;m<12;m++)
+    ST.intakes.push({id:id++,kind:'budget',ci,month:m,year:2026,students:n/12}); });
+  render();});
+for (const lang of ['en','zh']) for (const w of [1440,1280,768,375]){
+  await p.setViewportSize({width:w,height:900});
+  const of = await p.evaluate((lang)=>{
+    if((localStorage.getItem('ucc_lang')||'en')!==lang) setLang(lang);
+    ST.module='commission'; ST.comm.view='target'; render();
+    return document.documentElement.scrollWidth-document.documentElement.clientWidth;}, lang);
+  if(of>1) errs.push(`target ${lang} ${w}px overflow=${of}`);
+}
+await p.evaluate(()=>{setLang('en');ST.comm.view='earnings';});
+await p.setViewportSize({width:1440,height:1200});
+ok('the target view does not scroll the page sideways at any width, either language',
+   !errs.some(e=>/target .* overflow/.test(e)));
+
 if(errs.length)fails.push(...errs);
 console.log(errs.length?'\nerrors: '+errs.join(' | '):'\nno console errors, no overflow');
 console.log(fails.length?`\nFAILED (${fails.length})`:'\nALL PASS');
