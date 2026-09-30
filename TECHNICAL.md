@@ -268,17 +268,42 @@ Currency, numbers and dates are never converted. Course names never translated.
 
 ## 9. Persistence
 
-- **localStorage** `ucc_sim_v4`, plus `ucc_lang` and `ucc_unlocked`.
-- **Supabase** REST cloud save (`buildFullSnapshot` / `applyFullSnapshot`)
-  using a publishable/anon key, safe client-side by design; RLS protects data.
-- **Access gate**: a simple client-side passcode, labelled in-UI as not
-  encryption. Chosen deliberately over Supabase Auth.
+- **localStorage** `ucc_sim_v4`, plus `ucc_lang` and `ucc_auth`. The session
+  in `ucc_auth` is deliberately **not** in `ST` and **not** in any of the three
+  persistence whitelists — on `ST` it would flow into `buildFullSnapshot` and
+  upload the signed-in user's access token into `ucc_saves`.
+- **Supabase** REST cloud save (`buildFullSnapshot` / `applyFullSnapshot`).
+  The publishable key is public by design; access is enforced by RLS policies
+  on `ucc_saves`, all four gated on the shared `is_allowed_user()`, which
+  requires a `unitedceres.edu.sg` address **and** a row in `allowed_users`.
+- **Access gate**: Google sign-in against the Supabase auth REST endpoints,
+  no SDK. It gates application entry on a live session **whose email is on
+  `unitedceres.edu.sg`**, and the same session authorises every cloud call.
+  The domain check exists so the gate matches its own on-screen text; it is
+  not what keeps data safe. It is **not** enforcement — the file is served to anyone who
+  requests the URL, and a forged session in localStorage satisfies every
+  client-side check. Enforcement of the saved data is the RLS policies;
+  enforcement of the page would have to happen at the edge.
+  Because OAuth cannot redirect to origin `null`, the app **cannot be opened
+  from `file://`** any more; the gate says so instead of showing a dead
+  button. The suites work around this by writing a forged `ucc_auth`, which is
+  sound precisely because the client gate is not a security boundary.
+  If sign-in ever breaks, everyone is locked out of the whole application.
+  There is deliberately **no bypass in the file** — a backdoor would be a
+  shared secret in public source, which is what the passcode gate was
+  removed for. The three recoveries (fix the redirect URL, revert the
+  deploy, write a session from the browser console) are written out in a
+  comment above the gate block.
+- Migrations live in `sql/`. They run **around** a deploy, not with it:
+  `01` (additive, before the code) then `02` (the atomic cutover, after the
+  new path is verified in a browser).
 
 ---
 
 ## 10. Testing
 
-22 Playwright suites, run directly against `file://` — no test framework, no
+25 Playwright suites, run directly against `file://` (`auth` serves over
+local HTTP, because `file://` cannot complete an OAuth redirect) — no test framework, no
 fixtures directory, no CI config. Each is a standalone `.mjs` that prints
 PASS/FAIL lines and exits non-zero on failure.
 

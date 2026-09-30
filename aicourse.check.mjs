@@ -32,7 +32,7 @@ await p.evaluate(([DIPAI,ADIPAI]) => {
   localStorage.setItem('ucc_sim_v4', JSON.stringify({ prices, intakes, ybYear:2026, module:'cba',
     smaster:{q:'',cat:'All',onlyActive:false,groups:{sim:true,oh:true,act:true,sub:true,price:true}},
     cba:{tab:'status',scope:'active',driver:'hours',off,rates:{},def:{},basis:'actual',otherRev:[]} }));
-  localStorage.setItem('ucc_unlocked','ucc2026');
+  localStorage.setItem('ucc_auth',JSON.stringify({access_token:'h.e30.s',refresh_token:'t',expires_at:Math.floor(Date.now()/1000)+86400,email:'test@unitedceres.edu.sg'}));
 }, [DIPAI,ADIPAI]);
 await p.reload(); await p.waitForTimeout(500);
 

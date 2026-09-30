@@ -10225,7 +10225,9 @@ function bindModuleNavEvents(){
   const authInBtn=document.getElementById("authInBtn");
   if(authInBtn)authInBtn.addEventListener("click",()=>{authSignIn();});
   const authOutBtn=document.getElementById("authOutBtn");
-  if(authOutBtn)authOutBtn.addEventListener("click",()=>{authSignOut();render();});
+  /* Signing out now closes the application, not just cloud save — the
+     session is what the gate opens on. */
+  if(authOutBtn)authOutBtn.addEventListener("click",()=>{authSignOut();ST.cloudOpen=false;renderGate();});
 
   const sbUrlInput=document.getElementById("sbUrlInput");
   const sbKeyInput=document.getElementById("sbKeyInput");
@@ -10532,49 +10534,111 @@ async function doAISend(msg,s){
 }
 
 /* ── Access gate ─────────────────────────────────────────────────────────
-   Deliberately simple. This keeps the link from being idly opened; it is NOT
-   encryption — the passcode below is readable by anyone who views the page
-   source. Change APP_PASSCODE to whatever you hand out; set it to "" to turn
-   the gate off entirely. */
-const APP_PASSCODE="ucc2026";
-const GATE_KEY="ucc_unlocked";
-function appLocked(){try{return !!APP_PASSCODE&&localStorage.getItem(GATE_KEY)!==APP_PASSCODE;}catch(e){return !!APP_PASSCODE;}}
+   Google sign-in, replacing the shared passcode that used to live here.
+
+   WHAT THIS IS. It decides who the application opens for, and it is the same
+   identity the database checks when reading and writing saved scenarios. No
+   shared secret, one account per person, and access removable per person
+   through allowed_users without telling everyone a new code.
+
+   WHAT THIS IS NOT. It is not enforcement, and nothing on the gate screen
+   claims it is. This file is served to anyone who requests the URL, and
+   everything in it -- the course list, the fees, every formula -- can be
+   read without passing the gate. Enforcement of the saved data is the RLS
+   policies in Postgres. Enforcement of the page itself would have to happen
+   before the file is served, which is a job for the edge, not for this file.
+
+   APP_PASSCODE is kept, empty, only so that cba.check.mjs -- which reads the
+   constant rather than hardcoding the string -- does not throw. Nothing
+   reads it and changing it has no effect. */
+/* ── IF NOBODY CAN GET IN ─────────────────────────────────────────────────
+   Entry now depends on the Google round trip working. If it breaks -- the
+   domain changes, the redirect URL is edited, the Google project moves --
+   everyone is locked out of the whole application, not just cloud save.
+   There is deliberately NO bypass in this file: any backdoor would be a
+   shared secret in a public source file, which is the thing the passcode
+   gate was removed for. There are three real recoveries and none needs a
+   code change.
+
+   1. FIX THE REDIRECT URL. Supabase dashboard > Authentication > URL
+      Configuration > Redirect URLs. It must exactly match what the browser
+      shows, because the app sends location.origin + location.pathname as
+      redirect_to. A missing or extra trailing slash is enough to break it.
+      This is the actual fix for the most likely failure, and it takes about
+      two minutes.
+
+   2. REVERT THE DEPLOY. On the droplet, roll /var/www/pricing_simulation
+      back to a commit before this gate (v1.99.0 or earlier). Those versions
+      gate cloud save only, so the application opens while you sort the
+      provider out. The RLS policies on ucc_saves are unaffected either way
+      -- anonymous access stays closed, so reverting the code does not
+      reopen the data.
+
+   3. OPEN THE BROWSER CONSOLE. The gate reads a session object out of
+      localStorage, so writing one in opens the app on that one machine:
+
+        localStorage.setItem('ucc_auth', JSON.stringify({
+          access_token:'h.'+btoa('{"email":"you@unitedceres.edu.sg"}')+'.s',
+          refresh_token:'', expires_at: Math.floor(Date.now()/1000)+3600,
+          email:'you@unitedceres.edu.sg' })); location.reload();
+
+      This is NOT a backdoor being added -- it is the inherent property of
+      any client-side gate, it is how the test suites get in, and it is why
+      nothing on the gate screen claims to protect the page. It gets you a
+      working application with local data only: cloud save will still refuse
+      you, because Postgres checks a real signed token and this is not one.
+
+   Longer term, the control that actually prevents entry is authentication
+   at the edge, before this file is served -- Cloudflare Access in front of
+   the droplet. Nothing in this file can do that job.
+   ──────────────────────────────────────────────────────────────────────── */
+const APP_PASSCODE="";
+const GATE_KEY="ucc_unlocked";   /* retired; kept so stale values can be cleared */
+/* Open only for a live session on a college address. The domain check is
+   here so the gate matches what its own text says -- it turns away an honest
+   stranger with a personal Google account, who would otherwise get in and
+   see the course list and fees. Like everything client-side it is
+   bypassable, and it is not what keeps the saved data safe; that is
+   is_allowed_user() in Postgres, which additionally requires a row in
+   allowed_users. Anything absent, unparseable, expired or off-domain is
+   locked -- never the other way round. */
+function appLocked(){
+  const a=authLive();
+  return !a||!/@unitedceres\.edu\.sg$/i.test(a.email||"");
+}
 function renderGate(msg){
-  document.getElementById("app").innerHTML=`
+  const box=inner=>{document.getElementById("app").innerHTML=`
   <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px">
-    <div class="card" style="max-width:340px;width:100%">
+    <div class="card" style="max-width:380px;width:100%">
       <div style="text-align:center;margin-bottom:16px">
-        <div style="font-size:11px;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase">United Ceres College</div>
-        <div style="font-size:17px;font-weight:700;margin-top:2px">Planning Suite</div>
+        <div style="font-size:11px;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase" data-i18n-skip>United Ceres College</div>
+        <div style="font-size:17px;font-weight:700;margin-top:2px">${tf("Planning Suite","规划系统")}</div>
       </div>
-      <input type="password" id="gatePw" placeholder="Passcode" style="width:100%;margin-bottom:8px;text-align:center">
-      <button id="gateGo" style="width:100%;padding:8px;background:var(--blue-600);color:#fff;border:1px solid var(--blue-600);border-radius:6px;font-weight:600;cursor:pointer">Unlock</button>
-      ${msg?`<div style="color:var(--text-danger);font-size:12px;margin-top:8px;text-align:center">${msg}</div>`:""}
-      <div style="font-size:10px;color:var(--text-muted);margin-top:14px;text-align:center;line-height:1.5">Internal use only. This is a simple access gate, not encryption \u2014 anyone who views the page source can read the passcode.</div>
+      ${inner}
+      ${msg?`<div style="color:var(--text-danger);font-size:12px;margin-top:10px;text-align:center">${msg}</div>`:""}
     </div>
-  </div>`;
-  const go=()=>{
-    const v=document.getElementById("gatePw").value;
-    if(v===APP_PASSCODE){try{localStorage.setItem(GATE_KEY,v);}catch(e){}start();}
-    else renderGate("Wrong passcode.");
-  };
-  document.getElementById("gateGo").addEventListener("click",go);
-  const pw=document.getElementById("gatePw");
-  pw.addEventListener("keydown",e=>{if(e.key==="Enter")go();});
-  pw.focus();
+  </div>`;};
+  /* OAuth cannot redirect to a file:// page -- its origin is "null" and no
+     provider accepts it. Say so, rather than showing a dead button. */
+  if(!authPossible()){
+    box(`<div style="font-size:12px;line-height:1.6">${tf(
+      "This copy was opened directly from a file, and signing in cannot work that way. Open the Planning Suite from its web address instead.",
+      "此副本是直接从文件打开的，这种方式无法完成登录。请通过网址打开规划系统。")}</div>`);
+    i18nApply();return;
+  }
+  box(`
+    <button id="gateGo" style="width:100%;padding:9px;background:var(--blue-600);color:#fff;border:1px solid var(--blue-600);border-radius:6px;font-weight:600;cursor:pointer">${tf("Sign in with Google","使用 Google 登录")}</button>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:12px;line-height:1.6">${tf(
+      "Use your United Ceres account. Access is limited to an approved list — if yours is not on it, ask Felix or Renzo to add you.",
+      "请使用您的 United Ceres 账号。访问权限仅限于已批准名单——如果名单中没有您，请联系 Felix 或 Renzo 添加。")}</div>
+    <div style="font-size:10px;color:var(--text-muted);margin-top:12px;line-height:1.5">${tf(
+      "Signing in decides who this application opens for, and who can read, change and delete saved scenarios. The page itself is served openly, so treat the figures in it as internal rather than confidential.",
+      "登录决定本应用向谁开放，以及谁可以读取、修改和删除云端存档。页面本身是公开提供的，因此请将其中的数据视为内部资料，而非机密资料。")}</div>`);
+  document.getElementById("gateGo").addEventListener("click",()=>{authSignIn();});
+  i18nApply();
 }
 function start(){
   loadFromStorage();initNumfmtDelegation();
-  /* Pick up any session first, so the first render already knows whether
-     the person is signed in and the Cloud Save panel does not flicker. */
-  authLoad();
-  const back=authConsumeRedirect();
-  if(back&&back.error){
-    ST.sbStatus=tf("Sign-in did not complete: {m}","登录未能完成：{m}",{m:back.error});
-    ST.sbStatusOk=false;ST.cloudOpen=true;
-  }else if(back&&back.ok){
-    ST.cloudOpen=true;
-  }
   render();
   /* Flush the selected course's working copy into ST.sim on load. This used
      to happen only as a side effect of sbFetchSaves() calling saveToStorage(),
@@ -10583,7 +10647,20 @@ function start(){
   saveToStorage();
   if(sbReady())sbFetchSaves();
 }
-function init(){if(appLocked()){renderGate();return;}start();}
+/* The session has to be established before the gate is judged, or someone
+   arriving back from Google with a valid token would be shown the gate
+   again. Order: load stored session, consume any redirect, then decide. */
+function init(){
+  authLoad();
+  const back=authConsumeRedirect();
+  if(appLocked()){
+    renderGate(back&&back.error
+      ? tf("Sign-in did not complete: {m}","登录未能完成：{m}",{m:back.error})
+      : "");
+    return;
+  }
+  start();
+}
 if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",init);}else{init();}
 </script>
 </body>

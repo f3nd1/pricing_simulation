@@ -28,7 +28,7 @@ p.on('pageerror', e => errs.push('pageerror: ' + e.message));
 await p.goto('file://' + process.cwd() + '/ucc_budget_simulator.html');
 await p.waitForTimeout(300);
 // unlock the gate, then seed some enrolment so there is something to analyse
-await p.evaluate(() => { localStorage.setItem('ucc_unlocked', APP_PASSCODE); });
+await p.evaluate(() => { localStorage.setItem('ucc_auth',JSON.stringify({access_token:'h.e30.s',refresh_token:'t',expires_at:Math.floor(Date.now()/1000)+86400,email:'test@unitedceres.edu.sg'})); });
 await p.reload();
 await p.waitForTimeout(400);
 

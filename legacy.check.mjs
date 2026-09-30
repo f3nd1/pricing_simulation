@@ -47,7 +47,7 @@ const seeded = await p.evaluate(([AI]) => {
     audit:[]
   };
   localStorage.setItem('ucc_sim_v4', JSON.stringify(legacy));
-  localStorage.setItem('ucc_unlocked','ucc2026');
+  localStorage.setItem('ucc_auth',JSON.stringify({access_token:'h.e30.s',refresh_token:'t',expires_at:Math.floor(Date.now()/1000)+86400,email:'test@unitedceres.edu.sg'}));
   return { aiCi, offCount:Object.keys(off).length, aiOff:!!off[AI] };
 }, [AI]);
 ok('legacy fixture carries a stale exclusion on the AI diploma',

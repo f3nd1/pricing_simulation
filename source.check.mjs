@@ -19,7 +19,7 @@ await p.evaluate(()=>{
     intakes.push({id:id++,kind:'actual',ci,month:0,year:2026,students:act});});
   localStorage.setItem('ucc_sim_v4',JSON.stringify({prices,intakes,ybYear:2026,module:'cba',
     cba:{driver:'hours',off:{},rates:{},def:{},basis:'actual',otherRev:[]}}));
-  localStorage.setItem('ucc_unlocked','ucc2026');});
+  localStorage.setItem('ucc_auth',JSON.stringify({access_token:'h.e30.s',refresh_token:'t',expires_at:Math.floor(Date.now()/1000)+86400,email:'test@unitedceres.edu.sg'}));});
 await p.reload(); await p.waitForTimeout(500);
 
 // ── 1. total cost reconciles exactly to its components ────────────────────

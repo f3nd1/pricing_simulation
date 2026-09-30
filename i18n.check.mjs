@@ -23,7 +23,7 @@ await p.evaluate(() => {
     saved:[{name:'My board case Q3',ts:Date.now()}],
     audit:[{area:'Yearly Budget',what:'my private note about IELTS',from:'1',to:'2',ts:Date.now()}],
     cba:{driver:'hours',off:{},rates:{},def:{},basis:'actual',otherRev:[]} }));
-  localStorage.setItem('ucc_unlocked','ucc2026');
+  localStorage.setItem('ucc_auth',JSON.stringify({access_token:'h.e30.s',refresh_token:'t',expires_at:Math.floor(Date.now()/1000)+86400,email:'test@unitedceres.edu.sg'}));
 });
 await p.reload(); await p.waitForTimeout(400);
 

@@ -11,7 +11,7 @@ p.on('pageerror', e => errs.push('pageerror: ' + e.message));
 const ok = (t,c,x='') => { console.log(`${c?'PASS':'FAIL'}  ${t}${x?' — '+x:''}`); if(!c) fails.push(t); };
 
 await p.goto('file://' + process.cwd() + '/ucc_budget_simulator.html');
-await p.evaluate(() => localStorage.setItem('ucc_unlocked','ucc2026'));
+await p.evaluate(() => localStorage.setItem('ucc_auth',JSON.stringify({access_token:'h.e30.s',refresh_token:'t',expires_at:Math.floor(Date.now()/1000)+86400,email:'test@unitedceres.edu.sg'})));
 await p.reload(); await p.waitForTimeout(400);
 
 /* a brand-new course, added through the app's own button, with no activity */

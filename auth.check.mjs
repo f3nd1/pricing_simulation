@@ -19,7 +19,7 @@ const ok=(t,c,x='')=>{console.log(`${c?'PASS':'FAIL'}  ${t}${x?' — '+x:''}`);i
 const p=await b.newPage(); await p.setViewportSize({width:1440,height:1000});
 p.on('pageerror',e=>errs.push(e.message));
 await p.goto(ORIGIN);
-await p.evaluate(()=>localStorage.setItem('ucc_unlocked','ucc2026'));
+await p.evaluate(()=>localStorage.setItem('ucc_auth',JSON.stringify({access_token:'h.e30.s',refresh_token:'t',expires_at:Math.floor(Date.now()/1000)+86400,email:'test@unitedceres.edu.sg'})));
 await p.reload(); await p.waitForTimeout(400);
 
 const tok = (email,secsFromNow=3600) => {
@@ -155,6 +155,110 @@ for (const lang of ['en','zh']) for (const w of [1440,1280,768,375]){
 await p.evaluate(()=>{setLang('en');ST.cloudOpen=false;render();});
 ok('the Cloud Save panel does not scroll the page sideways at any width, either language',
    !errs.some(e=>/cloud panel/.test(e)));
+
+// ── the ENTRY gate: the app does not open without a live session ─────────
+const gate = await p.evaluate(()=>{
+  localStorage.removeItem('ucc_auth');authLoad();
+  init();
+  const t=document.getElementById('app').innerText;
+  return {locked:appLocked(), hasBtn:!!document.getElementById('gateGo'),
+    started:typeof ST!=="undefined"&&!!document.querySelector('.module-nav'),
+    txt:t};});
+ok('WITH NO SESSION THE APPLICATION DOES NOT OPEN — the gate is shown instead',
+   gate.locked && gate.hasBtn && !gate.started);
+ok('the gate offers Google sign-in, not a passcode',
+   /Sign in with Google/i.test(gate.txt) && !/passcode/i.test(gate.txt));
+ok('the gate says access is by approved list', /approved list/i.test(gate.txt));
+ok('THE GATE NEVER CLAIMS TO PROTECT THE PAGE OR ITS CONTENTS',
+   !/(page|app|application|data|figures?|contents?) (is|are) (protected|secure|encrypted)/i.test(gate.txt) &&
+   !/only you can see|no one else can/i.test(gate.txt));
+ok('it says plainly that the page itself is served openly',
+   /served openly/i.test(gate.txt) && /internal rather than confidential/i.test(gate.txt));
+ok('the old shared passcode is gone from the file',
+   await p.evaluate(()=>APP_PASSCODE===""), 'APP_PASSCODE is empty');
+ok('a stale ucc_unlocked value no longer opens anything',
+   await p.evaluate(()=>{localStorage.setItem('ucc_unlocked','ucc2026');
+     localStorage.removeItem('ucc_auth');authLoad();return appLocked();}));
+
+// a live session opens it
+const opens = await p.evaluate(()=>{
+  authStore({access_token:'h.e30.s',refresh_token:'t',
+    expires_at:Math.floor(Date.now()/1000)+3600,email:'t@unitedceres.edu.sg'});
+  init();
+  return {locked:appLocked(), started:!!document.querySelector('.module-nav')};});
+ok('a live session opens the application', !opens.locked && opens.started);
+
+// an expired session closes it again on next load
+const shut = await p.evaluate(()=>{
+  const a=JSON.parse(localStorage.getItem('ucc_auth'));
+  a.expires_at=Math.floor(Date.now()/1000)-1;localStorage.setItem('ucc_auth',JSON.stringify(a));
+  authLoad();init();
+  return {locked:appLocked(), hasBtn:!!document.getElementById('gateGo')};});
+ok('an EXPIRED session closes the application on the next load', shut.locked && shut.hasBtn);
+
+// signing out returns to the gate rather than leaving the app open
+const out = await p.evaluate(()=>{
+  authStore({access_token:'h.e30.s',refresh_token:'t',
+    expires_at:Math.floor(Date.now()/1000)+3600,email:'t@unitedceres.edu.sg'});
+  init(); ST.cloudOpen=true; render();
+  document.getElementById('authOutBtn').click();
+  return {stored:localStorage.getItem('ucc_auth'),
+    hasBtn:!!document.getElementById('gateGo'),
+    started:!!document.querySelector('.module-nav')};});
+ok('SIGNING OUT CLOSES THE APPLICATION, not just cloud save',
+   out.stored===null && out.hasBtn && !out.started);
+
+// the gate speaks Chinese too
+const gateZh = await p.evaluate(()=>{
+  localStorage.removeItem('ucc_auth');authLoad();
+  setLang('zh');init();
+  const t=document.getElementById('app').innerText;
+  setLang('en');
+  return t;});
+ok('CN: the gate is translated and still makes no protection claim',
+   /使用 Google 登录/.test(gateZh) && /已批准名单/.test(gateZh) &&
+   /内部资料/.test(gateZh) &&
+   /* the college name is a proper noun and is never translated; it renders
+      uppercased by text-transform, so the strip has to ignore case */
+   !/[A-Za-z]{4,}/.test(gateZh.replace(/united ceres( college)?|google|felix|renzo/gi,'')));
+
+// ── the gate turns away an account that is not on the college domain ────
+const dom = await p.evaluate(()=>{
+  const mk=e=>{const pl=btoa(JSON.stringify({email:e})).replace(/=+$/,'');
+    authStore({access_token:'h.'+pl+'.s',refresh_token:'t',
+      expires_at:Math.floor(Date.now()/1000)+3600,email:e});
+    init();
+    return {locked:appLocked(), opened:!!document.querySelector('.module-nav')};};
+  const out={};
+  out.stranger = mk('stranger@gmail.com');
+  out.college  = mk('someone@unitedceres.edu.sg');
+  out.mixedCase= mk('Someone@UnitedCeres.Edu.Sg');
+  out.lookalike= mk('evil@unitedceres.edu.sg.attacker.com');
+  out.prefix   = mk('x@notunitedceres.edu.sg');
+  out.noEmail  = (authStore({access_token:'h.e30.s',refresh_token:'t',
+      expires_at:Math.floor(Date.now()/1000)+3600,email:''}),init(),
+      {locked:appLocked(),opened:!!document.querySelector('.module-nav')});
+  return out;});
+ok('A PERSONAL GOOGLE ACCOUNT DOES NOT OPEN THE APPLICATION',
+   dom.stranger.locked && !dom.stranger.opened, 'stranger@gmail.com refused');
+ok('a college address does open it', !dom.college.locked && dom.college.opened);
+ok('the domain check ignores case', !dom.mixedCase.locked);
+ok('a LOOKALIKE domain is refused — the match is anchored at the end',
+   dom.lookalike.locked, 'evil@unitedceres.edu.sg.attacker.com refused');
+ok('a domain that merely ends similarly is refused', dom.prefix.locked);
+ok('a session with no email at all is refused, not waved through', dom.noEmail.locked);
+ok('the gate text is now true of the door, not just the data',
+   await p.evaluate(()=>{localStorage.removeItem('ucc_auth');authLoad();init();
+     return /approved list/i.test(document.getElementById('app').innerText);}));
+
+// ── the recovery notes are a comment, not a code path ───────────────────
+const src = await (await fetch('http://127.0.0.1:8791/')).text();
+ok('the recovery notes are present in the source for whoever is locked out',
+   /IF NOBODY CAN GET IN/.test(src) && /Cloudflare Access/.test(src));
+ok('THE RECOVERY NOTES ADD NO EXECUTABLE BYPASS — no recovery branch exists',
+   !/recovery\s*[=:]/i.test(src.replace(/\/\*[\s\S]*?\*\//g,'')) &&
+   !/[?&](recovery|bypass|skipauth|override)=/i.test(src.replace(/\/\*[\s\S]*?\*\//g,'')),
+   'no query-parameter or flag bypass outside comments');
 
 if(errs.length)fails.push(...errs);
 console.log(errs.length?'\nerrors: '+errs.join(' | '):'\nno console errors, no overflow');

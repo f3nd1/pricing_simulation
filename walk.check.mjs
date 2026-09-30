@@ -22,7 +22,7 @@ const F = await p.evaluate(() => {
   intakes.push({id:id++,kind:'budget',ci:7,month:0,year:2026,students:9});    /* no actual */
   localStorage.setItem('ucc_sim_v4', JSON.stringify({ prices, intakes, ybYear:2026, module:'cba',
     cba:{driver:'hours',off:{},rates:{},def:{},basis:'actual',otherRev:[]} }));
-  localStorage.setItem('ucc_unlocked','ucc2026');
+  localStorage.setItem('ucc_auth',JSON.stringify({access_token:'h.e30.s',refresh_token:'t',expires_at:Math.floor(Date.now()/1000)+86400,email:'test@unitedceres.edu.sg'}));
   return { A:prices[0].name, B:prices[6].name, C:prices[7].name };
 });
 await p.reload(); await p.waitForTimeout(500);

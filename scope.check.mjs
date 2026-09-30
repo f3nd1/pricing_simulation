@@ -10,7 +10,7 @@ p.on('pageerror',e=>errs.push(e.message));
 p.on('console',m=>{if(m.type()==='error'&&!/ERR_TUNNEL|Failed to load/.test(m.text()))errs.push(m.text());});
 p.on('dialog',d=>d.accept());
 await p.goto('file://'+process.cwd()+'/ucc_budget_simulator.html');
-await p.evaluate(()=>localStorage.setItem('ucc_unlocked','ucc2026'));
+await p.evaluate(()=>localStorage.setItem('ucc_auth',JSON.stringify({access_token:'h.e30.s',refresh_token:'t',expires_at:Math.floor(Date.now()/1000)+86400,email:'test@unitedceres.edu.sg'})));
 await p.reload(); await p.waitForTimeout(400);
 
 // baseline: a few courses with 2026 activity
