@@ -372,7 +372,10 @@ for (const [m,extra] of [['manage',{}],['analyse',{sub:'portfolio'}],['analyse',
   for (const view of ['simple','advanced']) {
     await go(m, {...extra, view});
     const t2 = await txt();
-    const bad = t2.match(/-?\d+\.\d{3,}/g);
+    /* the build stamp (e.g. v1.101.0) is a version, not a measurement --
+       strip it before looking for raw floats, or every v1.1xx release
+       fails this guard */
+    const bad = t2.replace(/\bv?\d+\.\d+\.\d+\b/g,'').match(/-?\d+\.\d{3,}/g);
     if (bad) floats.push(`${m}/${view}: ${bad.slice(0,3).join(', ')}`);
   }
 }
