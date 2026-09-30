@@ -983,16 +983,167 @@ function applyFullSnapshot(d){
   fcSyncPeriodArrays();
 }
 
+/* ── Google sign-in, against the Supabase auth REST endpoints ────────────
+   No SDK. supabase-js would either break the "nothing loads from the
+   network" rule or add ~130 KB of vendored code that nobody here has a
+   toolchain to update. Every other Supabase call in this file is already a
+   hand-written fetch; this is the seventh.
+
+   WHAT THIS DOES AND DOES NOT DO. It identifies the person and protects the
+   cloud-saved scenarios. It does NOT protect this page, its source, the
+   course data or any figure in it — the browser must be able to read the
+   whole file to run it, and the file is served publicly. Every on-screen
+   string below is written to say exactly that and nothing more.
+
+   The token lives in its OWN localStorage key, deliberately NOT in ST and
+   NOT in any of the three persistence whitelists. Putting it in ST would
+   carry it into buildFullSnapshot, which would upload the signed-in user's
+   access token into the ucc_saves table on the next cloud save. */
+const AUTH_KEY="ucc_auth";
+const AUTH_DOMAIN="unitedceres.edu.sg";
+let AUTH=null;   /* {access_token, refresh_token, expires_at, email} | null */
+
+function authLoad(){
+  try{const raw=localStorage.getItem(AUTH_KEY);AUTH=raw?JSON.parse(raw):null;}
+  catch(e){AUTH=null;}
+  return AUTH;
+}
+function authStore(a){
+  AUTH=a;
+  try{a?localStorage.setItem(AUTH_KEY,JSON.stringify(a)):localStorage.removeItem(AUTH_KEY);}
+  catch(e){/* private mode — the session still works for this page load */}
+}
+/* Fail closed: anything unparseable, expired or missing is "not signed in",
+   never "signed in". A 30s margin stops a token expiring mid-request. */
+function authLive(){
+  const a=AUTH;
+  if(!a||!a.access_token||!a.expires_at)return null;
+  return (a.expires_at-30)*1000>Date.now()?a:null;
+}
+function authEmail(){const a=authLive();return a?a.email||"":"";}
+/* The redirect target is this exact page, minus any auth fragment. It must
+   be registered in Supabase under Authentication > URL Configuration, or
+   the provider refuses the round trip. */
+function authRedirectUrl(){
+  return location.origin+location.pathname+location.search;
+}
+/* file:// has origin "null" and cannot be an OAuth redirect target, so
+   sign-in is offered only where it can actually complete. Opening the file
+   from disk keeps working — without cloud save, as it always has. */
+function authPossible(){
+  return !!SUPABASE_URL&&location.protocol!=="file:";
+}
+function authSignIn(){
+  if(!authPossible())return;
+  const u=`${SUPABASE_URL}/auth/v1/authorize?provider=google`
+    +`&redirect_to=${encodeURIComponent(authRedirectUrl())}`
+    /* hd is a hint to Google's account chooser only. It is not a
+       restriction — the domain is enforced in Postgres by
+       is_allowed_user(), which also requires a row in allowed_users. */
+    +`&hd=${encodeURIComponent(AUTH_DOMAIN)}`;
+  location.href=u;
+}
+function authSignOut(){
+  const a=AUTH;
+  authStore(null);
+  ST.sbSaves=[];ST.sbStatus="";ST.sbStatusOk=null;
+  /* Best effort; the local session is already gone either way. */
+  if(a&&a.access_token&&SUPABASE_URL){
+    fetch(`${SUPABASE_URL}/auth/v1/logout`,{method:"POST",
+      headers:{apikey:SUPABASE_ANON_KEY,Authorization:`Bearer ${a.access_token}`}}).catch(()=>{});
+  }
+}
+/* Read the tokens Supabase puts in the URL fragment after a successful
+   round trip, then scrub them out of the address bar and history. */
+function authConsumeRedirect(){
+  const h=location.hash||"";
+  if(h.indexOf("access_token=")<0&&h.indexOf("error=")<0)return null;
+  const q=new URLSearchParams(h.replace(/^#/,""));
+  const clean=()=>{try{history.replaceState(null,"",authRedirectUrl());}catch(e){location.hash="";}};
+  if(q.get("error")){
+    const msg=q.get("error_description")||q.get("error");
+    clean();
+    return{error:msg};
+  }
+  const at=q.get("access_token"),rt=q.get("refresh_token"),ein=parseInt(q.get("expires_in")||"3600",10);
+  clean();
+  if(!at)return{error:"No access token in the sign-in response."};
+  authStore({access_token:at,refresh_token:rt||"",
+    expires_at:Math.floor(Date.now()/1000)+(isFinite(ein)?ein:3600),
+    email:authEmailFromToken(at)});
+  return{ok:true};
+}
+/* The email claim, read from the JWT payload for display only. Nothing is
+   authorised on the strength of this — the database re-reads the same claim
+   from the verified token and decides for itself. */
+function authEmailFromToken(t){
+  try{
+    const p=t.split(".")[1];
+    if(!p)return"";
+    const j=JSON.parse(decodeURIComponent(escape(atob(p.replace(/-/g,"+").replace(/_/g,"/")))));
+    return j.email||"";
+  }catch(e){return"";}
+}
+async function authRefresh(){
+  const a=AUTH;
+  if(!a||!a.refresh_token||!SUPABASE_URL)return null;
+  try{
+    const res=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,{
+      method:"POST",
+      headers:{apikey:SUPABASE_ANON_KEY,"Content-Type":"application/json"},
+      body:JSON.stringify({refresh_token:a.refresh_token})
+    });
+    if(!res.ok){authStore(null);return null;}
+    const d=await res.json();
+    if(!d.access_token){authStore(null);return null;}
+    authStore({access_token:d.access_token,refresh_token:d.refresh_token||a.refresh_token,
+      expires_at:Math.floor(Date.now()/1000)+(d.expires_in||3600),
+      email:authEmailFromToken(d.access_token)||a.email});
+    return AUTH;
+  }catch(e){authStore(null);return null;}
+}
+/* One call every cloud operation goes through. Returns a live token or
+   null; never a stale one, and never the anon key as a stand-in. */
+async function authReady(){
+  if(authLive())return AUTH;
+  if(AUTH&&AUTH.refresh_token)return await authRefresh();
+  return null;
+}
+
 function sbHeaders(){
-  return{apikey:ST.sbKey,Authorization:`Bearer ${ST.sbKey}`,"Content-Type":"application/json"};
+  /* The signed-in user's token, never the anon key on its own. apikey
+     identifies the project; Authorization is what the RLS policies read.
+     If there is no live session this returns the anon key and the database
+     refuses the request — which is the correct, fail-closed outcome, but
+     every caller checks authReady() first so it should not arise. */
+  const a=authLive();
+  return{apikey:ST.sbKey,
+    Authorization:`Bearer ${a?a.access_token:ST.sbKey}`,
+    "Content-Type":"application/json"};
 }
 function sbConfigured(){
   return!!(ST.sbUrl&&ST.sbKey);
 }
+/* Cloud operations need a project AND a live session. */
+function sbReady(){
+  return sbConfigured()&&!!authLive();
+}
+/* A session that ran out mid-use. Says so and stops — it never silently
+   retries as anonymous. */
+function authExpired(){
+  ST.sbSaves=[];ST.sbLoading=false;
+  ST.sbStatus=tf("Your sign-in has expired. Sign in again to use cloud save.",
+                 "登录已过期，请重新登录后再使用云端存档。");
+  ST.sbStatusOk=false;render();
+}
 async function sbTestConnection(url,key){
   try{
+    /* Tests the connection as the signed-in user, because that is who the
+       app actually reads and writes as. Testing with the anon key would
+       report a working connection that every real operation then refuses. */
+    const a=await authReady();
     const res=await fetch(`${url.replace(/\/$/,"")}/rest/v1/ucc_saves?select=id&limit=1`,{
-      headers:{apikey:key,Authorization:`Bearer ${key}`}
+      headers:{apikey:key,Authorization:`Bearer ${a?a.access_token:key}`}
     });
     if(!res.ok){
       const body=await res.text().catch(()=>"");
@@ -1005,6 +1156,7 @@ async function sbTestConnection(url,key){
 }
 async function sbFetchSaves(){
   if(!sbConfigured())return;
+  if(!await authReady()){ST.sbSaves=[];ST.sbStatus="";ST.sbStatusOk=null;render();return;}
   ST.sbLoading=true;render();
   try{
     const res=await fetch(`${ST.sbUrl.replace(/\/$/,"")}/rest/v1/ucc_saves?select=id,name,updated_at&order=updated_at.desc`,{
@@ -1021,6 +1173,7 @@ async function sbFetchSaves(){
 }
 async function sbSaveScenario(name){
   if(!sbConfigured()||!name.trim())return;
+  if(!await authReady())return authExpired();
   ST.sbLoading=true;render();
   try{
     const res=await fetch(`${ST.sbUrl.replace(/\/$/,"")}/rest/v1/ucc_saves`,{
@@ -1038,6 +1191,7 @@ async function sbSaveScenario(name){
 }
 async function sbOverwriteScenario(id){
   if(!sbConfigured())return;
+  if(!await authReady())return authExpired();
   ST.sbLoading=true;render();
   try{
     const res=await fetch(`${ST.sbUrl.replace(/\/$/,"")}/rest/v1/ucc_saves?id=eq.${id}`,{
@@ -1054,6 +1208,7 @@ async function sbOverwriteScenario(id){
 }
 async function sbLoadScenario(id){
   if(!sbConfigured())return;
+  if(!await authReady())return authExpired();
   ST.sbLoading=true;render();
   try{
     const res=await fetch(`${ST.sbUrl.replace(/\/$/,"")}/rest/v1/ucc_saves?id=eq.${id}&select=data`,{
@@ -1071,6 +1226,7 @@ async function sbLoadScenario(id){
 }
 async function sbDeleteScenario(id){
   if(!sbConfigured())return;
+  if(!await authReady())return authExpired();
   ST.sbLoading=true;render();
   try{
     const res=await fetch(`${ST.sbUrl.replace(/\/$/,"")}/rest/v1/ucc_saves?id=eq.${id}`,{
@@ -3067,8 +3223,45 @@ function buildModuleNav(){
   ${buildCloudModal()}`;
 }
 
+/* The sign-in block at the top of the Cloud Save panel. Three states:
+   signed in, able to sign in, and unable to (opened from disk). It is
+   careful never to imply that signing in protects the page or its data —
+   it protects the saved scenarios in the database, and nothing else. */
+function buildAuthBlock(){
+  const email=authEmail();
+  const note=`<div style="font-size:10px;color:var(--text-muted);margin-top:7px;line-height:1.5">${tf(
+    "Signing in identifies you to the database and controls who can read, change and delete saved scenarios. It does not protect this page or the figures in it — anyone with the link can still open the app.",
+    "登录用于向数据库表明您的身份，并决定谁可以读取、修改和删除云端存档。它并不保护本页面及页面上的数据——任何拿到链接的人仍可打开本应用。")}</div>`;
+  if(email)return`
+    <div class="cloud-field" style="display:block">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:12px">✓ ${tf("Signed in as","当前登录身份")}
+          <strong data-i18n-skip>${email}</strong></span>
+        <button id="authOutBtn" style="margin-left:auto">${tf("Sign out","退出登录")}</button>
+      </div>${note}
+    </div>`;
+  if(!authPossible())return`
+    <div class="cloud-field" style="display:block">
+      <div style="font-size:12px">${tf(
+        "Cloud save needs sign-in, which cannot run when the file is opened directly from disk. Open the app from its web address to use cloud save.",
+        "云端存档需要登录，而直接从本地磁盘打开文件时无法完成登录。请通过网址打开本应用以使用云端存档。")}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:7px;line-height:1.5">${tf(
+        "Everything else works as normal, and your work is still saved in this browser.",
+        "其余功能一切正常，您的数据仍会保存在本浏览器中。")}</div>
+    </div>`;
+  return`
+    <div class="cloud-field" style="display:block">
+      <button id="authInBtn" class="primary" style="background:var(--blue-600);color:#fff;border-color:var(--blue-600);padding:8px 14px">${tf("Sign in with Google","使用 Google 登录")}</button>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:7px">${tf(
+        "Use your United Ceres account. Access is limited to an approved list — if yours is not on it, ask Felix or Renzo to add you.",
+        "请使用您的 United Ceres 账号。访问权限仅限于已批准名单——如果名单中没有您，请联系 Felix 或 Renzo 添加。")}</div>${note}
+    </div>`;
+}
+
 function buildCloudModal(){
   const configured=sbConfigured();
+  const signedIn=!!authLive();
+  const ready=configured&&signedIn;
   const statusClass=ST.sbStatusOk===true?"ok":ST.sbStatusOk===false?"bad":"neutral";
   const statusText=ST.sbStatus||(configured?"Configured":"Not configured");
   const keyMasked=ST.sbKey?"•".repeat(Math.min(ST.sbKey.length,40)):"";
@@ -3080,6 +3273,9 @@ function buildCloudModal(){
         <button class="cloud-close" id="cloudCloseBtn">×</button>
       </div>
       <div class="cloud-body">
+        <div class="cloud-section-title">${tf("Sign in","登录")}</div>
+        ${buildAuthBlock()}
+        <div class="cloud-divider"></div>
         <div class="cloud-section-title">Connection settings</div>
         ${SUPABASE_URL?`<div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">🔒 This app is wired to a fixed Supabase project — the fields below are locked.</div>`:""}
         <div class="cloud-field">
@@ -3094,18 +3290,19 @@ function buildCloudModal(){
         <div class="cloud-btnrow">
           ${SUPABASE_URL?"":`<button id="sbSaveReloadBtn" class="primary" style="background:var(--blue-600);color:#fff;border-color:var(--blue-600)">Save &amp; reload</button>`}
           <button id="sbTestBtn">Test connection</button>
-          <button id="sbReloadBtn"${configured?"":" disabled"}>Reload from Supabase</button>
+          <button id="sbReloadBtn"${ready?"":" disabled"}>Reload from Supabase</button>
           ${SUPABASE_URL?"":`<button id="sbClearBtn" style="color:var(--text-danger)">Clear (use local storage only)</button>`}
         </div>
         <div class="cloud-divider"></div>
         <div class="cloud-section-title">Save current state as a scenario</div>
         <div class="cloud-save-row">
-          <input type="text" id="sbSaveNameInput" placeholder="e.g. 2026 Budget — Draft 2" value="${ST.sbSaveName||""}"${configured?"":" disabled"}>
-          <button id="sbSaveBtn" class="primary" style="background:var(--green-800);color:#fff;border-color:var(--green-800)"${configured?"":" disabled"}>💾 Save to cloud</button>
+          <input type="text" id="sbSaveNameInput" placeholder="e.g. 2026 Budget — Draft 2" value="${ST.sbSaveName||""}"${ready?"":" disabled"}>
+          <button id="sbSaveBtn" class="primary" style="background:var(--green-800);color:#fff;border-color:var(--green-800)"${ready?"":" disabled"}>💾 Save to cloud</button>
         </div>
         <div class="cloud-section-title">Saved scenarios ${ST.sbSaves.length?`(${ST.sbSaves.length})`:""}</div>
         <div class="cloud-list">
           ${!configured?`<div style="font-size:11px;color:var(--text-muted);padding:8px 0">Configure and save your connection above to see cloud scenarios.</div>`:
+            !signedIn?`<div style="font-size:11px;color:var(--text-muted);padding:8px 0">${tf("Sign in to see saved scenarios.","登录后可查看云端存档。")}</div>`:
             ST.sbSaves.length===0?`<div style="font-size:11px;color:var(--text-muted);padding:8px 0">No scenarios saved yet.</div>`:
             ST.sbSaves.map(s=>`
             <div class="cloud-item">
@@ -10025,6 +10222,11 @@ function bindModuleNavEvents(){
   if(cloudBackdrop)cloudBackdrop.addEventListener("click",()=>{ST.cloudOpen=false;render();});
   if(cloudCloseBtn)cloudCloseBtn.addEventListener("click",()=>{ST.cloudOpen=false;render();});
 
+  const authInBtn=document.getElementById("authInBtn");
+  if(authInBtn)authInBtn.addEventListener("click",()=>{authSignIn();});
+  const authOutBtn=document.getElementById("authOutBtn");
+  if(authOutBtn)authOutBtn.addEventListener("click",()=>{authSignOut();render();});
+
   const sbUrlInput=document.getElementById("sbUrlInput");
   const sbKeyInput=document.getElementById("sbKeyInput");
   const sbSaveNameInput=document.getElementById("sbSaveNameInput");
@@ -10361,7 +10563,26 @@ function renderGate(msg){
   pw.addEventListener("keydown",e=>{if(e.key==="Enter")go();});
   pw.focus();
 }
-function start(){loadFromStorage();initNumfmtDelegation();render();if(sbConfigured())sbFetchSaves();}
+function start(){
+  loadFromStorage();initNumfmtDelegation();
+  /* Pick up any session first, so the first render already knows whether
+     the person is signed in and the Cloud Save panel does not flicker. */
+  authLoad();
+  const back=authConsumeRedirect();
+  if(back&&back.error){
+    ST.sbStatus=tf("Sign-in did not complete: {m}","登录未能完成：{m}",{m:back.error});
+    ST.sbStatusOk=false;ST.cloudOpen=true;
+  }else if(back&&back.ok){
+    ST.cloudOpen=true;
+  }
+  render();
+  /* Flush the selected course's working copy into ST.sim on load. This used
+     to happen only as a side effect of sbFetchSaves() calling saveToStorage(),
+     so it silently depended on Supabase being configured AND the fetch
+     firing. It is local state and must not depend on the network. */
+  saveToStorage();
+  if(sbReady())sbFetchSaves();
+}
 function init(){if(appLocked()){renderGate();return;}start();}
 if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",init);}else{init();}
 </script>
